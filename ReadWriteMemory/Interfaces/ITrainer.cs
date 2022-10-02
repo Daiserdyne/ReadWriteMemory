@@ -1,4 +1,4 @@
-﻿namespace Memory.Interfaces;
+﻿namespace ReadWriteMemory.Interfaces;
 
 public interface ITrainer
 {

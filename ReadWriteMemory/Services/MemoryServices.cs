@@ -1,7 +1,7 @@
-﻿using Memory.Interfaces;
+﻿using ReadWriteMemory.Interfaces;
 using System.Reflection;
 
-namespace Memory.Services;
+namespace ReadWriteMemory.Services;
 
 public static class MemoryServices
 {
@@ -23,7 +23,7 @@ public static class MemoryServices
 
     private static IEnumerable<ITrainer> GetAllImplementedTrainers()
     {
-        
+
         var implementedTrainers = from t in Assembly.GetExecutingAssembly().GetTypes()
                                   where t.GetInterfaces().Contains(typeof(ITrainer))
                                         && t.GetConstructor(Type.EmptyTypes) != null

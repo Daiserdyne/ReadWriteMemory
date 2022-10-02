@@ -1,4 +1,4 @@
-﻿namespace Memory.Structures;
+﻿namespace ReadWriteMemory.Structures;
 
 /// <summary>
 /// AoB scan information.

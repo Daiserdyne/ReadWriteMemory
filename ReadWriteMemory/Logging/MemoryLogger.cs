@@ -1,4 +1,4 @@
-﻿namespace Memory.Logging;
+﻿namespace ReadWriteMemory.Logging;
 
 public sealed class MemoryLogger : IMemoryLogger
 {

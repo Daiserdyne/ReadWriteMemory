@@ -1,15 +1,14 @@
-﻿using Memory.Imports;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Memory.Models;
-using Memory.Logging;
-using static Memory.Imports.NativeMethods;
-using System.Globalization;
-using Memory.Structures;
+using static ReadWriteMemory.Imports.NativeMethods;
+using ReadWriteMemory.Structures;
+using ReadWriteMemory.Models;
+using ReadWriteMemory.Imports;
+using ReadWriteMemory.Logging;
 
-namespace Memory;
+namespace ReadWriteMemory;
 
-public sealed class Memory
+public sealed partial class Memory
 {
     #region Fields
 
@@ -20,8 +19,7 @@ public sealed class Memory
 
     private MemoryLogger? _logger;
 
-    private List<MemoryAddress<UIntPtr>> _x64AddressRegister = new();
-    private List<MemoryAddress<IntPtr>> _x86AddressRegister = new();
+    private List<MemoryAddress> _addressRegister = new();
 
     #endregion
 
@@ -67,14 +65,16 @@ public sealed class Memory
     /// <param name="processName">Show reason open process fails</param>
     public bool OpenProcess(string processName)
     {
-        var pid = Process.GetProcessesByName(processName).First().Id;
+        var procId = Process.GetProcessesByName(processName).FirstOrDefault()?.Id;
 
-        if (pid <= 0)
+        if (procId is null || procId <= 0)
         {
             _logger?.Error("Opening process failed.", "Can't find this process.");
 
             return false;
         }
+
+        int pid = procId ?? 0;
 
         if (_proc is null)
             _proc = new();
@@ -261,10 +261,10 @@ public sealed class Memory
                     // The whole size can not be used
                     tmpAddress = memoryInfos.BaseAddress;
                     int offset = (int)(sysInfo.allocationGranularity -
-                                       ((long)tmpAddress % sysInfo.allocationGranularity));
+                                       (long)tmpAddress % sysInfo.allocationGranularity);
 
                     // Check if there is enough left
-                    if ((memoryInfos.RegionSize - offset) >= size)
+                    if (memoryInfos.RegionSize - offset >= size)
                     {
                         // yup there is enough
                         tmpAddress = UIntPtr.Add(tmpAddress, offset);
@@ -309,10 +309,10 @@ public sealed class Memory
             }
 
             if (memoryInfos.RegionSize % sysInfo.allocationGranularity > 0)
-                memoryInfos.RegionSize += sysInfo.allocationGranularity - (memoryInfos.RegionSize % sysInfo.allocationGranularity);
+                memoryInfos.RegionSize += sysInfo.allocationGranularity - memoryInfos.RegionSize % sysInfo.allocationGranularity;
 
             previous = current;
-            current = new UIntPtr(((ulong)memoryInfos.BaseAddress) + (ulong)memoryInfos.RegionSize);
+            current = new UIntPtr((ulong)memoryInfos.BaseAddress + (ulong)memoryInfos.RegionSize);
 
             if ((long)current >= (long)maxAddress)
                 return caveAddress;
@@ -385,17 +385,19 @@ public sealed class Memory
             return UIntPtr.Zero;
 
         if (_proc.Is64Bit)
-            return Get64BitAddress(address, modulename, offests);
+            return GetBaseAddress(address, modulename, offests);
 
-        return (UIntPtr)Convert.ToInt64(Get32BitAddress(address, modulename));
+        _logger?.Error("Can't get target address.", "32-Bit processes aren't supported.");
+
+        return UIntPtr.Zero;
     }
 
-    public UIntPtr Get64BitAddress(int address, string moduleName = "", params int[]? offests)
+    private UIntPtr GetBaseAddress(int address, string moduleName = "", params int[]? offests)
     {
         if (_proc is null)
             return UIntPtr.Zero;
 
-        foreach (var x64Address in _x64AddressRegister)
+        foreach (var x64Address in _addressRegister)
         {
             if (x64Address.UniqueAddressHash == CreateUniqueAddressHash(address, moduleName, offests))
                 return x64Address.BaseAddress;
@@ -403,7 +405,7 @@ public sealed class Memory
 
         var moduleAddress = IntPtr.Zero;
 
-        if (moduleName != "" && int.TryParse(moduleName, out int mAddress))
+        if (moduleName == string.Empty && int.TryParse(moduleName, out int mAddress))
             moduleAddress = (IntPtr)mAddress;
         else
             moduleAddress = GetModuleAddressByName(moduleName);
@@ -418,7 +420,7 @@ public sealed class Memory
 
         var memoryAddress = new byte[addressSize];
 
-        ReadProcessMemory(_proc.Handle, (UIntPtr)((long)moduleAddress + (long)address),
+        ReadProcessMemory(_proc.Handle, (UIntPtr)((long)moduleAddress + address),
                         memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
 
         var baseAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress, 0);
@@ -434,63 +436,7 @@ public sealed class Memory
             }
         }
 
-        _x64AddressRegister.Add(new()
-        {
-            Address = address,
-            ModuleName = moduleName,
-            Offsets = offests ?? new int[0],
-            BaseAddress = baseAddress,
-            UniqueAddressHash = CreateUniqueAddressHash(address, moduleName, offests)
-        });
-
-        return baseAddress;
-    }
-
-    public IntPtr Get32BitAddress(int address, string moduleName = "", params int[]? offests)
-    {
-        if (_proc is null)
-            return IntPtr.Zero;
-
-        foreach (var x86Address in _x86AddressRegister)
-        {
-            if (x86Address.UniqueAddressHash == CreateUniqueAddressHash(address, moduleName, offests))
-                return x86Address.BaseAddress;
-        }
-
-        var moduleAddress = IntPtr.Zero;
-
-        if (moduleName != "" && int.TryParse(moduleName, out int mAddress))
-            moduleAddress = (IntPtr)mAddress;
-        else
-            moduleAddress = GetModuleAddressByName(moduleName);
-
-        if (moduleAddress == IntPtr.Zero)
-        {
-            _logger?.Error("Can't get the modules address", "The modules address is IntPtr.Zero.");
-            return IntPtr.Zero;
-        }
-
-        int addressSize = 8;
-
-        var memoryAddress = new byte[addressSize];
-
-        ReadProcessMemory(_proc.Handle, (UIntPtr)((int)moduleAddress + address),
-                        memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
-
-        var baseAddress = (IntPtr)BitConverter.ToInt32(memoryAddress);
-
-        if (offests is not null)
-        {
-            foreach (var offset in offests)
-            {
-                ReadProcessMemory(_proc.Handle, (UIntPtr)((int)baseAddress + offset),
-                    memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
-
-                baseAddress = (IntPtr)BitConverter.ToInt32(memoryAddress);
-            }
-        }
-
-        _x86AddressRegister.Add(new()
+        _addressRegister.Add(new()
         {
             Address = address,
             ModuleName = moduleName,

@@ -1,9 +1,9 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Memory.Imports;
+namespace ReadWriteMemory.Imports;
 
-internal class NativeMethods
+internal abstract class NativeMethods
 {
     #region Constants
 
@@ -74,7 +74,7 @@ internal class NativeMethods
     [DllImport("dbghelp.dll")]
     static extern bool MiniDumpWriteDump(
         IntPtr hProcess,
-        Int32 ProcessId,
+        int ProcessId,
         IntPtr hFile,
         MINIDUMP_TYPE DumpType,
         IntPtr ExceptionParam,
@@ -156,7 +156,7 @@ internal class NativeMethods
     private static extern bool _CloseHandle(IntPtr hObject);
 
     [DllImport("kernel32.dll")]
-    public static extern Int32 CloseHandle(
+    public static extern int CloseHandle(
     IntPtr hObject
     );
 
@@ -166,9 +166,9 @@ internal class NativeMethods
     );
 
     [DllImport("kernel32", SetLastError = true, ExactSpelling = true)]
-    internal static extern Int32 WaitForSingleObject(
+    internal static extern int WaitForSingleObject(
         IntPtr handle,
-        Int32 milliseconds
+        int milliseconds
     );
 
     [DllImport("kernel32.dll")]
@@ -195,21 +195,21 @@ internal class NativeMethods
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
 
-    [DllImport("kernel32", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-    public static extern IntPtr CreateToolhelp32Snapshot([In] UInt32 dwFlags, [In] UInt32 th32ProcessID);
+    [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Auto)]
+    public static extern IntPtr CreateToolhelp32Snapshot([In] uint dwFlags, [In] uint th32ProcessID);
 
-    [DllImport("kernel32", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+    [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Auto)]
     static extern bool Process32First([In] IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
     [DllImport("kernel32.dll")]
     public static extern bool Module32First(IntPtr hSnapshot, ref MODULEENTRY32 lpme);
     [DllImport("kernel32.dll")]
     public static extern bool Module32Next(IntPtr hSnapshot, ref MODULEENTRY32 lpme);
 
-    [DllImport("kernel32", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+    [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Auto)]
     static extern bool Process32Next([In] IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
 
     [DllImport("ntdll.dll", SetLastError = true)]
-    internal static extern NTSTATUS NtCreateThreadEx(out IntPtr hProcess, AccessMask desiredAccess, IntPtr objectAttributes, UIntPtr processHandle, IntPtr startAddress, IntPtr parameter, ThreadCreationFlags inCreateSuspended, Int32 stackZeroBits, Int32 sizeOfStack, Int32 maximumStackSize, IntPtr attributeList);
+    internal static extern NTSTATUS NtCreateThreadEx(out IntPtr hProcess, AccessMask desiredAccess, IntPtr objectAttributes, UIntPtr processHandle, IntPtr startAddress, IntPtr parameter, ThreadCreationFlags inCreateSuspended, int stackZeroBits, int sizeOfStack, int maximumStackSize, IntPtr attributeList);
 
 
     internal enum NTSTATUS
@@ -315,15 +315,15 @@ internal class NativeMethods
     [Flags]
     public enum ThreadAccess : int
     {
-        TERMINATE = (0x0001),
-        SUSPEND_RESUME = (0x0002),
-        GET_CONTEXT = (0x0008),
-        SET_CONTEXT = (0x0010),
-        SET_INFORMATION = (0x0020),
-        QUERY_INFORMATION = (0x0040),
-        SET_THREAD_TOKEN = (0x0080),
-        IMPERSONATE = (0x0100),
-        DIRECT_IMPERSONATION = (0x0200)
+        TERMINATE = 0x0001,
+        SUSPEND_RESUME = 0x0002,
+        GET_CONTEXT = 0x0008,
+        SET_CONTEXT = 0x0010,
+        SET_INFORMATION = 0x0020,
+        QUERY_INFORMATION = 0x0040,
+        SET_THREAD_TOKEN = 0x0080,
+        IMPERSONATE = 0x0100,
+        DIRECT_IMPERSONATION = 0x0200
     }
 
     [Flags]
@@ -347,20 +347,20 @@ internal class NativeMethods
     private struct PROCESSENTRY32
     {
         const int MAX_PATH = 260;
-        internal UInt32 dwSize;
-        internal UInt32 cntUsage;
-        internal UInt32 th32ProcessID;
+        internal uint dwSize;
+        internal uint cntUsage;
+        internal uint th32ProcessID;
         internal IntPtr th32DefaultHeapID;
-        internal UInt32 th32ModuleID;
-        internal UInt32 cntThreads;
-        internal UInt32 th32ParentProcessID;
-        internal Int32 pcPriClassBase;
-        internal UInt32 dwFlags;
+        internal uint th32ModuleID;
+        internal uint cntThreads;
+        internal uint th32ParentProcessID;
+        internal int pcPriClassBase;
+        internal uint dwFlags;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_PATH)]
         internal string szExeFile;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
     public struct MODULEENTRY32
     {
         internal uint dwSize;

@@ -1,4 +1,4 @@
-﻿namespace Memory.Logging;
+﻿namespace ReadWriteMemory.Logging;
 
 internal interface IMemoryLogger : IDisposable
 {
