@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using Memory.Models;
 using Memory.Logging;
 using static Memory.Imports.NativeMethods;
+using System.Globalization;
+using Memory.Structures;
 
 namespace Memory;
 
@@ -18,6 +20,9 @@ public sealed class Memory
 
     private MemoryLogger? _logger;
 
+    private List<MemoryAddress<UIntPtr>> _x64AddressRegister = new();
+    private List<MemoryAddress<IntPtr>> _x86AddressRegister = new();
+
     #endregion
 
     #region Properties
@@ -31,7 +36,10 @@ public sealed class Memory
         {
             lock (_mem)
             {
-                return _instance ?? new();
+                if (_instance is null)
+                    _instance = new();
+
+                return _instance;
             }
         }
     }
@@ -43,7 +51,10 @@ public sealed class Memory
     {
         get
         {
-            return _logger ?? new();
+            if (_logger is null)
+                _logger = new();
+
+            return _logger;
         }
     }
 
@@ -149,7 +160,8 @@ public sealed class Memory
             return UIntPtr.Zero; // returning UIntPtr.Zero instead of throwing an exception
                                  // to better match existing code
 
-        var theCode = GetCode(code, file);
+        //var theCode = GetCode(code, file);
+        var theCode = UIntPtr.Zero;
 
         UIntPtr address = theCode;
 
@@ -359,5 +371,161 @@ public sealed class Memory
             return;
 
         WriteProcessMemory(_proc.Handle, address, write, (UIntPtr)write.Length, out IntPtr bytesRead);
+    }
+
+    /// <summary>
+    /// Calculates the true address.
+    /// </summary>
+    /// <param name="size">size of address (default is 8)</param>
+    /// <param name="address">size of address (default is 8)</param>
+    /// <returns></returns>
+    public UIntPtr GetTargetAddress(string modulename, int address, params int[]? offests)
+    {
+        if (_proc is null)
+            return UIntPtr.Zero;
+
+        if (_proc.Is64Bit)
+            return Get64BitAddress(address, modulename, offests);
+
+        return (UIntPtr)Convert.ToInt64(Get32BitAddress(address, modulename));
+    }
+
+    public UIntPtr Get64BitAddress(int address, string moduleName = "", params int[]? offests)
+    {
+        if (_proc is null)
+            return UIntPtr.Zero;
+
+        foreach (var x64Address in _x64AddressRegister)
+        {
+            if (x64Address.UniqueAddressHash == CreateUniqueAddressHash(address, moduleName, offests))
+                return x64Address.BaseAddress;
+        }
+
+        var moduleAddress = IntPtr.Zero;
+
+        if (moduleName != "" && int.TryParse(moduleName, out int mAddress))
+            moduleAddress = (IntPtr)mAddress;
+        else
+            moduleAddress = GetModuleAddressByName(moduleName);
+
+        if (moduleAddress == IntPtr.Zero)
+        {
+            _logger?.Error("Can't get the modules address", "The modules address is IntPtr.Zero.");
+            return UIntPtr.Zero;
+        }
+
+        int addressSize = 16;
+
+        var memoryAddress = new byte[addressSize];
+
+        ReadProcessMemory(_proc.Handle, (UIntPtr)((long)moduleAddress + (long)address),
+                        memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
+
+        var baseAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress, 0);
+
+        if (offests is not null)
+        {
+            foreach (var offset in offests)
+            {   // This shit dont work
+                baseAddress = (UIntPtr)Convert.ToInt64((long)baseAddress + offset);
+                ReadProcessMemory(_proc.Handle, baseAddress, memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
+                baseAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress, 0);
+
+            }
+        }
+
+        _x64AddressRegister.Add(new()
+        {
+            Address = address,
+            ModuleName = moduleName,
+            Offsets = offests ?? new int[0],
+            BaseAddress = baseAddress,
+            UniqueAddressHash = CreateUniqueAddressHash(address, moduleName, offests)
+        });
+
+        return baseAddress;
+    }
+
+    public IntPtr Get32BitAddress(int address, string moduleName = "", params int[]? offests)
+    {
+        if (_proc is null)
+            return IntPtr.Zero;
+
+        foreach (var x86Address in _x86AddressRegister)
+        {
+            if (x86Address.UniqueAddressHash == CreateUniqueAddressHash(address, moduleName, offests))
+                return x86Address.BaseAddress;
+        }
+
+        var moduleAddress = IntPtr.Zero;
+
+        if (moduleName != "" && int.TryParse(moduleName, out int mAddress))
+            moduleAddress = (IntPtr)mAddress;
+        else
+            moduleAddress = GetModuleAddressByName(moduleName);
+
+        if (moduleAddress == IntPtr.Zero)
+        {
+            _logger?.Error("Can't get the modules address", "The modules address is IntPtr.Zero.");
+            return IntPtr.Zero;
+        }
+
+        int addressSize = 8;
+
+        var memoryAddress = new byte[addressSize];
+
+        ReadProcessMemory(_proc.Handle, (UIntPtr)((int)moduleAddress + address),
+                        memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
+
+        var baseAddress = (IntPtr)BitConverter.ToInt32(memoryAddress);
+
+        if (offests is not null)
+        {
+            foreach (var offset in offests)
+            {
+                ReadProcessMemory(_proc.Handle, (UIntPtr)((int)baseAddress + offset),
+                    memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
+
+                baseAddress = (IntPtr)BitConverter.ToInt32(memoryAddress);
+            }
+        }
+
+        _x86AddressRegister.Add(new()
+        {
+            Address = address,
+            ModuleName = moduleName,
+            Offsets = offests ?? new int[0],
+            BaseAddress = baseAddress,
+            UniqueAddressHash = CreateUniqueAddressHash(address, moduleName, offests)
+        });
+
+        return baseAddress;
+    }
+
+    /// <summary>
+    /// Retrieve _proc. Process module baseaddress by name
+    /// </summary>
+    /// <param name="moduleName">name of module</param>
+    /// <returns></returns>
+    private IntPtr GetModuleAddressByName(string moduleName)
+    {
+        if (_proc is null)
+        {
+            _logger?.Error("Couldn't get module address by name", $"{nameof(_proc)} was null.");
+            return IntPtr.Zero;
+        }
+
+        return _proc.Process.Modules.Cast<ProcessModule>()
+            .First(module => module.ModuleName == moduleName).BaseAddress;
+    }
+
+    private static string CreateUniqueAddressHash(int address, string moduleName, int[]? offests)
+    {
+        string offsetSequence = string.Empty;
+
+        if (offests is not null)
+            offsetSequence = string.Concat(offests);
+
+        return address + moduleName + offsetSequence;
     }
 }
