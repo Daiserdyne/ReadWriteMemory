@@ -21,7 +21,7 @@ public sealed partial class Memory : IDisposable
 
     private MemoryLogger? _logger;
 
-    private List<MemoryAddressTable> _addressRegister = new();
+    private readonly List<MemoryAddressTable> _addressRegister = new();
 
     #endregion
 
@@ -36,8 +36,7 @@ public sealed partial class Memory : IDisposable
         {
             lock (_mem)
             {
-                if (_instance is null)
-                    _instance = new();
+                _instance ??= new();
 
                 return _instance;
             }
@@ -93,8 +92,7 @@ public sealed partial class Memory : IDisposable
             return false;
         }
 
-        if (_proc is null)
-            _proc = new();
+        _proc ??= new();
 
         _proc.ProcessName = processName;
         _proc.Process = Process.GetProcessById(pid);
@@ -150,7 +148,7 @@ public sealed partial class Memory : IDisposable
         if (_proc is null || _proc.Handle == IntPtr.Zero)
             return;
 
-        CloseHandle(_proc.Handle);
+        _ = CloseHandle(_proc.Handle);
 
         _proc = null;
     }
@@ -291,19 +289,16 @@ public sealed partial class Memory : IDisposable
         }
 
         var current = minAddress;
-        var previous = current;
 
-        MEMORY_BASIC_INFORMATION memoryInfos;
-
-        var tmpAddress = UIntPtr.Zero;
-
-        while (VirtualQueryEx(_proc.Handle, current, out memoryInfos).ToUInt64() != 0)
+        while (VirtualQueryEx(_proc.Handle, current, out MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
         {
             if ((long)memoryInfos.BaseAddress > (long)maxAddress)
                 return UIntPtr.Zero;  // No memory found, let windows handle
 
             if (memoryInfos.State == MEM_FREE && memoryInfos.RegionSize > size)
             {
+
+                UIntPtr tmpAddress;
                 if ((long)memoryInfos.BaseAddress % sysInfo.allocationGranularity > 0)
                 {
                     // The whole size can not be used
@@ -359,7 +354,7 @@ public sealed partial class Memory : IDisposable
             if (memoryInfos.RegionSize % sysInfo.allocationGranularity > 0)
                 memoryInfos.RegionSize += sysInfo.allocationGranularity - memoryInfos.RegionSize % sysInfo.allocationGranularity;
 
-            previous = current;
+            UIntPtr previous = current;
             current = new UIntPtr((ulong)memoryInfos.BaseAddress + (ulong)memoryInfos.RegionSize);
 
             if ((long)current >= (long)maxAddress)
@@ -418,22 +413,25 @@ public sealed partial class Memory : IDisposable
         if (_proc is null || _proc.Process.Responding is false)
             return;
 
-        WriteProcessMemory(_proc.Handle, address, write, (UIntPtr)write.Length, out IntPtr bytesRead);
+        WriteProcessMemory(_proc.Handle, address, write, (UIntPtr)write.Length, out _);
     }
 
     public byte[] ReadBytes(UIntPtr address, int length)
     {
         if (_proc is null)
-            return new byte[0];
+            return Array.Empty<byte>();
 
-        var opcodes = new byte[length];
+        var bytes = new byte[length];
 
         return ReadProcessMemory(_proc.Handle, address, 
-            opcodes, (UIntPtr)length, IntPtr.Zero) == true ? opcodes : new byte[0];
+            bytes, (UIntPtr)length, IntPtr.Zero) == true ? bytes : Array.Empty<byte>();
     }
 
     public UIntPtr GetBaseAddress(MemoryAddress memAddress, int addressSize = 16)
     {
+        _logger?.Info("", "SUGUGUUS");
+
+
         if (_proc is null)
             return UIntPtr.Zero;
 
@@ -444,7 +442,7 @@ public sealed partial class Memory : IDisposable
         if (baseAddr != UIntPtr.Zero)
             return baseAddr;
 
-        var moduleAddress = IntPtr.Zero;
+        IntPtr moduleAddress;
 
         if (moduleName == string.Empty && int.TryParse(moduleName, out int mAddress))
             moduleAddress = (IntPtr)mAddress;
@@ -459,35 +457,34 @@ public sealed partial class Memory : IDisposable
 
         var memoryAddress = new byte[addressSize];
 
-        var baseAddress = UIntPtr.Zero;
-
         int address = memAddress.Address;
         int[]? offsets = memAddress.Offsets;
 
+        var baseAddress = (UIntPtr)IntPtr.Add(moduleAddress, address).ToInt64();
+
         if (offsets is not null && offsets.Length != 0)
         {
+            ReadProcessMemory(_proc.Handle, baseAddress, memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
+            baseAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress);
+
             for (int i = 0; i < offsets.Length; i++)
             {
                 if (i == offsets.Length - 1)
-                    return (UIntPtr)Convert.ToInt64((long)baseAddress + offsets[i]);
+                {
+                    baseAddress = (UIntPtr)Convert.ToInt64((long)baseAddress + offsets[i]);
+                    break;
+                }
 
-                baseAddress = (UIntPtr)Convert.ToInt64((long)baseAddress + offsets[i]);
-
-                ReadProcessMemory(_proc.Handle, baseAddress, memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
-
+                ReadProcessMemory(_proc.Handle, UIntPtr.Add(baseAddress, offsets[i]), memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
                 baseAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress);
             }
-        }
-        else
-        {
-            baseAddress = (UIntPtr)IntPtr.Add(moduleAddress, address).ToInt64();
         }
 
         _addressRegister.Add(new()
         {
             Address = address,
             ModuleName = moduleName,
-            Offsets = offsets ?? new int[0],
+            Offsets = offsets ?? Array.Empty<int>(),
             BaseAddress = baseAddress,
             UniqueAddressHash = CreateUniqueAddressHash(memAddress)
         });
@@ -541,7 +538,7 @@ public sealed partial class Memory : IDisposable
     {
         string addressHash = CreateUniqueAddressHash(memAddress);
 
-        for (int i = 0; i < _addressRegister.Count(); i++)
+        for (int i = 0; i < _addressRegister.Count; i++)
         {
             if (_addressRegister[i].UniqueAddressHash == addressHash)
                 return i;

@@ -21,6 +21,8 @@ internal class Program
 
     protected internal static void Main()
     {
+        _mem.GetBaseAddress(new(0x219FF58, "Outlast2.exe", new[] { 0xc38, 0x7f58 }));
+
         _caveAddress = _mem.CreateCodeCave(_movementXAddress, _movementX, 9);
         _caveAddress = _mem.CreateCodeCave(_movementYAddress, _movementY, 5);
 
@@ -28,6 +30,8 @@ internal class Program
         _mem.CloseCodeCave(_movementYAddress);
 
         _mem.Dispose();
+
+        Console.ReadLine();
     }
 
     private static void Logger_OnLogging(string caption, string message)
