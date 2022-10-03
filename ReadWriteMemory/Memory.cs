@@ -1,14 +1,16 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
-using static ReadWriteMemory.Imports.NativeMethods;
-using ReadWriteMemory.Structures;
+using static ReadWriteMemory.NativeImports.NativeMethods;
 using ReadWriteMemory.Models;
-using ReadWriteMemory.Imports;
 using ReadWriteMemory.Logging;
+using ReadWriteMemory.NativeImports;
+using Windows.Services.Maps;
+using System;
+using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace ReadWriteMemory;
 
-public sealed partial class Memory
+public sealed partial class Memory : IDisposable
 {
     #region Fields
 
@@ -19,7 +21,7 @@ public sealed partial class Memory
 
     private MemoryLogger? _logger;
 
-    private List<MemoryAddress> _addressRegister = new();
+    private List<MemoryAddressTable> _addressRegister = new();
 
     #endregion
 
@@ -58,6 +60,21 @@ public sealed partial class Memory
 
     #endregion
 
+    #region C'tor
+
+    public Memory()
+    {
+    }
+
+    /// <summary>
+    /// Creates an instance of the memory object and opens the target process.
+    /// </summary>
+    /// <param name="processName"></param>
+    public Memory(string processName) =>
+        OpenProcess(processName);
+
+    #endregion
+
     /// <summary>
     /// Open the PC game process with all security and access rights.
     /// </summary>
@@ -67,14 +84,14 @@ public sealed partial class Memory
     {
         var procId = Process.GetProcessesByName(processName).FirstOrDefault()?.Id;
 
-        if (procId is null || procId <= 0)
+        int pid = procId ?? 0;
+
+        if (procId <= 0)
         {
             _logger?.Error("Opening process failed.", "Can't find this process.");
 
             return false;
         }
-
-        int pid = procId ?? 0;
 
         if (_proc is null)
             _proc = new();
@@ -92,20 +109,9 @@ public sealed partial class Memory
 
         _proc.Handle = NativeMethods.OpenProcess(true, pid);
 
-        try
-        {
-            Process.EnterDebugMode();
-        }
-        catch (Exception)
-        {
-            _logger?.Warn("Opening process failed.", "Couldn't enter debug mode.");
-        }
-
         if (_proc.Handle == IntPtr.Zero)
         {
             var error = Marshal.GetLastWin32Error();
-
-            Process.LeaveDebugMode();
 
             _proc = null;
             _logger?.Error("Opening process failed.", "opening a handle to the target process failed. Error code: " + error);
@@ -115,6 +121,12 @@ public sealed partial class Memory
 
         _proc.Is64Bit = Environment.Is64BitOperatingSystem
             && IsWow64Process(_proc.Handle, out bool isWow64) && isWow64 is false;
+
+        if (!_proc.Is64Bit)
+        {
+            _logger?.Error("", ""); // No 32-Bit support.
+            return false;
+        }
 
         var mainModule = _proc.Process?.MainModule;
 
@@ -146,48 +158,39 @@ public sealed partial class Memory
     /// <summary>
     /// Creates a code cave to write custom opcodes in target process
     /// </summary>
-    /// <param name="code">Address to create the trampoline</param>
+    /// <param name="memAddress">Address, module name and offesets</param>
     /// <param name="newBytes">The opcodes to write in the code cave</param>
     /// <param name="replaceCount">The number of bytes being replaced</param>
     /// <param name="size">size of the allocated region</param>
-    /// <param name="file">ini file to look in</param>
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>UIntPtr to created code cave for use for later deallocation</returns>
-    public UIntPtr CreateCodeCave(string code, byte[] newBytes, int replaceCount, int size = 0x1000, string file = "")
+    public UIntPtr CreateCodeCave(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
     {
         if (replaceCount < 5 || _proc is null)
-            return UIntPtr.Zero; // returning UIntPtr.Zero instead of throwing an exception
-                                 // to better match existing code
+            return UIntPtr.Zero;
 
-        //var theCode = GetCode(code, file);
-        var theCode = UIntPtr.Zero;
+        var baseAddress = GetBaseAddress(memAddress);
 
-        UIntPtr address = theCode;
-
-        // if x64 we need to try to allocate near the address so we dont run into the +-2GB limit of the 0xE9 jmp
-
-        UIntPtr caveAddress = UIntPtr.Zero;
-        UIntPtr prefered = address;
+        var caveAddress = UIntPtr.Zero;
 
         for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
         {
-            caveAddress = VirtualAllocEx(_proc.Handle, FindFreeBlockForRegion(prefered, (uint)size), (uint)size,
+            caveAddress = VirtualAllocEx(_proc.Handle, FindFreeBlockForRegion(baseAddress, size), size,
                 MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
             if (caveAddress == UIntPtr.Zero)
-                prefered = UIntPtr.Add(prefered, 0x10000);
+                baseAddress = UIntPtr.Add(baseAddress, 0x10000);
         }
 
-        // Failed to allocate memory around the address we wanted let windows handle it and hope for the best?
         if (caveAddress == UIntPtr.Zero)
-            caveAddress = VirtualAllocEx(_proc.Handle, UIntPtr.Zero, (uint)size, MEM_COMMIT | MEM_RESERVE,
+            caveAddress = VirtualAllocEx(_proc.Handle, UIntPtr.Zero, size, MEM_COMMIT | MEM_RESERVE,
                                          PAGE_EXECUTE_READWRITE);
 
         int nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;
 
         // (to - from - 5)
-        int offset = (int)((long)caveAddress - (long)address - 5);
+        int offset = (int)((long)caveAddress - (long)baseAddress - 5);
 
         byte[] jmpBytes = new byte[5 + nopsNeeded];
 
@@ -201,17 +204,62 @@ public sealed partial class Memory
         }
 
         byte[] caveBytes = new byte[5 + newBytes.Length];
-        offset = (int)((long)address + jmpBytes.Length - ((long)caveAddress + newBytes.Length) - 5);
+        offset = (int)((long)baseAddress + jmpBytes.Length - ((long)caveAddress + newBytes.Length) - 5);
 
         newBytes.CopyTo(caveBytes, 0);
         caveBytes[newBytes.Length] = 0xE9;
 
         BitConverter.GetBytes(offset).CopyTo(caveBytes, newBytes.Length + 1);
 
+        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
+
+        if (tableIndex != -1)
+            _addressRegister[tableIndex].CodeCaveTable = new(ReadBytes(baseAddress, replaceCount), caveAddress);
+
         WriteBytes(caveAddress, caveBytes);
-        WriteBytes(address, jmpBytes);
+        WriteBytes(baseAddress, jmpBytes);
 
         return caveAddress;
+    }
+
+    /// <summary>
+    /// Closes a created code cave with the cave address.
+    /// </summary>
+    /// <returns></returns>
+    public bool CloseCodeCave(MemoryAddress memAddress)
+    {
+        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
+
+        if (tableIndex == -1)
+            return false;
+
+        var baseAddress = _addressRegister[tableIndex].BaseAddress;
+        var caveTable = _addressRegister[tableIndex].CodeCaveTable;
+
+        if (caveTable is null)
+            return false;
+
+        WriteBytes(baseAddress, caveTable.OriginalOpcode);
+
+        var deallocation = DeallocateMemory(caveTable.CaveAddress);
+
+        if (!deallocation)
+            _logger?.Warn("", "Couldn't free memory.");
+
+        _addressRegister[tableIndex].CodeCaveTable = null;
+
+        return deallocation;
+    }
+
+    private bool DeallocateMemory(UIntPtr address)
+    {
+        if (_proc is null)
+        {
+            _logger?.Error("", "_proc was null and region couldn't be dealloc."); // _proc was null and region couldn't be dealloc.
+            return false;
+        }
+
+        return VirtualFreeEx(_proc.Handle, address, (UIntPtr)0, 0x8000);
     }
 
     private UIntPtr FindFreeBlockForRegion(UIntPtr baseAddress, uint size)
@@ -367,41 +415,34 @@ public sealed partial class Memory
     /// <param name="write">Byte array to write to</param>
     public void WriteBytes(UIntPtr address, byte[] write)
     {
-        if (_proc is null)
+        if (_proc is null || _proc.Process.Responding is false)
             return;
 
         WriteProcessMemory(_proc.Handle, address, write, (UIntPtr)write.Length, out IntPtr bytesRead);
     }
 
-    /// <summary>
-    /// Calculates the true address.
-    /// </summary>
-    /// <param name="size">size of address (default is 8)</param>
-    /// <param name="address">size of address (default is 8)</param>
-    /// <returns></returns>
-    public UIntPtr GetTargetAddress(string modulename, int address, params int[]? offests)
+    public byte[] ReadBytes(UIntPtr address, int length)
     {
         if (_proc is null)
-            return UIntPtr.Zero;
+            return new byte[0];
 
-        if (_proc.Is64Bit)
-            return GetBaseAddress(address, modulename, offests);
+        var opcodes = new byte[length];
 
-        _logger?.Error("Can't get target address.", "32-Bit processes aren't supported.");
-
-        return UIntPtr.Zero;
+        return ReadProcessMemory(_proc.Handle, address, 
+            opcodes, (UIntPtr)length, IntPtr.Zero) == true ? opcodes : new byte[0];
     }
 
-    private UIntPtr GetBaseAddress(int address, string moduleName = "", params int[]? offests)
+    public UIntPtr GetBaseAddress(MemoryAddress memAddress, int addressSize = 16)
     {
         if (_proc is null)
             return UIntPtr.Zero;
 
-        foreach (var x64Address in _addressRegister)
-        {
-            if (x64Address.UniqueAddressHash == CreateUniqueAddressHash(address, moduleName, offests))
-                return x64Address.BaseAddress;
-        }
+        string moduleName = memAddress.ModuleName;
+
+        var baseAddr = GetBaseAddressByMemoryAddress(memAddress);
+
+        if (baseAddr != UIntPtr.Zero)
+            return baseAddr;
 
         var moduleAddress = IntPtr.Zero;
 
@@ -416,33 +457,39 @@ public sealed partial class Memory
             return UIntPtr.Zero;
         }
 
-        int addressSize = 16;
-
         var memoryAddress = new byte[addressSize];
 
-        ReadProcessMemory(_proc.Handle, (UIntPtr)((long)moduleAddress + address),
-                        memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
+        var baseAddress = UIntPtr.Zero;
 
-        var baseAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress, 0);
+        int address = memAddress.Address;
+        int[]? offsets = memAddress.Offsets;
 
-        if (offests is not null)
+        if (offsets is not null && offsets.Length != 0)
         {
-            foreach (var offset in offests)
-            {   // This shit dont work
-                baseAddress = (UIntPtr)Convert.ToInt64((long)baseAddress + offset);
-                ReadProcessMemory(_proc.Handle, baseAddress, memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
-                baseAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress, 0);
+            for (int i = 0; i < offsets.Length; i++)
+            {
+                if (i == offsets.Length - 1)
+                    return (UIntPtr)Convert.ToInt64((long)baseAddress + offsets[i]);
 
+                baseAddress = (UIntPtr)Convert.ToInt64((long)baseAddress + offsets[i]);
+
+                ReadProcessMemory(_proc.Handle, baseAddress, memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
+
+                baseAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress);
             }
+        }
+        else
+        {
+            baseAddress = (UIntPtr)IntPtr.Add(moduleAddress, address).ToInt64();
         }
 
         _addressRegister.Add(new()
         {
             Address = address,
             ModuleName = moduleName,
-            Offsets = offests ?? new int[0],
+            Offsets = offsets ?? new int[0],
             BaseAddress = baseAddress,
-            UniqueAddressHash = CreateUniqueAddressHash(address, moduleName, offests)
+            UniqueAddressHash = CreateUniqueAddressHash(memAddress)
         });
 
         return baseAddress;
@@ -461,17 +508,50 @@ public sealed partial class Memory
             return IntPtr.Zero;
         }
 
-        return _proc.Process.Modules.Cast<ProcessModule>()
-            .First(module => module.ModuleName == moduleName).BaseAddress;
+        var baseAddress = _proc.Process.Modules.Cast<ProcessModule>()
+            .FirstOrDefault(module => module.ModuleName?.ToLower() == moduleName.ToLower())?.BaseAddress;
+
+        return baseAddress ?? IntPtr.Zero;
     }
 
-    private static string CreateUniqueAddressHash(int address, string moduleName, int[]? offests)
+    private static string CreateUniqueAddressHash(MemoryAddress memAddres)
     {
         string offsetSequence = string.Empty;
 
-        if (offests is not null)
-            offsetSequence = string.Concat(offests);
+        if (memAddres.Offsets is not null)
+            offsetSequence = string.Concat(memAddres.Offsets);
 
-        return address + moduleName + offsetSequence;
+        return memAddres.Address + memAddres.ModuleName + offsetSequence;
+    }
+
+    private UIntPtr GetBaseAddressByMemoryAddress(MemoryAddress memAddress)
+    {
+        string addressHash = CreateUniqueAddressHash(memAddress);
+
+        foreach (var addrTable in _addressRegister)
+        {
+            if (addrTable.UniqueAddressHash == addressHash)
+                return addrTable.BaseAddress;
+        }
+
+        return UIntPtr.Zero;
+    }
+
+    private int GetAddressIndexByMemoryAddress(MemoryAddress memAddress)
+    {
+        string addressHash = CreateUniqueAddressHash(memAddress);
+
+        for (int i = 0; i < _addressRegister.Count(); i++)
+        {
+            if (_addressRegister[i].UniqueAddressHash == addressHash)
+                return i;
+        }
+
+        return -1;
+    }
+
+    public void Dispose()
+    {
+        CloseProcess();
     }
 }

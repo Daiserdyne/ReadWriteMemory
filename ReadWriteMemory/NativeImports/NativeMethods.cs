@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 
-namespace ReadWriteMemory.Imports;
+namespace ReadWriteMemory.NativeImports;
 
 internal abstract class NativeMethods
 {
