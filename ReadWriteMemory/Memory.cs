@@ -4,9 +4,7 @@ using static ReadWriteMemory.NativeImports.NativeMethods;
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Logging;
 using ReadWriteMemory.NativeImports;
-using Windows.Services.Maps;
-using System;
-using static System.Runtime.CompilerServices.RuntimeHelpers;
+using System.Reflection.Metadata.Ecma335;
 
 namespace ReadWriteMemory;
 
@@ -28,49 +26,61 @@ public sealed partial class Memory : IDisposable
     #region Properties
 
     /// <summary>
-    /// Returns a singelton Instance of the memory object.
-    /// </summary>
-    public static Memory Instance
-    {
-        get
-        {
-            lock (_mem)
-            {
-                _instance ??= new();
-
-                return _instance;
-            }
-        }
-    }
-
-    /// <summary>
     /// Returns a simple logger which allows you to see whats going on here.
     /// </summary>
     public MemoryLogger Logger
     {
-        get
-        {
-            if (_logger is null)
-                _logger = new();
-
-            return _logger;
-        }
+        get => _logger ??= new();
     }
 
     #endregion
 
     #region C'tor
 
+    /// <summary>
+    /// Creates a instance of the memory object without opening the target process.
+    /// </summary>
     public Memory()
     {
     }
 
     /// <summary>
-    /// Creates an instance of the memory object and opens the target process.
+    /// Creates a instance of the memory object and opens the process.
     /// </summary>
     /// <param name="processName"></param>
-    public Memory(string processName) =>
+    public Memory(string processName)
+    {
         OpenProcess(processName);
+    }
+
+    #endregion
+
+    #region Singelton
+
+    /// <summary>
+    /// Creates a singleton instance of the memory object.
+    /// </summary>
+    /// <returns></returns>
+    public static Memory Instance()
+    {
+        lock (_mem)
+        {
+            return _instance ??= new();
+        }
+    }
+
+    /// <summary>
+    /// Creates a singleton instance of the memory object and opens the process.
+    /// </summary>
+    /// <param name="processName"></param>
+    /// <returns></returns>
+    public static Memory Instance(string processName)
+    {
+        lock (_mem)
+        {
+            return _instance ??= new(processName);
+        }
+    }
 
     #endregion
 
@@ -154,7 +164,7 @@ public sealed partial class Memory : IDisposable
     }
 
     /// <summary>
-    /// Creates a code cave to write custom opcodes in target process
+    /// Creates a code cave to write custom opcodes in target process.
     /// </summary>
     /// <param name="memAddress">Address, module name and offesets</param>
     /// <param name="newBytes">The opcodes to write in the code cave</param>
@@ -162,11 +172,36 @@ public sealed partial class Memory : IDisposable
     /// <param name="size">size of the allocated region</param>
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
-    /// <returns>UIntPtr to created code cave for use for later deallocation</returns>
-    public UIntPtr CreateCodeCave(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
+    /// <returns>Created code cave address</returns>
+    public Task<UIntPtr> CreateOrResumeCodeCaveAsync(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
+    {
+        return Task.Run(() => CreateOrResumeCodeCave(memAddress, newBytes, replaceCount, size));
+    }
+
+    /// <summary>
+    /// Creates a code cave to write custom opcodes in target process. 
+    /// If you created a code cave in the past with the same memory address, it will
+    /// jump back to your cave address.
+    /// </summary>
+    /// <param name="memAddress">Address, module name and offesets</param>
+    /// <param name="newBytes">The opcodes to write in the code cave</param>
+    /// <param name="replaceCount">The number of bytes being replaced</param>
+    /// <param name="size">size of the allocated region</param>
+    /// <remarks>Please ensure that you use the proper replaceCount
+    /// if you replace halfway in an instruction you may cause bad things</remarks>
+    /// <returns>Created code cave address</returns>
+    public UIntPtr CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
     {
         if (replaceCount < 5 || _proc is null)
             return UIntPtr.Zero;
+
+        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
+
+        if (tableIndex != -1 && _addressRegister[tableIndex].CodeCaveTable != null)
+        {
+            WriteBytes(_addressRegister[tableIndex].BaseAddress, _addressRegister[tableIndex].CodeCaveTable.JmpBytes);
+            return _addressRegister[tableIndex].CodeCaveTable.CaveAddress;
+        }
 
         var baseAddress = GetBaseAddress(memAddress);
 
@@ -209,15 +244,49 @@ public sealed partial class Memory : IDisposable
 
         BitConverter.GetBytes(offset).CopyTo(caveBytes, newBytes.Length + 1);
 
-        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
+        tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
         if (tableIndex != -1)
-            _addressRegister[tableIndex].CodeCaveTable = new(ReadBytes(baseAddress, replaceCount), caveAddress);
+            _addressRegister[tableIndex].CodeCaveTable = 
+                new(ReadBytes(baseAddress, replaceCount), caveAddress, jmpBytes);
 
         WriteBytes(caveAddress, caveBytes);
         WriteBytes(baseAddress, jmpBytes);
 
         return caveAddress;
+    }
+
+    /// <summary>
+    /// Restores the original opcodes to the memory address without dealloacating the memory.
+    /// So your code-bytes stay in the memory at the cave address. The advantage is that you
+    /// don't have to create a new code cave which costs time. You can simply jump to the cave address
+    /// or use the original code. Don't forget to dispose the memory object when you exit the application.
+    /// Otherwise the codecaves continue to live forever.
+    /// </summary>
+    /// <param name="memAddress"></param>
+    /// <returns></returns>
+    public bool PauseOpenedCodeCave(MemoryAddress memAddress)
+    {
+        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
+
+        if (tableIndex == -1)
+        {
+            _logger?.Error("", $"Couldn't find this memory address: {(IntPtr)memAddress.Address}");
+            return false;
+        }
+
+        var baseAddress = _addressRegister[tableIndex].BaseAddress;
+        var caveTable = _addressRegister[tableIndex].CodeCaveTable;
+
+        if (caveTable is null)
+        {
+            _logger?.Warn("", "There is currently no opened code cave with this address.");
+            return false;
+        }
+
+        WriteBytes(baseAddress, caveTable.OriginalOpcode);
+
+        return true;
     }
 
     /// <summary>
@@ -247,6 +316,28 @@ public sealed partial class Memory : IDisposable
         _addressRegister[tableIndex].CodeCaveTable = null;
 
         return deallocation;
+    }
+
+    /// <summary>
+    /// Closes all opened code caves by patching the original bytes back and deallocating all allocated memory.
+    /// </summary>
+    private void CloseAllCodeCaves()
+    {
+        foreach (var memoryTable in _addressRegister.Where(addr => addr.CodeCaveTable != null))
+        {
+            var baseAddress = memoryTable.BaseAddress;
+            var caveTable = memoryTable.CodeCaveTable;
+
+            if (caveTable is null)
+                return;
+
+            WriteBytes(baseAddress, caveTable.OriginalOpcode);
+
+            var deallocation = DeallocateMemory(caveTable.CaveAddress);
+
+            if (!deallocation)
+                _logger?.Warn("", "Couldn't free memory.");
+        }
     }
 
     private bool DeallocateMemory(UIntPtr address)
@@ -427,20 +518,17 @@ public sealed partial class Memory : IDisposable
             bytes, (UIntPtr)length, IntPtr.Zero) == true ? bytes : Array.Empty<byte>();
     }
 
-    public UIntPtr GetBaseAddress(MemoryAddress memAddress, int addressSize = 16)
+    private UIntPtr GetBaseAddress(MemoryAddress memAddress, int addressSize = 16)
     {
-        _logger?.Info("", "SUGUGUUS");
-
-
         if (_proc is null)
             return UIntPtr.Zero;
 
         string moduleName = memAddress.ModuleName;
 
-        var baseAddr = GetBaseAddressByMemoryAddress(memAddress);
+        var savedBaseAddress = GetBaseAddressByMemoryAddress(memAddress);
 
-        if (baseAddr != UIntPtr.Zero)
-            return baseAddr;
+        if (savedBaseAddress != UIntPtr.Zero)
+            return savedBaseAddress;
 
         IntPtr moduleAddress;
 
@@ -493,7 +581,7 @@ public sealed partial class Memory : IDisposable
     }
 
     /// <summary>
-    /// Retrieve _proc. Process module baseaddress by name
+    /// Gets the process module base address by name.
     /// </summary>
     /// <param name="moduleName">name of module</param>
     /// <returns></returns>
@@ -511,6 +599,11 @@ public sealed partial class Memory : IDisposable
         return baseAddress ?? IntPtr.Zero;
     }
 
+    /// <summary>
+    /// Creates an simple and unique address hash.
+    /// </summary>
+    /// <param name="memAddres"></param>
+    /// <returns></returns>
     private static string CreateUniqueAddressHash(MemoryAddress memAddres)
     {
         string offsetSequence = string.Empty;
@@ -521,6 +614,11 @@ public sealed partial class Memory : IDisposable
         return memAddres.Address + memAddres.ModuleName + offsetSequence;
     }
 
+    /// <summary>
+    /// Gets the base address from the given memory address object.
+    /// </summary>
+    /// <param name="memAddress"></param>
+    /// <returns>Base address of given memory address object.</returns>
     private UIntPtr GetBaseAddressByMemoryAddress(MemoryAddress memAddress)
     {
         string addressHash = CreateUniqueAddressHash(memAddress);
@@ -534,6 +632,11 @@ public sealed partial class Memory : IDisposable
         return UIntPtr.Zero;
     }
 
+    /// <summary>
+    /// Searches the given memory address and returns the index in the address register. 
+    /// </summary>
+    /// <param name="memAddress"></param>
+    /// <returns>The index from the given memory address in the addressRegister.</returns>
     private int GetAddressIndexByMemoryAddress(MemoryAddress memAddress)
     {
         string addressHash = CreateUniqueAddressHash(memAddress);
@@ -547,8 +650,17 @@ public sealed partial class Memory : IDisposable
         return -1;
     }
 
+    /// <summary>
+    /// Disposes the whole memory object and restores the process normal memory state.
+    /// </summary>
     public void Dispose()
     {
+        CloseAllCodeCaves();
         CloseProcess();
+
+        _addressRegister.Clear();
+        _logger = null;
+        _proc = null;
+        _instance = null;
     }
 }
