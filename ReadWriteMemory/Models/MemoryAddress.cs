@@ -2,7 +2,7 @@
 
 public sealed class MemoryAddress
 {
-    public MemoryAddress(int address, string moduleName, params int[]? offsets)
+    public MemoryAddress(int address, string moduleName = "", params int[]? offsets)
     {
         Address = address;
         ModuleName = moduleName;
@@ -10,6 +10,6 @@ public sealed class MemoryAddress
     }
 
     public int Address { get; }
-    public string ModuleName { get; } = string.Empty;
+    public string ModuleName { get; }
     public int[]? Offsets { get; }
 }

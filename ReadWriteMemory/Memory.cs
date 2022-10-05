@@ -4,7 +4,6 @@ using static ReadWriteMemory.NativeImports.NativeMethods;
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Logging;
 using ReadWriteMemory.NativeImports;
-using System.Reflection.Metadata.Ecma335;
 
 namespace ReadWriteMemory;
 
@@ -195,13 +194,8 @@ public sealed partial class Memory : IDisposable
         if (replaceCount < 5 || _proc is null)
             return UIntPtr.Zero;
 
-        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
-
-        if (tableIndex != -1 && _addressRegister[tableIndex].CodeCaveTable != null)
-        {
-            WriteBytes(_addressRegister[tableIndex].BaseAddress, _addressRegister[tableIndex].CodeCaveTable.JmpBytes);
-            return _addressRegister[tableIndex].CodeCaveTable.CaveAddress;
-        }
+        if (IsCodeCaveOpen(memAddress, out var caveAddr))
+            return caveAddr;
 
         var baseAddress = GetBaseAddress(memAddress);
 
@@ -244,7 +238,7 @@ public sealed partial class Memory : IDisposable
 
         BitConverter.GetBytes(offset).CopyTo(caveBytes, newBytes.Length + 1);
 
-        tableIndex = GetAddressIndexByMemoryAddress(memAddress);
+        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
         if (tableIndex != -1)
             _addressRegister[tableIndex].CodeCaveTable = 
@@ -254,6 +248,32 @@ public sealed partial class Memory : IDisposable
         WriteBytes(baseAddress, jmpBytes);
 
         return caveAddress;
+    }
+
+    /// <summary>
+    /// Checks if a code cave was created in the past with the given memory address.
+    /// </summary>
+    /// <param name="tableIndex"></param>
+    /// <param name="caveAddress"></param>
+    /// <returns></returns>
+    private bool IsCodeCaveOpen(MemoryAddress memAddress, out UIntPtr caveAddress)
+    {
+        caveAddress = UIntPtr.Zero;
+
+        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
+
+        if (tableIndex == -1)
+            return false;
+
+        var caveTable = _addressRegister[tableIndex].CodeCaveTable;
+
+        if (caveTable is null)
+            return false;
+
+        WriteBytes(_addressRegister[tableIndex].BaseAddress, caveTable.JmpBytes);
+        caveAddress = caveTable.CaveAddress;
+
+        return true;
     }
 
     /// <summary>
@@ -290,7 +310,7 @@ public sealed partial class Memory : IDisposable
     }
 
     /// <summary>
-    /// Closes a created code cave with the cave address.
+    /// Closes a created code cave. Just give this function the memory address where you create a code cave with.
     /// </summary>
     /// <returns></returns>
     public bool CloseCodeCave(MemoryAddress memAddress)
@@ -523,14 +543,14 @@ public sealed partial class Memory : IDisposable
         if (_proc is null)
             return UIntPtr.Zero;
 
-        string moduleName = memAddress.ModuleName;
-
         var savedBaseAddress = GetBaseAddressByMemoryAddress(memAddress);
 
         if (savedBaseAddress != UIntPtr.Zero)
             return savedBaseAddress;
 
         IntPtr moduleAddress;
+
+        string moduleName = memAddress.ModuleName;
 
         if (moduleName == string.Empty && int.TryParse(moduleName, out int mAddress))
             moduleAddress = (IntPtr)mAddress;
@@ -570,9 +590,7 @@ public sealed partial class Memory : IDisposable
 
         _addressRegister.Add(new()
         {
-            Address = address,
-            ModuleName = moduleName,
-            Offsets = offsets ?? Array.Empty<int>(),
+            MemoryAddress = memAddress,
             BaseAddress = baseAddress,
             UniqueAddressHash = CreateUniqueAddressHash(memAddress)
         });
