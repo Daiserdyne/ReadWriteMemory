@@ -1,13 +1,12 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
-using static ReadWriteMemory.NativeImports.NativeMethods;
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Logging;
 using ReadWriteMemory.NativeImports;
 
 namespace ReadWriteMemory;
 
-public sealed partial class Memory : IDisposable
+public sealed partial class Memory : NativeMethods, IDisposable
 {
     #region Fields
 
@@ -241,7 +240,7 @@ public sealed partial class Memory : IDisposable
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
         if (tableIndex != -1)
-            _addressRegister[tableIndex].CodeCaveTable = 
+            _addressRegister[tableIndex].CodeCaveTable =
                 new(ReadBytes(baseAddress, replaceCount), caveAddress, jmpBytes);
 
         WriteBytes(caveAddress, caveBytes);
@@ -379,27 +378,18 @@ public sealed partial class Memory : IDisposable
         var minAddress = UIntPtr.Subtract(baseAddress, 0x70000000);
         var maxAddress = UIntPtr.Add(baseAddress, 0x70000000);
 
-        var caveAddress = UIntPtr.Zero;
-
         GetSystemInfo(out SYSTEM_INFO sysInfo);
 
-        if (_proc.Is64Bit)
-        {
-            if ((long)minAddress > (long)sysInfo.maximumApplicationAddress ||
-                (long)minAddress < (long)sysInfo.minimumApplicationAddress)
-                minAddress = sysInfo.minimumApplicationAddress;
-
-            if ((long)maxAddress < (long)sysInfo.minimumApplicationAddress ||
-                (long)maxAddress > (long)sysInfo.maximumApplicationAddress)
-                maxAddress = sysInfo.maximumApplicationAddress;
-        }
-        else
-        {
+        if ((long)minAddress > (long)sysInfo.maximumApplicationAddress ||
+            (long)minAddress < (long)sysInfo.minimumApplicationAddress)
             minAddress = sysInfo.minimumApplicationAddress;
+
+        if ((long)maxAddress < (long)sysInfo.minimumApplicationAddress ||
+            (long)maxAddress > (long)sysInfo.maximumApplicationAddress)
             maxAddress = sysInfo.maximumApplicationAddress;
-        }
 
         var current = minAddress;
+        var caveAddress = UIntPtr.Zero;
 
         while (VirtualQueryEx(_proc.Handle, current, out MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
         {
@@ -408,8 +398,8 @@ public sealed partial class Memory : IDisposable
 
             if (memoryInfos.State == MEM_FREE && memoryInfos.RegionSize > size)
             {
-
                 UIntPtr tmpAddress;
+
                 if ((long)memoryInfos.BaseAddress % sysInfo.allocationGranularity > 0)
                 {
                     // The whole size can not be used
@@ -443,16 +433,13 @@ public sealed partial class Memory : IDisposable
                 {
                     tmpAddress = memoryInfos.BaseAddress;
 
-                    if ((long)tmpAddress < (long)baseAddress) // try to get it the cloest possible 
-                                                              // (so to the end of the region - size and
-                                                              // aligned by system allocation granularity)
+                    if ((long)tmpAddress < (long)baseAddress)
                     {
                         tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - size));
 
                         if ((long)tmpAddress > (long)baseAddress)
                             tmpAddress = baseAddress;
 
-                        // decrease until aligned properly
                         tmpAddress =
                             UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
                     }
@@ -478,55 +465,6 @@ public sealed partial class Memory : IDisposable
         return caveAddress;
     }
 
-    private UIntPtr VirtualQueryEx(IntPtr hProcess, UIntPtr lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer)
-    {
-        UIntPtr retVal;
-
-        if (_proc is null || _proc.Is64Bit || IntPtr.Size == 8)
-        {
-            // 64 bit
-            MEMORY_BASIC_INFORMATION64 tmp64 = new();
-            retVal = Native_VirtualQueryEx(hProcess, lpAddress, out tmp64, new UIntPtr((uint)Marshal.SizeOf(tmp64)));
-
-            lpBuffer.BaseAddress = tmp64.BaseAddress;
-            lpBuffer.AllocationBase = tmp64.AllocationBase;
-            lpBuffer.AllocationProtect = tmp64.AllocationProtect;
-            lpBuffer.RegionSize = (long)tmp64.RegionSize;
-            lpBuffer.State = tmp64.State;
-            lpBuffer.Protect = tmp64.Protect;
-            lpBuffer.Type = tmp64.Type;
-
-            return retVal;
-        }
-
-        MEMORY_BASIC_INFORMATION32 tmp32 = new();
-
-        retVal = Native_VirtualQueryEx(hProcess, lpAddress, out tmp32, new UIntPtr((uint)Marshal.SizeOf(tmp32)));
-
-        lpBuffer.BaseAddress = tmp32.BaseAddress;
-        lpBuffer.AllocationBase = tmp32.AllocationBase;
-        lpBuffer.AllocationProtect = tmp32.AllocationProtect;
-        lpBuffer.RegionSize = tmp32.RegionSize;
-        lpBuffer.State = tmp32.State;
-        lpBuffer.Protect = tmp32.Protect;
-        lpBuffer.Type = tmp32.Type;
-
-        return retVal;
-    }
-
-    /// <summary>
-    /// Write byte array to address
-    /// </summary>
-    /// <param name="address">Address to write to</param>
-    /// <param name="write">Byte array to write to</param>
-    public void WriteBytes(UIntPtr address, byte[] write)
-    {
-        if (_proc is null || _proc.Process.Responding is false)
-            return;
-
-        WriteProcessMemory(_proc.Handle, address, write, (UIntPtr)write.Length, out _);
-    }
-
     public byte[] ReadBytes(UIntPtr address, int length)
     {
         if (_proc is null)
@@ -534,7 +472,7 @@ public sealed partial class Memory : IDisposable
 
         var bytes = new byte[length];
 
-        return ReadProcessMemory(_proc.Handle, address, 
+        return ReadProcessMemory(_proc.Handle, address,
             bytes, (UIntPtr)length, IntPtr.Zero) == true ? bytes : Array.Empty<byte>();
     }
 
