@@ -1,5 +1,6 @@
 ﻿using ReadWriteMemory.Models;
 using System;
+using System.Text;
 
 namespace ReadWriteMemory;
 
@@ -18,28 +19,88 @@ public sealed partial class Memory
         WriteProcessMemory(_proc.Handle, address, write, (UIntPtr)write.Length, out _);
     }
 
-    public void WriteMemory(MemoryAddress memAddress, int value)
+    public bool WriteMemory(MemoryAddress memAddress, DataType type, object value)
     {
-        var newValue = BitConverter.GetBytes(value);
-    }
+        if (_proc is null)
+            return false;
 
-    public void WriteMemory(MemoryAddress memAddress, long value)
-    {
-        var newValue = BitConverter.GetBytes(value);
-    }
+        byte[]? newValue = null;
+        int size = 4;
 
-    public void WriteMemory(MemoryAddress memAddress, float value)
-    {
+        switch (type)
+        {
+            case DataType.Short:
 
-    }
+                if (value is short)
+                {
+                    newValue = BitConverter.GetBytes((short)value);
+                    size = 2;
+                }
 
-    public void WriteMemory(MemoryAddress memAddress, double value)
-    {
+                break;
 
-    }
+            case DataType.Int:
 
-    public void WriteMemory(MemoryAddress memAddress, string value)
-    {
+                if (value is int)
+                {
+                    newValue = BitConverter.GetBytes((int)value);
+                    size = 4;
+                }
 
+                break;
+
+            case DataType.Long:
+
+                if (value is long)
+                {
+                    newValue = BitConverter.GetBytes((long)value);
+                    size = 8;
+                }
+
+                break;
+
+            case DataType.Float:
+
+                if (value is float)
+                {
+                    newValue = BitConverter.GetBytes((float)value);
+                    size = 4;
+                }
+
+                break;
+
+            case DataType.Double:
+
+                if (value is double)
+                {
+                    newValue = BitConverter.GetBytes((double)value);
+                    size = 8;
+                }
+
+                break;
+
+            case DataType.String:
+
+                if (value is string)
+                {
+                    newValue = Encoding.UTF8.GetBytes((string)value);
+                    size = newValue.Length;
+                }
+
+                break;
+
+            default:
+                return false;
+        }
+
+        if (newValue == null)
+            return false;
+
+        var targetAddress = GetTargetAddress(memAddress);
+
+        if (targetAddress == UIntPtr.Zero)
+            return false;
+
+        return WriteProcessMemory(_proc.Handle, targetAddress, newValue, (UIntPtr)size, IntPtr.Zero);
     }
 }

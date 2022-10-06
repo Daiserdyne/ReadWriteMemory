@@ -16,6 +16,25 @@ internal class Program
     {
         _mem.Logger.OnLogging += Logger_OnLogging;
 
+        
+        //MemoryAddress asdfsd = new(0x20CF9E551C0);
+
+        //Console.WriteLine(_mem.WriteMemory(asdfsd, Memory.DataType.String, "U gay"));
+
+
+        MemoryAddress health = new(0x20CCCEC9CF8);
+
+        Console.WriteLine(_mem.WriteMemory(health, Memory.DataType.Float, 90f));
+        Console.ReadLine();
+        Console.WriteLine(_mem.WriteMemory(health, Memory.DataType.Float, 80f));
+        Console.ReadLine();
+        Console.WriteLine(_mem.WriteMemory(health, Memory.DataType.Float, 70f));
+        Console.ReadLine();
+        Console.WriteLine(_mem.WriteMemory(health, Memory.DataType.Float, 60f));
+        Console.ReadLine();
+        Console.WriteLine(_mem.WriteMemory(health, Memory.DataType.Float, 50f));
+        Console.ReadLine();
+
         while (true)
         {
             switch (Console.ReadLine())
@@ -34,8 +53,8 @@ internal class Program
                     _mem.CloseCodeCave(_movementXAddress);
                     _mem.CloseCodeCave(_movementYAddress);
                     break;
-                    
-                    case "exit":
+
+                case "exit":
                     _mem.Dispose();
                     return;
 
