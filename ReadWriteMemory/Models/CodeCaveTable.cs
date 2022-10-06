@@ -4,12 +4,12 @@ internal sealed class CodeCaveTable
 {
 	public CodeCaveTable(byte[] originalOpcode, UIntPtr caveAddress, byte[] jmpBytes)
 	{
-		OriginalOpcode = originalOpcode;
+		OriginalOpcodes = originalOpcode;
 		CaveAddress = caveAddress;
 		JmpBytes = jmpBytes;
 	}
 
 	public UIntPtr CaveAddress { get; }
-	public byte[] OriginalOpcode { get; }
+	public byte[] OriginalOpcodes { get; }
 	public byte[] JmpBytes { get; }
 }

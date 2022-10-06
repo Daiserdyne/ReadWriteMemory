@@ -8,6 +8,12 @@ namespace ReadWriteMemory;
 
 public sealed partial class Memory : NativeMethods, IDisposable
 {
+    #region constants
+
+    private const int Size = 16;
+
+    #endregion
+
     #region Fields
 
     private ProcessInformation? _proc;
@@ -313,7 +319,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
             return false;
         }
 
-        WriteBytes(baseAddress, caveTable.OriginalOpcode);
+        WriteBytes(baseAddress, caveTable.OriginalOpcodes);
 
         return true;
     }
@@ -335,7 +341,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         if (caveTable is null)
             return false;
 
-        WriteBytes(baseAddress, caveTable.OriginalOpcode);
+        WriteBytes(baseAddress, caveTable.OriginalOpcodes);
 
         var deallocation = DeallocateMemory(caveTable.CaveAddress);
 
@@ -352,7 +358,8 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     private void CloseAllCodeCaves()
     {
-        foreach (var memoryTable in _addressRegister.Where(addr => addr.CodeCaveTable != null))
+        foreach (var memoryTable in _addressRegister
+            .Where(addr => addr.CodeCaveTable is not null))
         {
             var baseAddress = memoryTable.TargetAddress;
             var caveTable = memoryTable.CodeCaveTable;
@@ -360,7 +367,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
             if (caveTable is null)
                 return;
 
-            WriteBytes(baseAddress, caveTable.OriginalOpcode);
+            WriteBytes(baseAddress, caveTable.OriginalOpcodes);
 
             var deallocation = DeallocateMemory(caveTable.CaveAddress);
 
@@ -486,12 +493,12 @@ public sealed partial class Memory : NativeMethods, IDisposable
             bytes, (UIntPtr)length, IntPtr.Zero) == true ? bytes : Array.Empty<byte>();
     }
 
-    private UIntPtr GetTargetAddress(MemoryAddress memAddress, int addressSize = 16)
+    private UIntPtr GetTargetAddress(MemoryAddress memAddress)
     {
         if (_proc is null)
             return UIntPtr.Zero;
 
-        var savedTargetAddress = GetBaseAddressByMemoryAddress(memAddress);
+        var savedTargetAddress = GetTargetAddressByMemoryAddress(memAddress);
 
         if (savedTargetAddress != UIntPtr.Zero)
             return savedTargetAddress;
@@ -512,13 +519,13 @@ public sealed partial class Memory : NativeMethods, IDisposable
         else
             targetAddress = (UIntPtr)memAddress.Address;
 
-        var memoryAddress = new byte[addressSize];
+        var memoryAddress = new byte[Size];
 
         int[]? offsets = memAddress.Offsets;
 
         if (offsets is not null && offsets.Length != 0)
         {
-            ReadProcessMemory(_proc.Handle, targetAddress, memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
+            ReadProcessMemory(_proc.Handle, targetAddress, memoryAddress, (UIntPtr)Size, IntPtr.Zero);
             targetAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress);
 
             for (int i = 0; i < offsets.Length; i++)
@@ -529,7 +536,9 @@ public sealed partial class Memory : NativeMethods, IDisposable
                     break;
                 }
 
-                ReadProcessMemory(_proc.Handle, UIntPtr.Add(targetAddress, offsets[i]), memoryAddress, (UIntPtr)addressSize, IntPtr.Zero);
+                ReadProcessMemory(_proc.Handle, UIntPtr.Add(targetAddress, offsets[i]), memoryAddress, 
+                    (UIntPtr)Size, IntPtr.Zero);
+
                 targetAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress);
             }
         }
@@ -583,7 +592,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     /// <param name="memAddress"></param>
     /// <returns>Base address of given memory address object.</returns>
-    private UIntPtr GetBaseAddressByMemoryAddress(MemoryAddress memAddress)
+    private UIntPtr GetTargetAddressByMemoryAddress(MemoryAddress memAddress)
     {
         string addressHash = CreateUniqueAddressHash(memAddress);
 
