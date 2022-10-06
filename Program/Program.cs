@@ -14,23 +14,25 @@ internal class Program
 
     protected internal static async Task Main()
     {
-        _mem.Logger.OnLogging += Logger_OnLogging;
+        //_mem.Logger.OnLogging += Logger_OnLogging;
 
-        MemoryAddress health = new(0x7ff63a22ff58, 0xc38, 0x7f58);
-        MemoryAddress someRandomAddress = new(0x219FF58, "Outlast2.exe", 0xc80);
+        //MemoryAddress health = new(0x7ff63a22ff58, 0xc38, 0x7f58);
+        //MemoryAddress someRandomAddress = new(0x219FF58, "Outlast2.exe", 0xc80);
 
-        Console.WriteLine(_mem.ReadInt32(someRandomAddress) ?? 0);
+        //Console.WriteLine(_mem.ReadInt32(someRandomAddress) ?? 0);
 
-        Console.ReadLine();
-        Console.WriteLine(_mem.WriteFloat(health, 90));
-        Console.ReadLine();
-        Console.WriteLine(_mem.WriteFloat(health, 80));
-        Console.ReadLine();
-        Console.WriteLine(_mem.WriteFloat(health, 70));
-        Console.ReadLine();
-        Console.WriteLine(_mem.WriteFloat(health, 60));
-        Console.ReadLine();
-        Console.WriteLine(_mem.WriteFloat(health, 100));
+        //Console.ReadLine();
+        //Console.WriteLine(_mem.WriteFloat(health, 90));
+        //Console.ReadLine();
+        //Console.WriteLine(_mem.WriteFloat(health, 80));
+        //Console.ReadLine();
+        //Console.WriteLine(_mem.WriteFloat(health, 70));
+        //Console.ReadLine();
+        //Console.WriteLine(_mem.WriteFloat(health, 60));
+        //Console.ReadLine();
+        //Console.WriteLine(_mem.WriteFloat(health, 100));
+
+
 
         while (true)
         {
