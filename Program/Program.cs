@@ -16,24 +16,21 @@ internal class Program
     {
         _mem.Logger.OnLogging += Logger_OnLogging;
 
-        
-        //MemoryAddress asdfsd = new(0x20CF9E551C0);
+        MemoryAddress health = new(0x7ff63a22ff58, 0xc38, 0x7f58);
+        MemoryAddress someRandomAddress = new(0x219FF58, "Outlast2.exe", 0xc80);
 
-        //Console.WriteLine(_mem.WriteMemory(asdfsd, Memory.DataType.String, "U gay"));
+        Console.WriteLine(_mem.ReadInt32(someRandomAddress) ?? 0);
 
-
-        MemoryAddress health = new(0x20CCCEC9CF8);
-
-        Console.WriteLine(_mem.WriteMemory(health, Memory.DataType.Float, 90f));
         Console.ReadLine();
-        Console.WriteLine(_mem.WriteMemory(health, Memory.DataType.Float, 80f));
+        Console.WriteLine(_mem.WriteFloat(health, 90));
         Console.ReadLine();
-        Console.WriteLine(_mem.WriteMemory(health, Memory.DataType.Float, 70f));
+        Console.WriteLine(_mem.WriteFloat(health, 80));
         Console.ReadLine();
-        Console.WriteLine(_mem.WriteMemory(health, Memory.DataType.Float, 60f));
+        Console.WriteLine(_mem.WriteFloat(health, 70));
         Console.ReadLine();
-        Console.WriteLine(_mem.WriteMemory(health, Memory.DataType.Float, 50f));
+        Console.WriteLine(_mem.WriteFloat(health, 60));
         Console.ReadLine();
+        Console.WriteLine(_mem.WriteFloat(health, 100));
 
         while (true)
         {
