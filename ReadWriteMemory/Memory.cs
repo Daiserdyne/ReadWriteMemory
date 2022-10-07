@@ -120,7 +120,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
             return false;
         }
 
-        _proc.Handle = NativeMethods.OpenProcess(true, pid);
+        _proc.Handle = OpenProcess(true, pid);
 
         if (_proc.Handle == IntPtr.Zero)
         {

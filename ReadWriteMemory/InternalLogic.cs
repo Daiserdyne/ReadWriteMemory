@@ -166,11 +166,6 @@ public sealed partial class Memory
         if (_proc is null)
             return UIntPtr.Zero;
 
-        var savedTargetAddress = GetTargetAddressByMemoryAddress(memAddress);
-
-        if (savedTargetAddress != UIntPtr.Zero)
-            return savedTargetAddress;
-
         IntPtr moduleAddress = IntPtr.Zero;
 
         string moduleName = memAddress.ModuleName;
@@ -186,6 +181,11 @@ public sealed partial class Memory
             targetAddress = (UIntPtr)((long)moduleAddress + address);
         else
             targetAddress = (UIntPtr)memAddress.Address;
+
+        var savedTargetAddress = GetTargetAddressByMemoryAddress(memAddress);
+
+        if (savedTargetAddress != UIntPtr.Zero && savedTargetAddress == targetAddress)
+            return savedTargetAddress;
 
         var memoryAddress = new byte[Size];
 
