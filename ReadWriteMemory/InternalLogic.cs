@@ -170,29 +170,33 @@ public sealed partial class Memory
 
         string moduleName = memAddress.ModuleName;
 
+        // Hier die baseaddresse speichern, und nicht immer neu berechnen-> increase performance
         if (moduleName != string.Empty)
             moduleAddress = GetModuleAddressByName(moduleName);
 
-        UIntPtr targetAddress;
+        UIntPtr baseAddress;
 
         var address = memAddress.Address;
 
         if (moduleAddress != IntPtr.Zero)
-            targetAddress = (UIntPtr)((long)moduleAddress + address);
+            baseAddress = (UIntPtr)((long)moduleAddress + address);
         else
-            targetAddress = (UIntPtr)memAddress.Address;
+            baseAddress = (UIntPtr)memAddress.Address;
 
         var savedTargetAddress = GetTargetAddressByMemoryAddress(memAddress);
 
-        if (savedTargetAddress != UIntPtr.Zero && savedTargetAddress == targetAddress)
+        // Diesen bullshit rausnehmen
+        if (savedTargetAddress != UIntPtr.Zero && savedTargetAddress == baseAddress)
             return savedTargetAddress;
 
         var memoryAddress = new byte[Size];
 
+        UIntPtr targetAddress = baseAddress;
         int[]? offsets = memAddress.Offsets;
 
         if (offsets is not null && offsets.Length != 0)
         {
+            // todo: RW mit Marshal.Copy austauschen
             ReadProcessMemory(_proc.Handle, targetAddress, memoryAddress, (UIntPtr)Size, IntPtr.Zero);
             targetAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress);
 
@@ -234,10 +238,10 @@ public sealed partial class Memory
             return IntPtr.Zero;
         }
 
-        var baseAddress = _proc.Process.Modules.Cast<ProcessModule>()
+        var moduleAddress = _proc.Process.Modules.Cast<ProcessModule>()
             .FirstOrDefault(module => module.ModuleName?.ToLower() == moduleName.ToLower())?.BaseAddress;
 
-        return baseAddress ?? IntPtr.Zero;
+        return moduleAddress ?? IntPtr.Zero;
     }
 
     /// <summary>

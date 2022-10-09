@@ -17,7 +17,6 @@ internal class Program
     {
         _mem.Logger.OnLogging += Logger_OnLogging;
 
-
         while (true)
         {
             Console.WriteLine("Current health: " + _mem.ReadFloat(_health));
