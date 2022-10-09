@@ -132,7 +132,7 @@ public sealed partial class Memory
         if (caveTable is null)
             return false;
 
-        WriteBytes(_addressRegister[tableIndex].TargetAddress, caveTable.JmpBytes);
+        WriteBytes(_addressRegister[tableIndex].BaseAddress, caveTable.JmpBytes);
         caveAddress = caveTable.CaveAddress;
 
         return true;
@@ -146,7 +146,7 @@ public sealed partial class Memory
         foreach (var memoryTable in _addressRegister
             .Where(addr => addr.CodeCaveTable is not null))
         {
-            var baseAddress = memoryTable.TargetAddress;
+            var baseAddress = memoryTable.BaseAddress;
             var caveTable = memoryTable.CodeCaveTable;
 
             if (caveTable is null)
@@ -166,39 +166,39 @@ public sealed partial class Memory
         if (_proc is null)
             return UIntPtr.Zero;
 
-        IntPtr moduleAddress = IntPtr.Zero;
+        UIntPtr baseAddress = UIntPtr.Zero;
 
-        string moduleName = memAddress.ModuleName;
+        var savedBaseAddress = GetBaseAddressByMemoryAddress(memAddress);
 
-        // Hier die baseaddresse speichern, und nicht immer neu berechnen-> increase performance
-        if (moduleName != string.Empty)
-            moduleAddress = GetModuleAddressByName(moduleName);
+        if (savedBaseAddress != UIntPtr.Zero)
+            baseAddress = savedBaseAddress;
 
-        UIntPtr baseAddress;
+        if (baseAddress == UIntPtr.Zero) // Increase performance by saving base address.
+        {
+            IntPtr moduleAddress = IntPtr.Zero;
 
-        var address = memAddress.Address;
+            string moduleName = memAddress.ModuleName;
 
-        if (moduleAddress != IntPtr.Zero)
-            baseAddress = (UIntPtr)((long)moduleAddress + address);
-        else
-            baseAddress = (UIntPtr)memAddress.Address;
+            if (moduleName != string.Empty)
+                moduleAddress = GetModuleAddressByName(moduleName);
 
-        var savedTargetAddress = GetTargetAddressByMemoryAddress(memAddress);
+            var address = memAddress.Address;
 
-        // Diesen bullshit rausnehmen
-        if (savedTargetAddress != UIntPtr.Zero && savedTargetAddress == baseAddress)
-            return savedTargetAddress;
-
-        var memoryAddress = new byte[Size];
+            if (moduleAddress != IntPtr.Zero)
+                baseAddress = (UIntPtr)((long)moduleAddress + address);
+            else
+                baseAddress = (UIntPtr)memAddress.Address;
+        }
 
         UIntPtr targetAddress = baseAddress;
         int[]? offsets = memAddress.Offsets;
 
         if (offsets is not null && offsets.Length != 0)
         {
-            // todo: RW mit Marshal.Copy austauschen
-            ReadProcessMemory(_proc.Handle, targetAddress, memoryAddress, (UIntPtr)Size, IntPtr.Zero);
-            targetAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress);
+            var buffer = new byte[Size];
+
+            ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)Size, IntPtr.Zero);
+            targetAddress = (UIntPtr)BitConverter.ToInt64(buffer);
 
             for (int i = 0; i < offsets.Length; i++)
             {
@@ -208,17 +208,17 @@ public sealed partial class Memory
                     break;
                 }
 
-                ReadProcessMemory(_proc.Handle, UIntPtr.Add(targetAddress, offsets[i]), memoryAddress,
+                ReadProcessMemory(_proc.Handle, UIntPtr.Add(targetAddress, offsets[i]), buffer,
                     (UIntPtr)Size, IntPtr.Zero);
 
-                targetAddress = (UIntPtr)BitConverter.ToInt64(memoryAddress);
+                targetAddress = (UIntPtr)BitConverter.ToInt64(buffer);
             }
         }
 
         _addressRegister.Add(new()
         {
             MemoryAddress = memAddress,
-            TargetAddress = targetAddress,
+            BaseAddress = baseAddress,
             UniqueAddressHash = CreateUniqueAddressHash(memAddress)
         });
 
@@ -264,14 +264,14 @@ public sealed partial class Memory
     /// </summary>
     /// <param name="memAddress"></param>
     /// <returns>Base address of given memory address object.</returns>
-    private UIntPtr GetTargetAddressByMemoryAddress(MemoryAddress memAddress)
+    private UIntPtr GetBaseAddressByMemoryAddress(MemoryAddress memAddress)
     {
         string addressHash = CreateUniqueAddressHash(memAddress);
 
         foreach (var addrTable in _addressRegister)
         {
             if (addrTable.UniqueAddressHash == addressHash)
-                return addrTable.TargetAddress;
+                return addrTable.BaseAddress;
         }
 
         return UIntPtr.Zero;

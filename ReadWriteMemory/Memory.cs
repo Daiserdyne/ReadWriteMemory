@@ -275,7 +275,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
             return false;
         }
 
-        var baseAddress = _addressRegister[tableIndex].TargetAddress;
+        var baseAddress = _addressRegister[tableIndex].BaseAddress;
         var caveTable = _addressRegister[tableIndex].CodeCaveTable;
 
         if (caveTable is null)
@@ -300,7 +300,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         if (tableIndex == -1)
             return false;
 
-        var baseAddress = _addressRegister[tableIndex].TargetAddress;
+        var baseAddress = _addressRegister[tableIndex].BaseAddress;
         var caveTable = _addressRegister[tableIndex].CodeCaveTable;
 
         if (caveTable is null)
