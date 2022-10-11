@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Logging;
 using ReadWriteMemory.NativeImports;
-using System.Text;
 
 namespace ReadWriteMemory;
 
@@ -324,6 +323,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
     public void Dispose()
     {
         CloseAllCodeCaves();
+        UnfreezeAllValues();
         CloseProcess();
 
         _addressRegister.Clear();

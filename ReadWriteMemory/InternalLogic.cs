@@ -1,6 +1,5 @@
 ﻿using ReadWriteMemory.Models;
 using System.Diagnostics;
-using System.Text;
 
 namespace ReadWriteMemory;
 
@@ -161,6 +160,16 @@ public sealed partial class Memory
         }
     }
 
+    private void UnfreezeAllValues()
+    {
+        foreach (var freezeTokenSrc in _addressRegister
+            .Where(addr => addr.FreezeTokenSrc is not null)
+            .Select(addr => addr.FreezeTokenSrc))
+        {
+            freezeTokenSrc?.Cancel();
+        }
+    }
+
     private UIntPtr GetTargetAddress(MemoryAddress memAddress)
     {
         if (_proc is null)
@@ -173,7 +182,7 @@ public sealed partial class Memory
         if (savedBaseAddress != UIntPtr.Zero)
             baseAddress = savedBaseAddress;
 
-        if (baseAddress == UIntPtr.Zero) // Increase performance by saving base address.
+        if (baseAddress == UIntPtr.Zero)
         {
             IntPtr moduleAddress = IntPtr.Zero;
 
