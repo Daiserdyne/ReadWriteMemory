@@ -54,6 +54,7 @@ internal class Program
                     break;
 
                 case "exit":
+                    memory.Logger.OnLogging -= Logger_OnLogging;
                     memory.Dispose();
                     return;
 

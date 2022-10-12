@@ -333,4 +333,12 @@ public sealed partial class Memory
 
         WriteProcessMemory(_proc.Handle, address, write, (UIntPtr)write.Length, out _);
     }
+
+    private bool IsProcessAliveOrResponding()
+    {
+        var procStatus = _proc is null || !_proc.Process.Responding ? false : true;
+        _logger?.Error("ERROR", "Process is is closed or not responding.");
+
+        return procStatus;
+    }
 }

@@ -5,9 +5,9 @@ namespace ReadWriteMemory;
 
 public sealed partial class Memory
 {
-    public bool FreezeInt16(MemoryAddress memAddress, short value, uint refreshRateInMilliseconds = 100)
+    public bool FreezeInt16(MemoryAddress memAddress, uint refreshRateInMilliseconds = 100)
     {
-        if (_proc is null)
+        if (!IsProcessAliveOrResponding())
             return false;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -15,7 +15,10 @@ public sealed partial class Memory
         if (targetAddress == UIntPtr.Zero)
             return false;
 
-        var valueToWrite = BitConverter.GetBytes(value);
+        var valueToFreeze = ReadProcessMemory(memAddress, targetAddress, 2);
+
+        if (valueToFreeze is null)
+            return false;
 
         int tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
@@ -29,19 +32,37 @@ public sealed partial class Memory
 
         _addressRegister[tableIndex].FreezeTokenSrc = freezeToken;
 
-        refreshRateInMilliseconds = refreshRateInMilliseconds < 10 ? 10 : refreshRateInMilliseconds;
+        refreshRateInMilliseconds = refreshRateInMilliseconds 
+            < 10 ? 10 : refreshRateInMilliseconds;
 
         BackgroundService.ExecuteTaskAsync(() =>
         {
-            WriteProcessMemory(_proc.Handle, targetAddress, valueToWrite, (UIntPtr)2, IntPtr.Zero);
+            if (!WriteProcessMemory(_proc.Handle, targetAddress, valueToFreeze, (UIntPtr)2, IntPtr.Zero))
+                freezeToken.Cancel();
         }, TimeSpan.FromMilliseconds(refreshRateInMilliseconds), freezeToken.Token);
 
         return true;
     }
 
+    private byte[]? ReadProcessMemory(MemoryAddress memAddress, UIntPtr targetAddress, int size)
+    {
+        if (!IsProcessAliveOrResponding())
+            return false;
+
+        var valueToFreeze = new byte[size];
+
+        if (!ReadProcessMemory(_proc.Handle, targetAddress, valueToFreeze, (UIntPtr)4, IntPtr.Zero))
+        {
+            _logger?.Error("Error", "Couldn't read value from memory address.");
+            return null;
+        }
+
+        return valueToFreeze;
+    }
+
     public bool FreezeFloat(MemoryAddress memAddress, uint refreshRateInMilliseconds = 100)
     {
-        if (_proc is null)
+        if (!IsProcessAliveOrResponding())
             return false;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -61,7 +82,7 @@ public sealed partial class Memory
 
         if (_addressRegister[tableIndex].FreezeTokenSrc is not null)
         {
-            _logger?.Error("", "This value is allread freezed");
+            _logger?.Info("", "This value is allready freezed.");
             return false;
         }
 
@@ -69,11 +90,13 @@ public sealed partial class Memory
 
         _addressRegister[tableIndex].FreezeTokenSrc = freezeToken;
 
-        refreshRateInMilliseconds = refreshRateInMilliseconds < 10 ? 10 : refreshRateInMilliseconds;
+        refreshRateInMilliseconds = refreshRateInMilliseconds 
+            < 10 ? 10 : refreshRateInMilliseconds;
 
         BackgroundService.ExecuteTaskAsync(() =>
         {
-            WriteProcessMemory(_proc.Handle, targetAddress, valueToWrite, (UIntPtr)4, IntPtr.Zero);
+            if (!WriteProcessMemory(_proc.Handle, targetAddress, valueToWrite, (UIntPtr)4, IntPtr.Zero))
+                freezeToken.Cancel();
         }, TimeSpan.FromMilliseconds(refreshRateInMilliseconds), freezeToken.Token);
 
         return true;
