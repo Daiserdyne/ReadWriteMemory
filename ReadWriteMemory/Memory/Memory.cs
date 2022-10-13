@@ -26,9 +26,6 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
     private readonly List<MemoryAddressTable> _addressRegister = new();
 
-    //private string _targetProcessName = string.Empty;
-    //private CancellationTokenSource? _checkProcessStatusSrc;
-
     #endregion
 
     #region Properties
@@ -95,8 +92,6 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// <param name="processName">Show reason open process fails</param>
     private bool OpenProcess(string processName)
     {
-        //_targetProcessName = processName;
-
         var procId = Process.GetProcessesByName(processName).FirstOrDefault()?.Id;
 
         int pid = procId ?? 0;
@@ -169,6 +164,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         _ = CloseHandle(_proc.Handle);
 
         _proc = null;
+        _addressRegister.Clear();
     }
 
     /// <summary>

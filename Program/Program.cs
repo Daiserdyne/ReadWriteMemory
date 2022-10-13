@@ -20,7 +20,7 @@ internal class Program
 
     protected internal static async Task Main()
     {
-        using Memory memory = Memory.Instance("Outlast2");
+        using var memory = Memory.Instance("Outlast2");
 
         memory.Logger.OnLogging += Logger_OnLogging;
 

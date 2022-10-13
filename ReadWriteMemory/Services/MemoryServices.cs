@@ -14,7 +14,7 @@ public static class MemoryServices
     {
         get
         {
-            if (_implementedTrainers is null || _implementedTrainers.Count() is 0)
+            if (_implementedTrainers is null || _implementedTrainers.Count() == 0)
                 _implementedTrainers = GetAllImplementedTrainers();
 
             return _implementedTrainers;
