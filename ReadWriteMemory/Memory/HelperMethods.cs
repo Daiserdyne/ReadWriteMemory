@@ -1,4 +1,6 @@
 ﻿using ReadWriteMemory.Models;
+using ReadWriteMemory.Services;
+using System.ComponentModel;
 using System.Diagnostics;
 
 namespace ReadWriteMemory;
@@ -7,7 +9,7 @@ public sealed partial class Memory
 {
     private UIntPtr FindFreeBlockForRegion(UIntPtr baseAddress, uint size)
     {
-        if (_proc is null)
+        if (!IsProcessAliveAndResponding())
             return UIntPtr.Zero;
 
         var minAddress = UIntPtr.Subtract(baseAddress, 0x70000000);
@@ -26,6 +28,7 @@ public sealed partial class Memory
         var current = minAddress;
         var caveAddress = UIntPtr.Zero;
 
+#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
         while (VirtualQueryEx(_proc.Handle, current, out MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
         {
             if ((long)memoryInfos.BaseAddress > (long)maxAddress)
@@ -96,19 +99,19 @@ public sealed partial class Memory
             if ((long)previous >= (long)current)
                 return caveAddress; // Overflow
         }
+#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         return caveAddress;
     }
 
     private bool DeallocateMemory(UIntPtr address)
     {
-        if (_proc is null)
-        {
-            _logger?.Error("", "_proc was null and region couldn't be dealloc."); // _proc was null and region couldn't be dealloc.
+        if (!IsProcessAliveAndResponding())
             return false;
-        }
 
+#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
         return VirtualFreeEx(_proc.Handle, address, (UIntPtr)0, 0x8000);
+#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
     }
 
     /// <summary>
@@ -172,7 +175,7 @@ public sealed partial class Memory
 
     private UIntPtr GetTargetAddress(MemoryAddress memAddress)
     {
-        if (_proc is null)
+        if (!IsProcessAliveAndResponding())
             return UIntPtr.Zero;
 
         UIntPtr baseAddress = UIntPtr.Zero;
@@ -206,6 +209,7 @@ public sealed partial class Memory
         {
             var buffer = new byte[Size];
 
+#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
             ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)Size, IntPtr.Zero);
             targetAddress = (UIntPtr)BitConverter.ToInt64(buffer);
 
@@ -219,6 +223,7 @@ public sealed partial class Memory
 
                 ReadProcessMemory(_proc.Handle, UIntPtr.Add(targetAddress, offsets[i]), buffer,
                     (UIntPtr)Size, IntPtr.Zero);
+#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
                 targetAddress = (UIntPtr)BitConverter.ToInt64(buffer);
             }
@@ -241,14 +246,13 @@ public sealed partial class Memory
     /// <returns></returns>
     private IntPtr GetModuleAddressByName(string moduleName)
     {
-        if (_proc is null)
-        {
-            _logger?.Error("Couldn't get module address by name", $"{nameof(_proc)} was null.");
+        if (!IsProcessAliveAndResponding())
             return IntPtr.Zero;
-        }
 
+#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
         var moduleAddress = _proc.Process.Modules.Cast<ProcessModule>()
             .FirstOrDefault(module => module.ModuleName?.ToLower() == moduleName.ToLower())?.BaseAddress;
+#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         return moduleAddress ?? IntPtr.Zero;
     }
@@ -312,13 +316,15 @@ public sealed partial class Memory
     /// <returns></returns>
     private byte[] ReadBytes(UIntPtr address, int length)
     {
-        if (_proc is null)
+        if (!IsProcessAliveAndResponding())
             return Array.Empty<byte>();
 
         var bytes = new byte[length];
 
+#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
         return ReadProcessMemory(_proc.Handle, address,
             bytes, (UIntPtr)length, IntPtr.Zero) == true ? bytes : Array.Empty<byte>();
+#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
     }
 
     /// <summary>
@@ -328,17 +334,18 @@ public sealed partial class Memory
     /// <param name="write">Byte array to write to</param>
     private void WriteBytes(UIntPtr address, byte[] write)
     {
-        if (_proc is null || _proc.Process.Responding is false)
+        if (!IsProcessAliveAndResponding())
             return;
 
+#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
         WriteProcessMemory(_proc.Handle, address, write, (UIntPtr)write.Length, out _);
+#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
     }
 
-    private bool IsProcessAliveOrResponding()
+    private bool IsProcessAliveAndResponding()
     {
-        var procStatus = _proc is null || !_proc.Process.Responding ? false : true;
-        _logger?.Error("ERROR", "Process is is closed or not responding.");
+        var procAlive = _proc is not null;
 
-        return procStatus;
+        return procAlive;
     }
 }

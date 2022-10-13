@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Logging;
 using ReadWriteMemory.NativeImports;
+using ReadWriteMemory.Services;
 
 namespace ReadWriteMemory;
 
@@ -25,6 +26,9 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
     private readonly List<MemoryAddressTable> _addressRegister = new();
 
+    //private string _targetProcessName = string.Empty;
+    //private CancellationTokenSource? _checkProcessStatusSrc;
+
     #endregion
 
     #region Properties
@@ -42,36 +46,32 @@ public sealed partial class Memory : NativeMethods, IDisposable
     #region C'tor
 
     /// <summary>
-    /// Creates a instance of the memory object without opening the target process.
-    /// </summary>
-    public Memory()
-    {
-    }
-
-    /// <summary>
     /// Creates a instance of the memory object and opens the process.
     /// </summary>
     /// <param name="processName"></param>
     public Memory(string processName)
     {
         OpenProcess(processName);
+
+        BackgroundService.ExecuteTaskAsync(() =>
+        {
+            if (Process.GetProcessesByName(processName).Length == 0 || _proc is null)
+            {
+                if (_proc is not null)
+                    _proc = null;
+
+                if (_addressRegister.Count != 0)
+                    _addressRegister.Clear();
+
+                OpenProcess(processName);
+            }
+        }, TimeSpan.FromMilliseconds(500), new CancellationTokenSource().Token);
+
     }
 
     #endregion
 
     #region Singelton
-
-    /// <summary>
-    /// Creates a singleton instance of the memory object.
-    /// </summary>
-    /// <returns></returns>
-    public static Memory Instance()
-    {
-        lock (_mem)
-        {
-            return _instance ??= new();
-        }
-    }
 
     /// <summary>
     /// Creates a singleton instance of the memory object and opens the process.
@@ -93,31 +93,27 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     /// <returns>Process opened successfully or failed.</returns>
     /// <param name="processName">Show reason open process fails</param>
-    public bool OpenProcess(string processName)
+    private bool OpenProcess(string processName)
     {
+        //_targetProcessName = processName;
+
         var procId = Process.GetProcessesByName(processName).FirstOrDefault()?.Id;
 
         int pid = procId ?? 0;
 
-        if (procId <= 0)
+        if (procId is null)
         {
-            _logger?.Error("Opening process failed.", "Can't find this process.");
+            _logger?.Error("ERROR", "Target process isn't running.");
 
             return false;
         }
 
         _proc ??= new();
-
         _proc.ProcessName = processName;
         _proc.Process = Process.GetProcessById(pid);
 
-        if (_proc.Process is not null && _proc.Process.Responding is false)
-        {
-            _proc = null;
-            _logger?.Error("Opening process failed.", "Process is not responding or null.");
-
+        if (!IsProcessAliveAndResponding())
             return false;
-        }
 
         _proc.Handle = OpenProcess(true, pid);
 
@@ -125,18 +121,22 @@ public sealed partial class Memory : NativeMethods, IDisposable
         {
             var error = Marshal.GetLastWin32Error();
 
+            _logger?.Error("ERROR", $"Opening process failed. Process handle was {IntPtr.Zero}. Error code: {error}");
+
             _proc = null;
-            _logger?.Error("Opening process failed.", "opening a handle to the target process failed. Error code: " + error);
 
             return false;
         }
 
-        _proc.Is64Bit = Environment.Is64BitOperatingSystem
-            && IsWow64Process(_proc.Handle, out bool isWow64) && isWow64 is false;
-
-        if (!_proc.Is64Bit)
+        if (!(Environment.Is64BitOperatingSystem
+            && IsWow64Process(_proc.Handle, out bool isWow64)
+            && isWow64 is false))
         {
-            _logger?.Error("", ""); // No 32-Bit support.
+            _logger?.Error("ERROR", "Target process or operation system are not 64 bit.\n" +
+                "This library only supports 64-bit processes and os.");
+
+            _proc = null;
+
             return false;
         }
 
@@ -144,7 +144,9 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         if (mainModule is null)
         {
-            _logger?.Error("Opening process failed.", "Main module was null.");
+            _logger?.Error("ERROR", "Couldn't get main module from target process.");
+
+            _proc = null;
 
             return false;
         }
@@ -159,8 +161,10 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     public void CloseProcess()
     {
-        if (_proc is null || _proc.Handle == IntPtr.Zero)
+#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
+        if (!IsProcessAliveAndResponding() || _proc.Handle == IntPtr.Zero)
             return;
+#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         _ = CloseHandle(_proc.Handle);
 
@@ -177,7 +181,8 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Created code cave address</returns>
-    public Task<UIntPtr> CreateOrResumeCodeCaveAsync(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
+    public Task<UIntPtr> CreateOrResumeCodeCaveAsync(MemoryAddress memAddress, byte[] newBytes,
+        int replaceCount, uint size = 0x1000)
     {
         return Task.Run(() => CreateOrResumeCodeCave(memAddress, newBytes, replaceCount, size));
     }
@@ -194,9 +199,10 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Created code cave address</returns>
-    public UIntPtr CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
+    public UIntPtr CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newBytes, int replaceCount,
+        uint size = 0x1000)
     {
-        if (replaceCount < 5 || _proc is null)
+        if (replaceCount < 5 || !IsProcessAliveAndResponding())
             return UIntPtr.Zero;
 
         if (IsCodeCaveOpen(memAddress, out var caveAddr))
@@ -208,16 +214,20 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
         {
+#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
             caveAddress = VirtualAllocEx(_proc.Handle, FindFreeBlockForRegion(targetAddress, size), size,
                 MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
             if (caveAddress == UIntPtr.Zero)
                 targetAddress = UIntPtr.Add(targetAddress, 0x10000);
         }
 
         if (caveAddress == UIntPtr.Zero)
+#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
             caveAddress = VirtualAllocEx(_proc.Handle, UIntPtr.Zero, size, MEM_COMMIT | MEM_RESERVE,
                                          PAGE_EXECUTE_READWRITE);
+#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         int nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;
 
@@ -294,6 +304,9 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// <returns></returns>
     public bool CloseCodeCave(MemoryAddress memAddress)
     {
+        if (!IsProcessAliveAndResponding())
+            return false;
+
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
         if (tableIndex == -1)

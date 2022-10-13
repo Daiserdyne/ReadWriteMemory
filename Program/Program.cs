@@ -1,12 +1,13 @@
 ﻿using ReadWriteMemory;
 using ReadWriteMemory.Models;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace Program;
 
 internal class Program
 {
-    private static readonly MemoryAddress _health = new(0x219FF58, "Outlast2.exe", 0xc38, 0x7f58);
+    //private static readonly MemoryAddress _health = new(0x219FF58, "Outlast2.exe", 0xc38, 0x7f58);
 
     private readonly static MemoryAddress _movementXAddress = new(0x56C55F, "Outlast2.exe");
     private readonly static MemoryAddress _movementYAddress = new(0x56C568, "Outlast2.exe");
@@ -23,13 +24,19 @@ internal class Program
 
         memory.Logger.OnLogging += Logger_OnLogging;
 
-        Console.WriteLine("Current health: " + memory.ReadFloat(_health));
-
         while (true)
         {
-
             switch (Console.ReadLine())
             {
+                case "r":
+                    var r = memory.ReadCoordinates(_XCoords);
+                    Console.WriteLine($"X: {r.Value.X} Y: {r.Value.Y} Z: {r.Value.Z} ");
+                    break;
+
+                case "t":
+                    memory.WriteCoordinates(_XCoords, new Vector3(-3746.308105f, 3277.897461f, -20000));
+                    break;
+
                 case "f":
                     memory.FreezeFloat(_XCoords, 1);
                     break;
