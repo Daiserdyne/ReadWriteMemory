@@ -1,4 +1,6 @@
-﻿using ReadWriteMemory;
+﻿using Pastel;
+using ReadWriteMemory;
+using ReadWriteMemory.Logging;
 using ReadWriteMemory.Models;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -15,19 +17,47 @@ internal class Program
     private readonly static byte[] _movementX = { 0x81, 0xBB, 0xE0, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x74, 0x17, 0x90, 0x90, 0x90, 0x90, 0xF3, 0x0F, 0x58, 0x7B, 0x04, 0xEB, 0x15, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0xF3, 0x0F, 0x11, 0x33, 0xF3, 0x0F, 0x58, 0x7B, 0x04 };
     private readonly static byte[] _movementY = { 0x81, 0xBB, 0xE0, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x74, 0x12, 0x90, 0x90, 0x90, 0x90, 0xEB, 0x11, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0xF3, 0x0F, 0x11, 0x7B, 0x04 };
 
+    private readonly static MemoryAddress _noCollisionX = new(0xEF3113, "Outlast2.exe");
+    private readonly static MemoryAddress _noCollisionY = new(0xEF3119, "Outlast2.exe");
+
+    static Memory memory = Memory.Instance("Outlast2");
+
+
     [DllImport("user32.dll")]
     public static extern short GetAsyncKeyState(int key);
 
+    private static void CurrentDomain_ProcessExit(object? sender, EventArgs e)
+    {
+        memory.Logger.MemoryLogger_OnLogging -= Logger_MemoryLogger_OnLogging;
+        memory.Dispose();
+    }
+
     protected internal static async Task Main()
     {
-        using var memory = Memory.Instance("Outlast2");
+        AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
 
-        memory.Logger.OnLogging += Logger_OnLogging;
+        memory.Logger.MemoryLogger_OnLogging += Logger_MemoryLogger_OnLogging;
+
+        Console.WriteLine("\u001b[38;2;18;69;66mfdsfsdf\u001b[0m");
+
+        var t = "fdsfsdf".Pastel("#124542");
+
+        Console.WriteLine("fdsfsdf".Pastel("#124542") + "Amogus".Pastel("#248A84"));
 
         while (true)
         {
             switch (Console.ReadLine())
             {
+                case "dn":
+                    memory.WriteBytes(_noCollisionX, new byte[] { 0xFF, 0x90, 0xE8, 0x0A, 0x00, 0x00 });
+                    memory.WriteBytes(_noCollisionY, new byte[] { 0xE9, 0x69, 0x16, 0x00, 0x00 });
+                    break;
+
+                case "n":
+                    memory.WriteBytes(_noCollisionX, new byte[] { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 });
+                    memory.WriteBytes(_noCollisionY, new byte[] { 0x90, 0x90, 0x90, 0x90, 0x90 });
+                    break;
+
                 case "r":
                     var r = memory.ReadCoordinates(_XCoords);
                     Console.WriteLine($"X: {r.Value.X} Y: {r.Value.Y} Z: {r.Value.Z} ");
@@ -61,7 +91,7 @@ internal class Program
                     break;
 
                 case "exit":
-                    memory.Logger.OnLogging -= Logger_OnLogging;
+                    memory.Logger.MemoryLogger_OnLogging -= Logger_MemoryLogger_OnLogging;
                     memory.Dispose();
                     return;
 
@@ -72,8 +102,16 @@ internal class Program
         }
     }
 
-    private static void Logger_OnLogging(string caption, string message)
+    private static void Logger_MemoryLogger_OnLogging(MemoryLogger.LogType type, string message)
     {
-        Console.WriteLine(message);
+        switch (type)
+        {
+            case MemoryLogger.LogType.Info:
+            case MemoryLogger.LogType.Warn:
+            case MemoryLogger.LogType.Error:
+            case MemoryLogger.LogType.Debug:
+                Console.WriteLine($"[{DateTime.Now}][{type}] {message}");
+                break;
+        }
     }
 }

@@ -9,7 +9,7 @@ public sealed partial class Memory
 {
     private UIntPtr FindFreeBlockForRegion(UIntPtr baseAddress, uint size)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return UIntPtr.Zero;
 
         var minAddress = UIntPtr.Subtract(baseAddress, 0x70000000);
@@ -106,7 +106,7 @@ public sealed partial class Memory
 
     private bool DeallocateMemory(UIntPtr address)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
 #pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
@@ -159,7 +159,7 @@ public sealed partial class Memory
             var deallocation = DeallocateMemory(caveTable.CaveAddress);
 
             if (!deallocation)
-                _logger?.Warn("", "Couldn't free memory.");
+                _logger?.Warn("Couldn't free memory.");
         }
     }
 
@@ -175,7 +175,7 @@ public sealed partial class Memory
 
     private UIntPtr GetTargetAddress(MemoryAddress memAddress)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return UIntPtr.Zero;
 
         UIntPtr baseAddress = UIntPtr.Zero;
@@ -246,7 +246,7 @@ public sealed partial class Memory
     /// <returns></returns>
     private IntPtr GetModuleAddressByName(string moduleName)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return IntPtr.Zero;
 
 #pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
@@ -316,7 +316,7 @@ public sealed partial class Memory
     /// <returns></returns>
     private byte[] ReadBytes(UIntPtr address, int length)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return Array.Empty<byte>();
 
         var bytes = new byte[length];
@@ -327,22 +327,9 @@ public sealed partial class Memory
 #pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
     }
 
-    /// <summary>
-    /// Writes a byte array to a given address
-    /// </summary>
-    /// <param name="address">Address to write to</param>
-    /// <param name="write">Byte array to write to</param>
-    private void WriteBytes(UIntPtr address, byte[] write)
-    {
-        if (!IsProcessAliveAndResponding())
-            return;
 
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-        WriteProcessMemory(_proc.Handle, address, write, (UIntPtr)write.Length, out _);
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
-    }
 
-    private bool IsProcessAliveAndResponding()
+    private bool IsProcessAlive()
     {
         var procAlive = _proc is not null;
 

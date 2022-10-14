@@ -1,9 +1,10 @@
-﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
-using ReadWriteMemory.Models;
+﻿using Pastel;
 using ReadWriteMemory.Logging;
+using ReadWriteMemory.Models;
 using ReadWriteMemory.NativeImports;
 using ReadWriteMemory.Services;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace ReadWriteMemory;
 
@@ -98,7 +99,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         if (procId is null)
         {
-            _logger?.Error("ERROR", "Target process isn't running.");
+            _logger?.Warn("Target process isn't running.");
 
             return false;
         }
@@ -107,7 +108,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         _proc.ProcessName = processName;
         _proc.Process = Process.GetProcessById(pid);
 
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
         _proc.Handle = OpenProcess(true, pid);
@@ -116,7 +117,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         {
             var error = Marshal.GetLastWin32Error();
 
-            _logger?.Error("ERROR", $"Opening process failed. Process handle was {IntPtr.Zero}. Error code: {error}");
+            _logger?.Error($"Opening process failed. Process handle was {IntPtr.Zero}. Error code: {error}");
 
             _proc = null;
 
@@ -127,7 +128,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
             && IsWow64Process(_proc.Handle, out bool isWow64)
             && isWow64 is false))
         {
-            _logger?.Error("ERROR", "Target process or operation system are not 64 bit.\n" +
+            _logger?.Error("Target process or operation system are not 64 bit.\n" +
                 "This library only supports 64-bit processes and os.");
 
             _proc = null;
@@ -139,7 +140,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         if (mainModule is null)
         {
-            _logger?.Error("ERROR", "Couldn't get main module from target process.");
+            _logger?.Error("Couldn't get main module from target process.");
 
             _proc = null;
 
@@ -147,6 +148,8 @@ public sealed partial class Memory : NativeMethods, IDisposable
         }
 
         _proc.MainModule = mainModule;
+
+        _logger?.Info($"Opened process: {processName.Pastel("#5EC8C2")} successfully.");
 
         return true;
     }
@@ -157,7 +160,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
     public void CloseProcess()
     {
 #pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-        if (!IsProcessAliveAndResponding() || _proc.Handle == IntPtr.Zero)
+        if (!IsProcessAlive() || _proc.Handle == IntPtr.Zero)
             return;
 #pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
@@ -198,7 +201,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
     public UIntPtr CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newBytes, int replaceCount,
         uint size = 0x1000)
     {
-        if (replaceCount < 5 || !IsProcessAliveAndResponding())
+        if (replaceCount < 5 || !IsProcessAlive())
             return UIntPtr.Zero;
 
         if (IsCodeCaveOpen(memAddress, out var caveAddr))
@@ -276,7 +279,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         if (tableIndex == -1)
         {
-            _logger?.Error("", $"Couldn't find this memory address: {(IntPtr)memAddress.Address}");
+            _logger?.Error($"Couldn't find this memory address: {(IntPtr)memAddress.Address}");
             return false;
         }
 
@@ -285,7 +288,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         if (caveTable is null)
         {
-            _logger?.Warn("", "There is currently no opened code cave with this address.");
+            _logger?.Warn("There is currently no opened code cave with this address.");
             return false;
         }
 
@@ -300,7 +303,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// <returns></returns>
     public bool CloseCodeCave(MemoryAddress memAddress)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
@@ -319,7 +322,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         var deallocation = DeallocateMemory(caveTable.CaveAddress);
 
         if (!deallocation)
-            _logger?.Warn("", "Couldn't free memory.");
+            _logger?.Warn("Couldn't free memory.");
 
         _addressRegister[tableIndex].CodeCaveTable = null;
 
@@ -331,6 +334,9 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     public void Dispose()
     {
+        foreach (var trainer in MemoryServices.ImplementedTrainers)
+            trainer.Disable();
+
         CloseAllCodeCaves();
         UnfreezeAllValues();
         CloseProcess();

@@ -7,7 +7,7 @@ public sealed partial class Memory
 {
     public bool FreezeInt16(MemoryAddress memAddress, uint refreshRateInMilliseconds = 100)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -24,7 +24,7 @@ public sealed partial class Memory
 
         if (_addressRegister[tableIndex].FreezeTokenSrc is not null)
         {
-            _logger?.Error("", "This value is allread freezed");
+            _logger?.Error("This value is allread freezed");
             return false;
         }
 
@@ -48,7 +48,7 @@ public sealed partial class Memory
 
     private byte[]? ReadProcessMemory(UIntPtr targetAddress, int size)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return null;
 
         var valueToFreeze = new byte[size];
@@ -56,7 +56,7 @@ public sealed partial class Memory
 #pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
         if (!ReadProcessMemory(_proc.Handle, targetAddress, valueToFreeze, (UIntPtr)4, IntPtr.Zero))
         {
-            _logger?.Error("Error", "Couldn't read value from memory address.");
+            _logger?.Error("Couldn't read value from memory address.");
             return null;
         }
 #pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
@@ -66,7 +66,7 @@ public sealed partial class Memory
 
     public bool FreezeFloat(MemoryAddress memAddress, uint refreshRateInMilliseconds = 100)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -79,7 +79,7 @@ public sealed partial class Memory
 #pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
         if (!ReadProcessMemory(_proc.Handle, targetAddress, valueToWrite, (UIntPtr)4, IntPtr.Zero))
         {
-            _logger?.Error("", "Couldn't read value from memory address.");
+            _logger?.Error("Couldn't read value from memory address.");
             return false;
         }
 #pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
@@ -88,7 +88,7 @@ public sealed partial class Memory
 
         if (_addressRegister[tableIndex].FreezeTokenSrc is not null)
         {
-            _logger?.Info("", "This value is allready freezed.");
+            _logger?.Info("This value is allready freezed.");
             return false;
         }
 
@@ -110,14 +110,14 @@ public sealed partial class Memory
 
     public bool UnfreezeValue(MemoryAddress memAddress)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
         int tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
         if (tableIndex == -1)
         {
-            _logger?.Warn("WARN", "There is no value to unfreeze");
+            _logger?.Warn("There is no value to unfreeze");
             return false;
         }
 
@@ -125,7 +125,7 @@ public sealed partial class Memory
 
         if (freezeToken is null)
         {
-            _logger?.Error("", "There is no value to unfreeze");
+            _logger?.Error("There is no value to unfreeze");
             return false;
         }
 

@@ -1,4 +1,5 @@
-﻿using ReadWriteMemory.Models;
+﻿using ReadWriteMemory.Logging;
+using ReadWriteMemory.Models;
 using System.Numerics;
 using System.Text;
 
@@ -8,7 +9,7 @@ public sealed partial class Memory
 {
     public bool WriteInt16(MemoryAddress memAddress, short value)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -24,14 +25,17 @@ public sealed partial class Memory
 #pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         if (!success)
+        {
+            _logger?.Error(LogMessages.WritingToMemoryFailed);
             return false;
+        }
 
         return true;
     }
 
     public bool WriteInt32(MemoryAddress memAddress, int value)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -47,14 +51,17 @@ public sealed partial class Memory
 #pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         if (!success)
+        {
+            _logger?.Error(LogMessages.WritingToMemoryFailed);
             return false;
+        }
 
         return true;
     }
 
     public bool WriteInt64(MemoryAddress memAddress, long value)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -70,14 +77,17 @@ public sealed partial class Memory
 #pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         if (!success)
+        {
+            _logger?.Error(LogMessages.WritingToMemoryFailed);
             return false;
+        }
 
         return true;
     }
 
     public bool WriteFloat(MemoryAddress memAddress, float value)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -93,14 +103,17 @@ public sealed partial class Memory
 #pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         if (!success)
+        {
+            _logger?.Error(LogMessages.WritingToMemoryFailed);
             return false;
+        }
 
         return true;
     }
 
     public bool WriteDouble(MemoryAddress memAddress, double value)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -116,14 +129,17 @@ public sealed partial class Memory
 #pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         if (!success)
+        {
+            _logger?.Error(LogMessages.WritingToMemoryFailed);
             return false;
+        }
 
         return true;
     }
 
     public bool WriteString(MemoryAddress memAddress, string value)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -139,7 +155,10 @@ public sealed partial class Memory
 #pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         if (!success)
+        {
+            _logger?.Error(LogMessages.WritingToMemoryFailed);
             return false;
+        }
 
         return true;
     }
@@ -151,7 +170,7 @@ public sealed partial class Memory
 
     public bool WriteCoordinates(MemoryAddress memoryAddress, Vector3 coords)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return false;
 
         var targetAddress = GetTargetAddress(memoryAddress);
@@ -191,16 +210,51 @@ public sealed partial class Memory
         if (successCounter == coordsAddresses.Length)
             return true;
 
+        _logger?.Error(LogMessages.WritingToMemoryFailed);
+
         return false;
     }
 
-    //public bool TeleportForward(Quaternion rotation, Vector3 position, float distance)
-    //{
-    //    if (!IsProcessAliveAndResponding())
-    //        return false;
+    /// <summary>
+    /// Writes a byte array to a given address
+    /// </summary>
+    /// <param name="address">Address to write to</param>
+    /// <param name="write">Byte array to write to</param>
+    public bool WriteBytes(MemoryAddress memoryAddress, byte[] write)
+    {
+        if (!IsProcessAlive())
+            return false;
 
+        var targetAddress = GetTargetAddress(memoryAddress);
 
+        if (targetAddress == UIntPtr.Zero)
+            return false;
 
-    //    return false;
-    //}
+#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
+        var success =  WriteProcessMemory(_proc.Handle, targetAddress, write, (UIntPtr)write.Length, out _);
+#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+
+        if (!success)
+        {
+            _logger?.Error(LogMessages.WritingToMemoryFailed);
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Writes a byte array to a given address
+    /// </summary>
+    /// <param name="address">Address to write to</param>
+    /// <param name="write">Byte array to write to</param>
+    private void WriteBytes(UIntPtr address, byte[] write)
+    {
+        if (!IsProcessAlive())
+            return;
+
+#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
+        WriteProcessMemory(_proc.Handle, address, write, (UIntPtr)write.Length, out _);
+#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+    }
 }

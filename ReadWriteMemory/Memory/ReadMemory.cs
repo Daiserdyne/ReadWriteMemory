@@ -7,7 +7,7 @@ public sealed partial class Memory
 {
     public short? ReadInt16(MemoryAddress memAddress)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return null;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -27,7 +27,7 @@ public sealed partial class Memory
 
     public int? ReadInt32(MemoryAddress memAddress)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return null;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -47,7 +47,7 @@ public sealed partial class Memory
 
     public long? ReadInt64(MemoryAddress memAddress)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return null;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -67,7 +67,7 @@ public sealed partial class Memory
 
     public float? ReadFloat(MemoryAddress memAddress)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return null;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -87,7 +87,7 @@ public sealed partial class Memory
 
     public double? ReadDouble(MemoryAddress memAddress)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return null;
 
         var targetAddress = GetTargetAddress(memAddress);
@@ -107,7 +107,7 @@ public sealed partial class Memory
 
     public Vector3? ReadCoordinates(MemoryAddress memoryAddress)
     {
-        if (!IsProcessAliveAndResponding())
+        if (!IsProcessAlive())
             return null;
 
         var targetAddress = GetTargetAddress(memoryAddress);

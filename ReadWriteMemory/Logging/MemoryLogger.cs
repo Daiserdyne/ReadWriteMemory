@@ -2,36 +2,39 @@
 
 public sealed class MemoryLogger : IDisposable
 {
-    public delegate void NotifyWhenLogging(string caption, string message);
-    public event NotifyWhenLogging? OnLogging;
+    public delegate void MemLogger(LogType type, string message);
+    public event MemLogger? MemoryLogger_OnLogging;
 
-    internal void Debug(string caption, string message)
+    public enum LogType : short
     {
-        OnLogging?.Invoke(caption, $"[{DateTime.Now}][Debug]: {message}");
+        Info,
+        Warn,
+        Error,
+        Debug
     }
 
-    internal void Error(string caption, string message)
+    internal void Info(string message)
     {
-        OnLogging?.Invoke(caption, $"[{DateTime.Now}][Error]: {message}");
+        MemoryLogger_OnLogging?.Invoke(LogType.Info, message);
     }
 
-    internal void Fatal(string caption, string message)
+    internal void Warn(string message)
     {
-        OnLogging?.Invoke(caption, $"[{DateTime.Now}][Fatal]: {message}");
+        MemoryLogger_OnLogging?.Invoke(LogType.Warn, message);
     }
 
-    internal void Info(string caption, string message)
+    internal void Error(string message)
     {
-        OnLogging?.Invoke(caption, $"[{DateTime.Now}][Info]: {message}");
+        MemoryLogger_OnLogging?.Invoke(LogType.Error, message);
     }
 
-    internal void Warn(string caption, string message)
+    internal void Debug(string message)
     {
-        OnLogging?.Invoke(caption, $"[{DateTime.Now}][Warn]: {message}");
+        MemoryLogger_OnLogging?.Invoke(LogType.Debug, message);
     }
 
     public void Dispose()
     {
-        OnLogging = null;
+        MemoryLogger_OnLogging = null;
     }
 }
