@@ -1,5 +1,4 @@
 ﻿using ReadWriteMemory;
-using ReadWriteMemory.Interfaces;
 using ReadWriteMemory.Logging;
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
@@ -21,7 +20,7 @@ internal class Program
     private readonly static MemoryAddress _noCollisionX = new(0xEF3113, "Outlast2.exe");
     private readonly static MemoryAddress _noCollisionY = new(0xEF3119, "Outlast2.exe");
 
-    static Memory memory = Memory.Instance("Outlast2");
+    private static readonly Memory memory = Memory.Instance("Outlast2");
 
 
     [DllImport("user32.dll")]
@@ -57,6 +56,10 @@ internal class Program
 
                 case "r":
                     var r = memory.ReadCoordinates(_XCoords);
+
+                    if (r is null)
+                        break;
+
                     Console.WriteLine($"X: {r.Value.X} Y: {r.Value.Y} Z: {r.Value.Z} ");
                     break;
 
@@ -99,14 +102,14 @@ internal class Program
         }
     }
 
-    private static void Logger_MemoryLogger_OnLogging(MemoryLogger.LogType type, string message)
+    private static void Logger_MemoryLogger_OnLogging(MemoryLogger.LoggingType type, string message)
     {
         switch (type)
         {
-            case MemoryLogger.LogType.Info:
-            case MemoryLogger.LogType.Warn:
-            case MemoryLogger.LogType.Error:
-            case MemoryLogger.LogType.Debug:
+            case MemoryLogger.LoggingType.Info:
+            case MemoryLogger.LoggingType.Warn:
+            case MemoryLogger.LoggingType.Error:
+            case MemoryLogger.LoggingType.Debug:
                 Console.WriteLine($"[{DateTime.Now}][{type}] {message}");
                 break;
         }

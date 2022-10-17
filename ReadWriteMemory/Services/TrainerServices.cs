@@ -3,17 +3,18 @@ using System.Reflection;
 
 namespace ReadWriteMemory.Services;
 
-public static class TrainerServices
+public class TrainerServices
 {
-    private static IDictionary<string, ITrainer>? _implementedTrainers;
+    private static IDictionary<string, ITrainer>? _trainerRegister;
 
     /// <summary>
-    /// Returns a Dictionary of all classes which have implemented the <c>ITrainer</c> interface in your assembly.
+    /// <para>Returns a Dictionary of all classes which have implemented the <seealso cref="ITrainer"/> interface in your entry assembly.</para>
     /// The key ist is the trainer shortname and the value the instantiated Trainer.
     /// </summary>
+    /// <returns>A dictionary of all implemented trainers. If no trainer are found, this will return a <c>empty</c> dictionary.</returns>
     public static IDictionary<string, ITrainer> ImplementedTrainers
     {
-        get => _implementedTrainers ??= GetAllImplementedTrainers();
+        get => _trainerRegister ??= GetAllImplementedTrainers();
     }
 
     private static IDictionary<string, ITrainer> GetAllImplementedTrainers()
@@ -24,9 +25,9 @@ public static class TrainerServices
             return new Dictionary<string, ITrainer>();
 
         var implementedTrainers = (from t in entryAssembly.GetTypes()
-                                  where t.GetInterfaces().Contains(typeof(ITrainer))
-                                        && t.GetConstructor(Type.EmptyTypes) != null
-                                  select Activator.CreateInstance(t) as ITrainer).ToList();
+                                   where t.GetInterfaces().Contains(typeof(ITrainer))
+                                         && t.GetConstructor(Type.EmptyTypes) != null
+                                   select Activator.CreateInstance(t) as ITrainer).ToList();
 
         if (!implementedTrainers.Any())
             return new Dictionary<string, ITrainer>();
