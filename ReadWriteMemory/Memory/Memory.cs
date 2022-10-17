@@ -1,5 +1,4 @@
-﻿using Pastel;
-using ReadWriteMemory.Logging;
+﻿using ReadWriteMemory.Logging;
 using ReadWriteMemory.Models;
 using ReadWriteMemory.NativeImports;
 using ReadWriteMemory.Services;
@@ -53,7 +52,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         BackgroundService.ExecuteTaskAsync(() =>
         {
-            if (Process.GetProcessesByName(processName).Length == 0 || _proc is null)
+            if (!IsProcessAlive())
             {
                 if (_proc is not null)
                     _proc = null;
@@ -64,7 +63,6 @@ public sealed partial class Memory : NativeMethods, IDisposable
                 OpenProcess(processName);
             }
         }, TimeSpan.FromMilliseconds(500), new CancellationTokenSource().Token);
-
     }
 
     #endregion
@@ -149,7 +147,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         _proc.MainModule = mainModule;
 
-        _logger?.Info($"Opened process: {processName.Pastel("#5EC8C2")} successfully.");
+        _logger?.Info($"Target process \"{processName}\" opened successfully.");
 
         return true;
     }
@@ -275,11 +273,14 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// <returns></returns>
     public bool PauseOpenedCodeCave(MemoryAddress memAddress)
     {
+        if (!IsProcessAlive())
+            return false;
+
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
         if (tableIndex == -1)
         {
-            _logger?.Error($"Couldn't find this memory address: {(IntPtr)memAddress.Address}");
+            _logger?.Debug($"Can't pause code cave because there is currently no opened cave.");
             return false;
         }
 
@@ -288,7 +289,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         if (caveTable is null)
         {
-            _logger?.Warn("There is currently no opened code cave with this address.");
+            _logger?.Debug($"Can't pause code cave because there is currently no opened cave.");
             return false;
         }
 
@@ -309,20 +310,26 @@ public sealed partial class Memory : NativeMethods, IDisposable
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
         if (tableIndex == -1)
+        {
+            _logger?.Debug($"Can't close code cave because there is currently no opened cave.");
             return false;
+        }
 
         var baseAddress = _addressRegister[tableIndex].BaseAddress;
         var caveTable = _addressRegister[tableIndex].CodeCaveTable;
 
         if (caveTable is null)
+        {
+            _logger?.Debug($"Can't close code cave because there is currently no opened cave.");
             return false;
+        }
 
         WriteBytes(baseAddress, caveTable.OriginalOpcodes);
 
         var deallocation = DeallocateMemory(caveTable.CaveAddress);
 
         if (!deallocation)
-            _logger?.Warn("Couldn't free memory.");
+            _logger?.Debug($"Couldn't free allocated code cave at address: {caveTable.CaveAddress:x16}");
 
         _addressRegister[tableIndex].CodeCaveTable = null;
 
@@ -334,8 +341,8 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     public void Dispose()
     {
-        foreach (var trainer in MemoryServices.ImplementedTrainers)
-            trainer.Disable();
+        foreach (var trainer in TrainerServices.ImplementedTrainers)
+            trainer.Value.Disable();
 
         CloseAllCodeCaves();
         UnfreezeAllValues();

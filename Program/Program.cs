@@ -1,7 +1,8 @@
-﻿using Pastel;
-using ReadWriteMemory;
+﻿using ReadWriteMemory;
+using ReadWriteMemory.Interfaces;
 using ReadWriteMemory.Logging;
 using ReadWriteMemory.Models;
+using ReadWriteMemory.Services;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -38,11 +39,7 @@ internal class Program
 
         memory.Logger.MemoryLogger_OnLogging += Logger_MemoryLogger_OnLogging;
 
-        Console.WriteLine("\u001b[38;2;18;69;66mfdsfsdf\u001b[0m");
-
-        var t = "fdsfsdf".Pastel("#124542");
-
-        Console.WriteLine("fdsfsdf".Pastel("#124542") + "Amogus".Pastel("#248A84"));
+        var trainer = TrainerServices.ImplementedTrainers;
 
         while (true)
         {
@@ -68,11 +65,11 @@ internal class Program
                     break;
 
                 case "f":
-                    memory.FreezeFloat(_XCoords, 1);
+                    await trainer["FreezeAllEnemies"].Enable();
                     break;
 
                 case "u":
-                    memory.UnfreezeValue(_XCoords);
+                    await trainer["FreezeAllEnemies"].Disable();
                     break;
 
                 case "a":

@@ -13,16 +13,16 @@ public interface ITrainer
     public string Description { get; }
 
     /// <summary>
-    /// This will execute the trainer.
+    /// This will execute the trainer payload.
     /// </summary>
     /// <param name="args"></param>
     /// <returns></returns>
-    public Task Enable(params string[] args);
+    public Task Enable(params string[]? args);
 
     /// <summary>
-    /// This will disable the trainer.
+    /// This will disable the trainer payload.
     /// </summary>
     /// <param name="args"></param>
     /// <returns></returns>
-    public Task Disable(params string[] args);
+    public Task Disable(params string[]? args);
 }

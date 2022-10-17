@@ -327,12 +327,8 @@ public sealed partial class Memory
 #pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
     }
 
-
-
     private bool IsProcessAlive()
     {
-        var procAlive = _proc is not null;
-
-        return procAlive;
+        return _proc is not null && Process.GetProcessesByName(_proc.ProcessName) is not null;
     }
 }

@@ -7,7 +7,4 @@
 		<Platforms>x64</Platforms>
 		<WindowsPackageType>None</WindowsPackageType>
 	</PropertyGroup>
-	<ItemGroup>
-	  <PackageReference Include="Pastel" Version="3.0.1" />
-	</ItemGroup>
 </Project>
