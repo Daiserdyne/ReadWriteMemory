@@ -1,4 +1,5 @@
-﻿using ReadWriteMemory;
+﻿using Pastel;
+using ReadWriteMemory;
 using ReadWriteMemory.Logging;
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
@@ -102,16 +103,19 @@ internal class Program
         }
     }
 
-    private static void Logger_MemoryLogger_OnLogging(MemoryLogger.LoggingType type, string message)
+    private static async void Logger_MemoryLogger_OnLogging(MemoryLogger.LoggingType type, string message)
     {
-        switch (type)
+        await Task.Run(() =>
         {
-            case MemoryLogger.LoggingType.Info:
-            case MemoryLogger.LoggingType.Warn:
-            case MemoryLogger.LoggingType.Error:
-            case MemoryLogger.LoggingType.Debug:
-                Console.WriteLine($"[{DateTime.Now}][{type}] {message}");
-                break;
-        }
+            switch (type)
+            {
+                case MemoryLogger.LoggingType.Info:
+                case MemoryLogger.LoggingType.Warn:
+                case MemoryLogger.LoggingType.Error:
+                    Console.WriteLine($"[{DateTime.Now.ToShortTimeString().Pastel("#5D599C")}][{type.ToString().Pastel("#3E7B4B")}]" +
+                        $"{" ->".Pastel("#53859C")} {message}");
+                    break;
+            }
+        });
     }
 }

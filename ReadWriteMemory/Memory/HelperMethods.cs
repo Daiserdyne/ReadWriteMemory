@@ -327,6 +327,19 @@ public sealed partial class Memory
 #pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
     }
 
+    private UIntPtr CalculateTargetAddress(MemoryAddress memoryAddress)
+    {
+        if (!IsProcessAlive())
+            return UIntPtr.Zero;
+
+        var targetAddress = GetTargetAddress(memoryAddress);
+
+        if (targetAddress == UIntPtr.Zero)
+            return UIntPtr.Zero;
+
+        return targetAddress;
+    }
+
     private bool IsProcessAlive()
     {
         return _proc is not null && Process.GetProcessesByName(_proc.ProcessName) is not null;

@@ -3,6 +3,7 @@ using ReadWriteMemory.Models;
 using ReadWriteMemory.NativeImports;
 using ReadWriteMemory.Services;
 using System.Diagnostics;
+using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace ReadWriteMemory;
@@ -23,7 +24,6 @@ public sealed partial class Memory : NativeMethods, IDisposable
     private static Memory? _instance;
 
     private MemoryLogger? _logger;
-    private MemoryLogger? _specialConsoleLogger;
 
     private readonly List<MemoryAddressTable> _addressRegister = new();
 
@@ -37,18 +37,6 @@ public sealed partial class Memory : NativeMethods, IDisposable
     public MemoryLogger Logger
     {
         get => _logger ??= new();
-    }
-
-    /// <summary>
-    /// Gives you a logger instance, such as <seealso cref="Logger"/>, but with the difference, that
-    /// this one includes special color styles and formatations. So this is basicly the better option when
-    /// you wish to have a clearer, better looking output when using <seealso cref="Console"/> methods.
-    /// <para><c>Note:</c> This is not recommended if you just want to normally log everything because the 
-    /// log entries include color codes which may result in a messy text output.</para> 
-    /// </summary>
-    public MemoryLogger SpecialConsoleLogger
-    {
-        get => _specialConsoleLogger ??= new();
     }
 
     #endregion
@@ -217,7 +205,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         if (IsCodeCaveOpen(memAddress, out var caveAddr))
         {
-            _logger?.Debug($"Can't create a new code cave. There is already one created.\nCave address: 0x{caveAddr:x16}\n");
+            _logger?.Info($"Resuming code cave for address 0x{(UIntPtr)memAddress.Address:x16}.\nCave address: 0x{caveAddr:x16}\n");
             return caveAddr;
         }
 
@@ -275,7 +263,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         WriteBytes(caveAddress, caveBytes);
         WriteBytes(targetAddress, jmpBytes);
 
-        _logger?.Debug($"Code cave created for address 0x{memAddress.Address:x16}.\nCustom code at cave address: " +
+        _logger?.Info($"Code cave created for address 0x{memAddress.Address:x16}.\nCustom code at cave address: " +
             $"0x{caveAddress:x16}. Opcodes patched.\n");
 
         return caveAddress;
@@ -299,7 +287,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         if (tableIndex == -1)
         {
-            _logger?.Debug($"Can't pause code cave because there is currently no opened cave.");
+            _logger?.Info($"Can't pause code cave because there is currently no opened cave.");
             return false;
         }
 
@@ -308,7 +296,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         if (caveTable is null)
         {
-            _logger?.Debug($"Can't pause code cave because there is currently no opened cave.");
+            _logger?.Info($"Can't pause code cave because there is currently no opened cave.");
             return false;
         }
 
@@ -330,7 +318,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         if (tableIndex == -1)
         {
-            _logger?.Debug($"Can't close code cave because there is currently no opened cave.");
+            _logger?.Info($"Can't close code cave because there is currently no opened cave.");
             return false;
         }
 
@@ -339,7 +327,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         if (caveTable is null)
         {
-            _logger?.Debug($"Can't close code cave because there is currently no opened cave.");
+            _logger?.Info($"Can't close code cave because there is currently no opened cave.");
             return false;
         }
 
@@ -348,7 +336,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         var deallocation = DeallocateMemory(caveTable.CaveAddress);
 
         if (!deallocation)
-            _logger?.Debug($"Couldn't free allocated code cave at address: {caveTable.CaveAddress:x16}");
+            _logger?.Info($"Couldn't free allocated code cave at address: {caveTable.CaveAddress:x16}");
 
         _addressRegister[tableIndex].CodeCaveTable = null;
 

@@ -5,86 +5,32 @@ namespace ReadWriteMemory;
 
 public sealed partial class Memory
 {
-    public bool FreezeInt16(MemoryAddress memAddress, uint refreshRateInMilliseconds = 100)
+    /// <summary>
+    /// <para>Freezes the value from the given <paramref name="memoryAddress"/>.</para>
+    /// You optionally can set the <paramref name="refreshRateInMilliseconds"/>
+    /// to a specific value you want.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="refreshRateInMilliseconds"></param>
+    /// <returns></returns>
+    public bool FreezeValue(MemoryAddress memoryAddress, uint refreshRateInMilliseconds = 100)
     {
         if (!IsProcessAlive())
             return false;
 
-        var targetAddress = GetTargetAddress(memAddress);
+        var targetAddress = CalculateTargetAddress(memoryAddress);
 
-        if (targetAddress == UIntPtr.Zero)
-            return false;
+        var valueToWrite = new byte[8];
 
-        var valueToFreeze = ReadProcessMemory(targetAddress, 2);
-
-        if (valueToFreeze is null)
-            return false;
-
-        int tableIndex = GetAddressIndexByMemoryAddress(memAddress);
-
-        if (_addressRegister[tableIndex].FreezeTokenSrc is not null)
-        {
-            _logger?.Error("This value is allread freezed");
-            return false;
-        }
-
-        var freezeToken = new CancellationTokenSource();
-
-        _addressRegister[tableIndex].FreezeTokenSrc = freezeToken;
-
-        refreshRateInMilliseconds = refreshRateInMilliseconds 
-            < 10 ? 10 : refreshRateInMilliseconds;
-
-        BackgroundService.ExecuteTaskAsync(() =>
-        {
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-            if (!WriteProcessMemory(_proc.Handle, targetAddress, valueToFreeze, (UIntPtr)2, IntPtr.Zero))
-                freezeToken.Cancel();
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
-        }, TimeSpan.FromMilliseconds(refreshRateInMilliseconds), freezeToken.Token);
-
-        return true;
-    }
-
-    private byte[]? ReadProcessMemory(UIntPtr targetAddress, int size)
-    {
-        if (!IsProcessAlive())
-            return null;
-
-        var valueToFreeze = new byte[size];
-
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-        if (!ReadProcessMemory(_proc.Handle, targetAddress, valueToFreeze, (UIntPtr)4, IntPtr.Zero))
-        {
-            _logger?.Error("Couldn't read value from memory address.");
-            return null;
-        }
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
-
-        return valueToFreeze;
-    }
-
-    public bool FreezeFloat(MemoryAddress memAddress, uint refreshRateInMilliseconds = 100)
-    {
-        if (!IsProcessAlive())
-            return false;
-
-        var targetAddress = GetTargetAddress(memAddress);
-
-        if (targetAddress == UIntPtr.Zero)
-            return false;
-
-        var valueToWrite = new byte[4];
-
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-        if (!ReadProcessMemory(_proc.Handle, targetAddress, valueToWrite, (UIntPtr)4, IntPtr.Zero))
+#pragma warning disable CS8602
+        if (!ReadProcessMemory(_proc.Handle, targetAddress, valueToWrite, (UIntPtr)valueToWrite.Length, IntPtr.Zero))
         {
             _logger?.Error("Couldn't read value from memory address.");
             return false;
         }
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning restore CS8602
 
-        int tableIndex = GetAddressIndexByMemoryAddress(memAddress);
+        int tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
 
         if (_addressRegister[tableIndex].FreezeTokenSrc is not null)
         {
@@ -96,24 +42,41 @@ public sealed partial class Memory
 
         _addressRegister[tableIndex].FreezeTokenSrc = freezeToken;
 
-        refreshRateInMilliseconds = refreshRateInMilliseconds 
-            < 10 ? 10 : refreshRateInMilliseconds;
+        switch (refreshRateInMilliseconds)
+        {
+            case < 10:
+                refreshRateInMilliseconds = 10;
+                break;
+
+                // Delete this case maybe
+            case > int.MaxValue:
+                refreshRateInMilliseconds = int.MaxValue;
+                break;
+        }
 
         BackgroundService.ExecuteTaskAsync(() =>
         {
-            if (!WriteProcessMemory(_proc.Handle, targetAddress, valueToWrite, (UIntPtr)4, IntPtr.Zero))
+            if (!WriteProcessMemory(_proc.Handle, targetAddress, valueToWrite, (UIntPtr)valueToWrite.Length, IntPtr.Zero))
                 freezeToken.Cancel();
         }, TimeSpan.FromMilliseconds(refreshRateInMilliseconds), freezeToken.Token);
+
+        _logger?.Info($"The value of the memory address 0x{(UIntPtr)memoryAddress.Address:x16} has been freezed with " +
+            $"a refresh rate of {refreshRateInMilliseconds}ms.");
 
         return true;
     }
 
-    public bool UnfreezeValue(MemoryAddress memAddress)
+    /// <summary>
+    /// Unfreezes a value from the given <paramref name="memoryAddress"/>.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <returns></returns>
+    public bool UnfreezeValue(MemoryAddress memoryAddress)
     {
         if (!IsProcessAlive())
             return false;
 
-        int tableIndex = GetAddressIndexByMemoryAddress(memAddress);
+        int tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
 
         if (tableIndex == -1)
         {
@@ -132,6 +95,8 @@ public sealed partial class Memory
         freezeToken.Cancel();
 
         _addressRegister[tableIndex].FreezeTokenSrc = null;
+
+        _logger?.Info($"The value of the memory address 0x{(UIntPtr)memoryAddress.Address:x16} has been unfreezed.");
 
         return true;
     }

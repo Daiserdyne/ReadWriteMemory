@@ -9,8 +9,7 @@ public sealed class MemoryLogger : IDisposable
     {
         Info,
         Warn,
-        Error,
-        Debug
+        Error
     }
 
     internal void Info(string message)
@@ -26,11 +25,6 @@ public sealed class MemoryLogger : IDisposable
     internal void Error(string message)
     {
         MemoryLogger_OnLogging?.Invoke(LoggingType.Error, message);
-    }
-
-    internal void Debug(string message)
-    {
-        MemoryLogger_OnLogging?.Invoke(LoggingType.Debug, message);
     }
 
     public void Dispose()

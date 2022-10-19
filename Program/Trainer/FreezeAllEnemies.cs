@@ -25,7 +25,7 @@ public class FreezeAllEnemies : ITrainer
     {
         await Task.Run(() =>
         {
-            _memory.FreezeFloat(_XCoords, 1);
+            _memory.FreezeValue(_XCoords, 10);
         });
     }
 }
