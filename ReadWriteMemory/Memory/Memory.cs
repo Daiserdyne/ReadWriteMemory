@@ -3,19 +3,12 @@ using ReadWriteMemory.Models;
 using ReadWriteMemory.NativeImports;
 using ReadWriteMemory.Services;
 using System.Diagnostics;
-using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace ReadWriteMemory;
 
 public sealed partial class Memory : NativeMethods, IDisposable
 {
-    #region Constants
-
-    private const int Size = 16;
-
-    #endregion
-
     #region Fields
 
     private ProcessInformation? _proc;
@@ -26,6 +19,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
     private MemoryLogger? _logger;
 
     private readonly List<MemoryAddressTable> _addressRegister = new();
+    private readonly byte[] _buffer = new byte[8];
 
     #endregion
 

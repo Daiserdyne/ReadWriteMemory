@@ -207,11 +207,9 @@ public sealed partial class Memory
 
         if (offsets is not null && offsets.Length != 0)
         {
-            var buffer = new byte[Size];
-
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-            ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)Size, IntPtr.Zero);
-            targetAddress = (UIntPtr)BitConverter.ToInt64(buffer);
+#pragma warning disable CS8602
+            ReadProcessMemory(_proc.Handle, targetAddress, _buffer, (UIntPtr)_buffer.Length, IntPtr.Zero);
+            targetAddress = (UIntPtr)BitConverter.ToInt64(_buffer);
 
             for (int i = 0; i < offsets.Length; i++)
             {
@@ -221,11 +219,11 @@ public sealed partial class Memory
                     break;
                 }
 
-                ReadProcessMemory(_proc.Handle, UIntPtr.Add(targetAddress, offsets[i]), buffer,
-                    (UIntPtr)Size, IntPtr.Zero);
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+                ReadProcessMemory(_proc.Handle, UIntPtr.Add(targetAddress, offsets[i]), _buffer,
+                    (UIntPtr)_buffer.Length, IntPtr.Zero);
+#pragma warning restore CS8602
 
-                targetAddress = (UIntPtr)BitConverter.ToInt64(buffer);
+                targetAddress = (UIntPtr)BitConverter.ToInt64(_buffer);
             }
         }
 

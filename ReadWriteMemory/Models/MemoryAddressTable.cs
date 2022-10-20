@@ -1,13 +1,13 @@
 ﻿namespace ReadWriteMemory.Models;
 
 /// <summary>
-/// Contains a sort of information table of a address.
+/// Contains/holds some information about the target memory address address.
 /// </summary>
 internal class MemoryAddressTable
 {
-    public MemoryAddress? MemoryAddress { get; set; }
-    public UIntPtr BaseAddress { get; set; }
-    public string UniqueAddressHash { get; set; } = string.Empty;
-    public CodeCaveTable? CodeCaveTable { get; set; }
-    public CancellationTokenSource? FreezeTokenSrc { get; set; }
+    internal MemoryAddress? MemoryAddress { get; set; }
+    internal UIntPtr BaseAddress { get; set; }
+    internal string UniqueAddressHash { get; set; } = string.Empty;
+    internal CodeCaveTable? CodeCaveTable { get; set; }
+    internal CancellationTokenSource? FreezeTokenSrc { get; set; }
 }

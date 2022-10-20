@@ -7,8 +7,8 @@ namespace ReadWriteMemory.Models;
 /// </summary>
 internal sealed class ProcessInformation
 {
-    public string ProcessName { get; set; } = string.Empty;
-    public Process Process { get; set; } = new();
-    public IntPtr Handle { get; set; }
-    public ProcessModule? MainModule { get; set; }
+    internal string ProcessName { get; set; } = string.Empty;
+    internal Process Process { get; set; } = new();
+    internal IntPtr Handle { get; set; }
+    internal ProcessModule? MainModule { get; set; }
 }

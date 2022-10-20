@@ -20,10 +20,10 @@ public sealed partial class Memory
 
         var targetAddress = CalculateTargetAddress(memoryAddress);
 
-        var valueToWrite = new byte[8];
+        var buffer = new byte[8];
 
 #pragma warning disable CS8602
-        if (!ReadProcessMemory(_proc.Handle, targetAddress, valueToWrite, (UIntPtr)valueToWrite.Length, IntPtr.Zero))
+        if (!ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
         {
             _logger?.Error("Couldn't read value from memory address.");
             return false;
@@ -56,7 +56,7 @@ public sealed partial class Memory
 
         BackgroundService.ExecuteTaskAsync(() =>
         {
-            if (!WriteProcessMemory(_proc.Handle, targetAddress, valueToWrite, (UIntPtr)valueToWrite.Length, IntPtr.Zero))
+            if (!WriteProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
                 freezeToken.Cancel();
         }, TimeSpan.FromMilliseconds(refreshRateInMilliseconds), freezeToken.Token);
 
