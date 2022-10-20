@@ -23,7 +23,7 @@ public sealed partial class Memory
         return true;
     }
 
-    public bool WriteInt16(MemoryAddress memAddress, short value)
+    public bool WriteMemory(MemoryAddress memAddress, short value)
     {
         var targetAddress = CalculateTargetAddress(memAddress);
 
@@ -35,7 +35,7 @@ public sealed partial class Memory
         return WriteProcessMemory(ref targetAddress, ref buffer);
     }
 
-    public bool WriteInt32(MemoryAddress memAddress, int value)
+    public bool WriteMemory(MemoryAddress memAddress, int value)
     {
         var targetAddress = CalculateTargetAddress(memAddress);
 
@@ -47,7 +47,7 @@ public sealed partial class Memory
         return WriteProcessMemory(ref targetAddress, ref buffer);
     }
 
-    public bool WriteInt64(MemoryAddress memAddress, long value)
+    public bool WriteMemory(MemoryAddress memAddress, long value)
     {
         var targetAddress = CalculateTargetAddress(memAddress);
 
@@ -59,7 +59,7 @@ public sealed partial class Memory
         return WriteProcessMemory(ref targetAddress, ref buffer);
     }
 
-    public bool WriteFloat(MemoryAddress memAddress, float value)
+    public bool WriteMemory(MemoryAddress memAddress, float value)
     {
         var targetAddress = CalculateTargetAddress(memAddress);
 
@@ -71,7 +71,7 @@ public sealed partial class Memory
         return WriteProcessMemory(ref targetAddress, ref buffer);
     }
 
-    public bool WriteDouble(MemoryAddress memAddress, double value)
+    public bool WriteMemory(MemoryAddress memAddress, double value)
     {
         var targetAddress = CalculateTargetAddress(memAddress);
 
@@ -83,7 +83,7 @@ public sealed partial class Memory
         return WriteProcessMemory(ref targetAddress, ref buffer);
     }
 
-    public bool WriteString(MemoryAddress memAddress, string value)
+    public bool WriteMemory(MemoryAddress memAddress, string value)
     {
         var targetAddress = CalculateTargetAddress(memAddress);
 

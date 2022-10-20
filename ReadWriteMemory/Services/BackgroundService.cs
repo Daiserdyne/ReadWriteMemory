@@ -2,7 +2,7 @@
 
 internal static class BackgroundService
 {
-    public static async void ExecuteTaskAsync(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
+    internal static async void ExecuteTaskAsync(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
     {
         await Task.Factory.StartNew(() =>
         {

@@ -5,112 +5,94 @@ namespace ReadWriteMemory;
 
 public sealed partial class Memory
 {
-    public short? ReadInt16(MemoryAddress memAddress)
+    public short? ReadInt16(MemoryAddress memoryAddress)
     {
-        if (!IsProcessAlive())
-            return null;
-
-        var targetAddress = GetTargetAddress(memAddress);
+        var targetAddress = CalculateTargetAddress(memoryAddress);
 
         if (targetAddress == UIntPtr.Zero)
             return null;
 
-        var valueToRead = new byte[2];
+        var buffer = new byte[2];
 
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-        if (ReadProcessMemory(_proc.Handle, targetAddress, valueToRead, (UIntPtr)2, IntPtr.Zero))
-            return BitConverter.ToInt16(valueToRead, 0);
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning disable CS8602
+        if (ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            return BitConverter.ToInt16(buffer, 0);
+#pragma warning restore CS8602
 
         return null;
     }
 
-    public int? ReadInt32(MemoryAddress memAddress)
+    public int? ReadInt32(MemoryAddress memoryAddress)
     {
-        if (!IsProcessAlive())
-            return null;
-
-        var targetAddress = GetTargetAddress(memAddress);
+        var targetAddress = CalculateTargetAddress(memoryAddress);
 
         if (targetAddress == UIntPtr.Zero)
             return null;
 
-        var valueToRead = new byte[4];
+        var buffer = new byte[4];
 
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-        if (ReadProcessMemory(_proc.Handle, targetAddress, valueToRead, (UIntPtr)4, IntPtr.Zero))
-            return BitConverter.ToInt32(valueToRead, 0);
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning disable CS8602
+        if (ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            return BitConverter.ToInt32(buffer, 0);
+#pragma warning restore CS8602
 
         return null;
     }
 
-    public long? ReadInt64(MemoryAddress memAddress)
+    public long? ReadInt64(MemoryAddress memoryAddress)
     {
-        if (!IsProcessAlive())
-            return null;
-
-        var targetAddress = GetTargetAddress(memAddress);
+        var targetAddress = CalculateTargetAddress(memoryAddress);
 
         if (targetAddress == UIntPtr.Zero)
             return null;
 
-        var valueToRead = new byte[8];
+        var buffer = new byte[8];
 
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-        if (ReadProcessMemory(_proc.Handle, targetAddress, valueToRead, (UIntPtr)8, IntPtr.Zero))
-            return BitConverter.ToInt64(valueToRead, 0);
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning disable CS8602
+        if (ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            return BitConverter.ToInt64(buffer, 0);
+#pragma warning restore CS8602
 
         return null;
     }
 
-    public float? ReadFloat(MemoryAddress memAddress)
+    public float? ReadFloat(MemoryAddress memoryAddress)
     {
-        if (!IsProcessAlive())
-            return null;
-
-        var targetAddress = GetTargetAddress(memAddress);
+        var targetAddress = CalculateTargetAddress(memoryAddress);
 
         if (targetAddress == UIntPtr.Zero)
             return null;
 
-        var valueToRead = new byte[4];
+        var buffer = new byte[4];
 
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-        if (ReadProcessMemory(_proc.Handle, targetAddress, valueToRead, (UIntPtr)4, IntPtr.Zero))
-            return BitConverter.ToSingle(valueToRead, 0);
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning disable CS8602
+        if (ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            return BitConverter.ToSingle(buffer, 0);
+#pragma warning restore CS8602
 
         return null;
     }
 
-    public double? ReadDouble(MemoryAddress memAddress)
+    public double? ReadDouble(MemoryAddress memoryAddress)
     {
-        if (!IsProcessAlive())
-            return null;
-
-        var targetAddress = GetTargetAddress(memAddress);
+        var targetAddress = CalculateTargetAddress(memoryAddress);
 
         if (targetAddress == UIntPtr.Zero)
             return null;
 
-        var valueToRead = new byte[8];
+        var buffer = new byte[8];
 
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-        if (ReadProcessMemory(_proc.Handle, targetAddress, valueToRead, (UIntPtr)8, IntPtr.Zero))
-            return BitConverter.ToDouble(valueToRead, 0);
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning disable CS8602
+        if (ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            return BitConverter.ToDouble(buffer, 0);
+#pragma warning restore CS8602
 
         return null;
     }
 
     public Vector3? ReadCoordinates(MemoryAddress memoryAddress)
     {
-        if (!IsProcessAlive())
-            return null;
-
-        var targetAddress = GetTargetAddress(memoryAddress);
+        var targetAddress = CalculateTargetAddress(memoryAddress);
 
         if (targetAddress == UIntPtr.Zero)
             return null;
@@ -127,13 +109,13 @@ public sealed partial class Memory
 
         for (int i = 0; i < coordsAddresses.Length; i++)
         {
-            var valueToRead = new byte[8];
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-            if (ReadProcessMemory(_proc.Handle, coordsAddresses[i], valueToRead, (UIntPtr)8, IntPtr.Zero))
+            var buffer = new byte[4];
+#pragma warning disable CS8602
+            if (ReadProcessMemory(_proc.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
                 successCounter++;
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning restore CS8602
 
-            coordValues[i] = BitConverter.ToSingle(valueToRead, 0);
+            coordValues[i] = BitConverter.ToSingle(buffer, 0);
         }
 
         if (successCounter != coordsAddresses.Length)
