@@ -1,5 +1,4 @@
-﻿using ReadWriteMemory.Logging;
-using ReadWriteMemory.Models;
+﻿using ReadWriteMemory.Models;
 using System.Numerics;
 using System.Text;
 
@@ -7,21 +6,7 @@ namespace ReadWriteMemory;
 
 public sealed partial class Memory
 {
-    private bool WriteProcessMemory(ref UIntPtr targetAddress, ref byte[] buffer)
-    {
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
-        var success = WriteProcessMemory(_proc.Handle, targetAddress, buffer,
-            (UIntPtr)buffer.Length, IntPtr.Zero);
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
-
-        if (!success)
-        {
-            _logger?.Error(LogMessages.WritingToMemoryFailed);
-            return false;
-        }
-
-        return true;
-    }
+    const int Vector3Length = 3;
 
     public bool WriteMemory(MemoryAddress memAddress, short value)
     {
@@ -95,9 +80,9 @@ public sealed partial class Memory
         return WriteProcessMemory(ref targetAddress, ref buffer);
     }
 
-    public bool WriteCoordinates(MemoryAddress memoryAddress, float x, float y, float z)
+    public bool WriteCoordinates(MemoryAddress memoryAddress, float newXCoord, float newYCoord, float newZCoord)
     {
-        return WriteCoordinates(memoryAddress, new Vector3(x, y, z));
+        return WriteCoordinates(memoryAddress, new Vector3(newXCoord, newYCoord, newZCoord));
     }
 
     public bool WriteCoordinates(MemoryAddress memoryAddress, Vector3 coords)
@@ -107,16 +92,14 @@ public sealed partial class Memory
         if (targetAddress == UIntPtr.Zero)
             return false;
 
-        const int VectorLength = 3;
-
-        var coordsAddresses = new UIntPtr[VectorLength]
+        var coordsAddresses = new UIntPtr[Vector3Length]
         {
             targetAddress,
             targetAddress + 4,
             targetAddress + 8
         };
 
-        var valuesToWrite = new float[VectorLength]
+        var valuesToWrite = new float[Vector3Length]
         {
             coords.X,
             coords.Y,
@@ -125,7 +108,7 @@ public sealed partial class Memory
 
         int successCounter = 0;
 
-        for (int i = 0; i < VectorLength; i++)
+        for (int i = 0; i < Vector3Length; i++)
         {
             var buffer = BitConverter.GetBytes(valuesToWrite[i]);
 
@@ -133,10 +116,66 @@ public sealed partial class Memory
                 successCounter++;
         }
 
-        if (successCounter == VectorLength)
+        if (successCounter == Vector3Length)
             return true;
 
-        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{VectorLength} where written.");
+        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} where written.");
+
+        return false;
+    }
+
+    public bool TeleportForward(MemoryAddress memoryAddress, Quaternion camRotations, float distance)
+    {
+        var targetAddress = CalculateTargetAddress(memoryAddress);
+
+        if (targetAddress == UIntPtr.Zero)
+            return false;
+
+        var coordsAddresses = new UIntPtr[3]
+        {
+            targetAddress,
+            targetAddress + 4,
+            targetAddress + 8
+        };
+
+        var coordValues = new float[3];
+        int successCounter = 0;
+
+        for (int i = 0; i < coordsAddresses.Length; i++)
+        {
+            var buffer = new byte[4];
+#pragma warning disable CS8602
+            if (ReadProcessMemory(_proc.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+                successCounter++;
+#pragma warning restore CS8602
+
+            coordValues[i] = BitConverter.ToSingle(buffer, 0);
+        }
+
+        if (successCounter != coordsAddresses.Length)
+            return false;
+
+        var newPosition = CalculateNewPosition(camRotations, new Vector3(coordValues), distance);
+
+        coordValues = new float[Vector3Length]
+        {
+            newPosition.X,
+            newPosition.Y,
+            newPosition.Z
+        };
+
+        for (int i = 0; i < Vector3Length; i++)
+        {
+            var buffer = BitConverter.GetBytes(coordValues[i]);
+
+            if (WriteProcessMemory(ref coordsAddresses[i], ref buffer))
+                successCounter++;
+        }
+
+        if (successCounter >= Vector3Length)
+            return true;
+
+        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} where written.");
 
         return false;
     }

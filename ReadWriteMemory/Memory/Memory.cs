@@ -342,8 +342,8 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     public void Dispose()
     {
-        foreach (var trainer in TrainerServices.ImplementedTrainers)
-            trainer.Value.Disable();
+        foreach (var trainer in TrainerServices.ImplementedTrainers.Values)
+            trainer.Disable();
 
         CloseAllCodeCaves();
         UnfreezeAllValues();
