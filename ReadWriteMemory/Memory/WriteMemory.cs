@@ -85,6 +85,47 @@ public sealed partial class Memory
         return WriteCoordinates(memoryAddress, new Vector3(newXCoord, newYCoord, newZCoord));
     }
 
+    public bool WriteCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, Vector3 coords)
+    {
+        var xAddress = CalculateTargetAddress(xPosition);
+        var yAddress = CalculateTargetAddress(yPosition);
+        var zAddress = CalculateTargetAddress(zPosition);
+
+        if (xAddress == UIntPtr.Zero || yAddress == UIntPtr.Zero || zAddress == UIntPtr.Zero)
+            return false;
+
+        var coordsAddresses = new UIntPtr[Vector3Length]
+        {
+            xAddress,
+            yAddress,
+            zAddress
+        };
+
+        var valuesToWrite = new float[Vector3Length]
+        {
+            coords.X,
+            coords.Y,
+            coords.Z
+        };
+
+        int successCounter = 0;
+
+        for (int i = 0; i < Vector3Length; i++)
+        {
+            var buffer = BitConverter.GetBytes(valuesToWrite[i]);
+
+            if (WriteProcessMemory(ref coordsAddresses[i], ref buffer))
+                successCounter++;
+        }
+
+        if (successCounter == Vector3Length)
+            return true;
+
+        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} where written.");
+
+        return false;
+    }
+
     public bool WriteCoordinates(MemoryAddress memoryAddress, Vector3 coords)
     {
         var targetAddress = CalculateTargetAddress(memoryAddress);

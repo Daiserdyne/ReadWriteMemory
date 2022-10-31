@@ -90,6 +90,42 @@ public sealed partial class Memory
         return null;
     }
 
+    public Vector3? ReadCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition)
+    {
+        var xAddress = CalculateTargetAddress(xPosition);
+        var yAddress = CalculateTargetAddress(yPosition);
+        var zAddress = CalculateTargetAddress(zPosition);
+
+        if (xAddress == UIntPtr.Zero || yAddress == UIntPtr.Zero || zAddress == UIntPtr.Zero)
+            return null;
+
+        var coordsAddresses = new UIntPtr[3]
+        {
+            xAddress,
+            yAddress,
+            zAddress
+        };
+
+        var coordValues = new float[3];
+        int successCounter = 0;
+
+        for (int i = 0; i < coordsAddresses.Length; i++)
+        {
+            var buffer = new byte[4];
+#pragma warning disable CS8602
+            if (ReadProcessMemory(_proc.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+                successCounter++;
+#pragma warning restore CS8602
+
+            coordValues[i] = BitConverter.ToSingle(buffer, 0);
+        }
+
+        if (successCounter != coordsAddresses.Length)
+            return null;
+
+        return new Vector3(coordValues);
+    }
+
     public Vector3? ReadCoordinates(MemoryAddress memoryAddress)
     {
         var targetAddress = CalculateTargetAddress(memoryAddress);
