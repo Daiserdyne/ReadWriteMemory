@@ -1,16 +1,21 @@
-﻿namespace ReadWriteMemory.Interfaces;
+﻿namespace ReadWriteMemory.Trainer.Interface;
 
 public interface ITrainer
 {
     /// <summary>
     /// Shortname of the trainer.
     /// </summary>
-    public string Shortname { get; }
+    public string TrainerName { get; }
 
     /// <summary>
     /// Description of what this trainer does.
     /// </summary>
     public string Description { get; }
+
+    /// <summary>
+    /// If true, the <see cref="Disable(string[]?)"/> function will be called when the <see cref="Memory"/> object will be disposed.
+    /// </summary>
+    public bool DisableWhenDispose { get; }
 
     /// <summary>
     /// This will execute the trainer payload.

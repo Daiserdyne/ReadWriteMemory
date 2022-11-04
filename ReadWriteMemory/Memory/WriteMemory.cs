@@ -85,27 +85,33 @@ public sealed partial class Memory
         return WriteCoordinates(memoryAddress, new Vector3(newXCoord, newYCoord, newZCoord));
     }
 
-    public bool WriteCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, Vector3 coords)
+    public bool WriteCoordinates(MemoryAddress xAddress, MemoryAddress yAddress, MemoryAddress zAddress, 
+        float newXCoord, float newYCoord, float newZCoord)
     {
-        var xAddress = CalculateTargetAddress(xPosition);
-        var yAddress = CalculateTargetAddress(yPosition);
-        var zAddress = CalculateTargetAddress(zPosition);
+        return WriteCoordinates(xAddress, yAddress, zAddress, new Vector3(newXCoord, newYCoord, newZCoord));
+    }
 
-        if (xAddress == UIntPtr.Zero || yAddress == UIntPtr.Zero || zAddress == UIntPtr.Zero)
+    public bool WriteCoordinates(MemoryAddress xAddress, MemoryAddress yAddress, MemoryAddress zAddress, Vector3 newCoords)
+    {
+        var targetXAddress = CalculateTargetAddress(xAddress);
+        var targetYAddress = CalculateTargetAddress(yAddress);
+        var targetZAddress = CalculateTargetAddress(zAddress);
+
+        if (targetXAddress == UIntPtr.Zero || targetYAddress == UIntPtr.Zero || targetZAddress == UIntPtr.Zero)
             return false;
 
         var coordsAddresses = new UIntPtr[Vector3Length]
         {
-            xAddress,
-            yAddress,
-            zAddress
+            targetXAddress,
+            targetYAddress,
+            targetZAddress
         };
 
         var valuesToWrite = new float[Vector3Length]
         {
-            coords.X,
-            coords.Y,
-            coords.Z
+            newCoords.X,
+            newCoords.Y,
+            newCoords.Z
         };
 
         int successCounter = 0;
@@ -126,9 +132,9 @@ public sealed partial class Memory
         return false;
     }
 
-    public bool WriteCoordinates(MemoryAddress memoryAddress, Vector3 coords)
+    public bool WriteCoordinates(MemoryAddress xAddress, Vector3 coords)
     {
-        var targetAddress = CalculateTargetAddress(memoryAddress);
+        var targetAddress = CalculateTargetAddress(xAddress);
 
         if (targetAddress == UIntPtr.Zero)
             return false;
@@ -165,6 +171,13 @@ public sealed partial class Memory
         return false;
     }
 
+    /// <summary>
+    /// Buggy
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="camRotations"></param>
+    /// <param name="distance"></param>
+    /// <returns></returns>
     public bool TeleportForward(MemoryAddress memoryAddress, Quaternion camRotations, float distance)
     {
         var targetAddress = CalculateTargetAddress(memoryAddress);
@@ -209,12 +222,8 @@ public sealed partial class Memory
         {
             var buffer = BitConverter.GetBytes(coordValues[i]);
 
-            if (WriteProcessMemory(ref coordsAddresses[i], ref buffer))
-                successCounter++;
+            WriteProcessMemory(ref coordsAddresses[i], ref buffer);
         }
-
-        if (successCounter >= Vector3Length)
-            return true;
 
         _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} where written.");
 

@@ -21,7 +21,7 @@ internal class Program
     private readonly static MemoryAddress _noCollisionX = new(0xEF3113, "Outlast2.exe");
     private readonly static MemoryAddress _noCollisionY = new(0xEF3119, "Outlast2.exe");
 
-    private static readonly Memory memory = Memory.Instance("Poppy_Playtime-Win64-Shipping");
+    private static readonly Memory memory = Memory.Instance("Outlast2");
 
 
     [DllImport("user32.dll")]

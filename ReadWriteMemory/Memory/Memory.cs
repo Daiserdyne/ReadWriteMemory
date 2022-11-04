@@ -68,12 +68,28 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// Creates a singleton instance of the memory object and opens the process.
     /// </summary>
     /// <param name="processName"></param>
-    /// <returns></returns>
+    /// <returns>The created instance of the <see cref="Memory"/> object.</returns>
     public static Memory Instance(string processName)
     {
         lock (_mem)
         {
             return _instance ??= new(processName);
+        }
+    }
+
+    /// <summary>
+    /// Returns you the <see cref="Memory"/> instance you created before with the <see cref="Instance(string)"/> Method.
+    /// </summary>
+    /// <param name="processName"></param>
+    public static Memory GetCreatedInstance()
+    {
+        lock (_mem)
+        {
+            if (_instance is null)
+                throw new NullReferenceException("Can't return a memory instance. You need to create a valid instance first by using the " +
+                    "Memory.Instance(string processName) Method.");
+
+            return _instance;
         }
     }
 
@@ -342,7 +358,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     public void Dispose()
     {
-        foreach (var trainer in TrainerServices.ImplementedTrainers.Values)
+        foreach (var trainer in TrainerServices.ImplementedTrainers.Values.Where(x => x.DisableWhenDispose))
             trainer.Disable();
 
         CloseAllCodeCaves();
