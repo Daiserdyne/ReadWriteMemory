@@ -1,4 +1,5 @@
 ﻿using Pastel;
+using Program.Trainer;
 using ReadWriteMemory;
 using ReadWriteMemory.Logging;
 using ReadWriteMemory.Models;
@@ -47,6 +48,10 @@ internal class Program
         {
             switch (Console.ReadLine())
             {
+                case "z":
+                    memory.WriteMemory(_XCoords, -4054.958008f);
+                    break;
+
                 case "dn":
                     memory.WriteBytes(_noCollisionX, new byte[] { 0xFF, 0x90, 0xE8, 0x0A, 0x00, 0x00 });
                     memory.WriteBytes(_noCollisionY, new byte[] { 0xE9, 0x69, 0x16, 0x00, 0x00 });

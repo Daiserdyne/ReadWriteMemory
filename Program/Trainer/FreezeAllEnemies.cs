@@ -6,6 +6,11 @@ namespace Program.Trainer;
 
 public class FreezeAllEnemies : ITrainer
 {
+    public FreezeAllEnemies()
+    {
+        Console.WriteLine("Im init");
+    }
+
     public string TrainerName => nameof(FreezeAllEnemies);
 
     public string Description => "Freezes all current enemies in your near.";

@@ -1,5 +1,6 @@
 ﻿using ReadWriteMemory.Models;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ReadWriteMemory;
@@ -8,74 +9,22 @@ public sealed partial class Memory
 {
     const int Vector3Length = 3;
 
-    public bool WriteMemory(MemoryAddress memAddress, short value)
+    public bool WriteMemory(MemoryAddress memAddress, object value)
     {
         var targetAddress = CalculateTargetAddress(memAddress);
 
         if (targetAddress == UIntPtr.Zero)
             return false;
 
-        var buffer = BitConverter.GetBytes(value);
+        var length = Marshal.SizeOf(value);
 
-        return WriteProcessMemory(ref targetAddress, ref buffer);
-    }
+        var buffer = new byte[length];
 
-    public bool WriteMemory(MemoryAddress memAddress, int value)
-    {
-        var targetAddress = CalculateTargetAddress(memAddress);
+        var pointer = Marshal.AllocHGlobal(length);
 
-        if (targetAddress == UIntPtr.Zero)
-            return false;
-
-        var buffer = BitConverter.GetBytes(value);
-
-        return WriteProcessMemory(ref targetAddress, ref buffer);
-    }
-
-    public bool WriteMemory(MemoryAddress memAddress, long value)
-    {
-        var targetAddress = CalculateTargetAddress(memAddress);
-
-        if (targetAddress == UIntPtr.Zero)
-            return false;
-
-        var buffer = BitConverter.GetBytes(value);
-
-        return WriteProcessMemory(ref targetAddress, ref buffer);
-    }
-
-    public bool WriteMemory(MemoryAddress memAddress, float value)
-    {
-        var targetAddress = CalculateTargetAddress(memAddress);
-
-        if (targetAddress == UIntPtr.Zero)
-            return false;
-
-        var buffer = BitConverter.GetBytes(value);
-
-        return WriteProcessMemory(ref targetAddress, ref buffer);
-    }
-
-    public bool WriteMemory(MemoryAddress memAddress, double value)
-    {
-        var targetAddress = CalculateTargetAddress(memAddress);
-
-        if (targetAddress == UIntPtr.Zero)
-            return false;
-
-        var buffer = BitConverter.GetBytes(value);
-
-        return WriteProcessMemory(ref targetAddress, ref buffer);
-    }
-
-    public bool WriteMemory(MemoryAddress memAddress, string value)
-    {
-        var targetAddress = CalculateTargetAddress(memAddress);
-
-        if (targetAddress == UIntPtr.Zero)
-            return false;
-
-        var buffer = Encoding.UTF8.GetBytes(value);
+        Marshal.StructureToPtr(value, pointer, true);
+        Marshal.Copy(pointer, buffer, 0, length);
+        Marshal.FreeHGlobal(pointer);
 
         return WriteProcessMemory(ref targetAddress, ref buffer);
     }

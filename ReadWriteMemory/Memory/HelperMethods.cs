@@ -7,6 +7,22 @@ namespace ReadWriteMemory;
 
 public sealed partial class Memory
 {
+    /// <summary>
+    /// Creates a code cave to write custom opcodes in target process.
+    /// </summary>
+    /// <param name="memAddress">Address, module name and offesets</param>
+    /// <param name="newBytes">The opcodes to write in the code cave</param>
+    /// <param name="replaceCount">The number of bytes being replaced</param>
+    /// <param name="size">size of the allocated region</param>
+    /// <remarks>Please ensure that you use the proper replaceCount
+    /// if you replace halfway in an instruction you may cause bad things</remarks>
+    /// <returns>Created code cave address</returns>
+    public Task<UIntPtr> CreateOrResumeCodeCaveAsync(MemoryAddress memAddress, byte[] newBytes,
+        int replaceCount, uint size = 0x1000)
+    {
+        return Task.Run(() => CreateOrResumeCodeCave(memAddress, newBytes, replaceCount, size));
+    }
+
     private UIntPtr FindFreeBlockForRegion(UIntPtr baseAddress, uint size)
     {
         if (!IsProcessAlive())
@@ -387,12 +403,14 @@ public sealed partial class Memory
 
     private bool IsProcessAlive()
     {
-        if (_isProcessRunning == false)
+        if (_currentProcessState == false)
         {
+#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
             _logger?.Warn($"Target process \"{_proc.ProcessName}\" isn't running.");
+#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
             return false;
         }
 
-        return _isProcessRunning;
+        return _currentProcessState;
     }
 }

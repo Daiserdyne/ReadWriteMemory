@@ -7,4 +7,11 @@
 		<Platforms>x64</Platforms>
 		<WindowsPackageType>None</WindowsPackageType>
 	</PropertyGroup>
+
+	<PropertyGroup>
+		<Version>1.0.1</Version>
+		<Authors>Timm3D</Authors>
+		<Product>ReadWriteMemory</Product>
+		<Description>A powerfull memory editing dll.</Description>
+	</PropertyGroup>
 </Project>

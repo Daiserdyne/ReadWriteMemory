@@ -16,7 +16,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
     private ProcessInformation? _proc;
 
-    private bool _isProcessRunning;
+    private bool _currentProcessState;
     private CancellationTokenSource? _checkProcessStateTokenSrc;
 
     private static readonly object _mem = new();
@@ -40,55 +40,6 @@ public sealed partial class Memory : NativeMethods, IDisposable
     }
 
     #endregion
-
-    private void StartProcessManagerService()
-    {
-        _checkProcessStateTokenSrc = new();
-
-        _ = BackgroundService.ExecuteTaskAsync(() =>
-        {
-            bool oldState = _isProcessRunning;
-
-            while (!_checkProcessStateTokenSrc.IsCancellationRequested)
-            {
-                if (Process.GetProcessesByName(_proc.ProcessName).Any())
-                {
-                    _isProcessRunning = true;
-
-                    if (_proc.Handle == IntPtr.Zero)
-                        OpenProcess();
-
-                    if (oldState != _isProcessRunning)
-                    {
-                        Process_OnStateChanged?.Invoke(_isProcessRunning);
-                        oldState = _isProcessRunning;
-                    }
-
-                    continue;
-                }
-
-                _isProcessRunning = false;
-
-                if (_proc.Handle != IntPtr.Zero)
-                {
-                    _proc = new()
-                    {
-                        ProcessName = _proc.ProcessName
-                    };
-
-                    _addressRegister.Clear();
-
-                    _logger?.Warn($"Target process \"{_proc.ProcessName}\" isn't running anymore.");
-                }
-
-                if (oldState != _isProcessRunning)
-                {
-                    Process_OnStateChanged?.Invoke(_isProcessRunning);
-                    oldState = _isProcessRunning;
-                }
-            }
-        }, TimeSpan.FromMilliseconds(250), _checkProcessStateTokenSrc.Token);
-    }
 
     #region C'tor
 
@@ -141,6 +92,55 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
     #endregion
 
+    private void StartProcessManagerService()
+    {
+        _checkProcessStateTokenSrc = new();
+
+        bool oldProcessState = _currentProcessState;
+
+        _ = BackgroundService.ExecuteTaskAsync(() =>
+        {
+#pragma warning disable CS8602
+            if (Process.GetProcessesByName(_proc.ProcessName).Any())
+            {
+                _currentProcessState = true;
+
+                if (_proc.Handle == IntPtr.Zero)
+                    OpenProcess();
+
+                TriggerStateChangedEvent(ref oldProcessState);
+
+                return;
+            }
+#pragma warning restore CS8602
+
+            _currentProcessState = false;
+
+            if (_proc.Handle != IntPtr.Zero)
+            {
+                _proc = new()
+                {
+                    ProcessName = _proc.ProcessName
+                };
+
+                _addressRegister.Clear();
+
+                _logger?.Warn($"Target process \"{_proc.ProcessName}\" isn't running anymore.");
+            }
+
+            TriggerStateChangedEvent(ref oldProcessState);
+        }, TimeSpan.FromMilliseconds(250), _checkProcessStateTokenSrc.Token);
+    }
+
+    private void TriggerStateChangedEvent(ref bool oldState)
+    {
+        if (oldState != _currentProcessState)
+        {
+            Process_OnStateChanged?.Invoke(_currentProcessState);
+            oldState = _currentProcessState;
+        }
+    }
+
     /// <summary>
     /// Open the PC game process with all security and access rights.
     /// </summary>
@@ -148,14 +148,16 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// <param name="processName">Show reason open process fails</param>
     private bool OpenProcess()
     {
+#pragma warning disable CS8602
         int? tmpPid = Process.GetProcessesByName(_proc.ProcessName)[0]?.Id;
+#pragma warning restore CS8602
 
         if (tmpPid is null)
             return false;
 
         int pid = (int)tmpPid;
 
-        _proc.Process = Process.GetProcessById(pid);        
+        _proc.Process = Process.GetProcessById(pid);
         _proc.Handle = OpenProcess(true, pid);
 
         if (_proc.Handle == IntPtr.Zero)
@@ -213,10 +215,10 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     public void CloseProcess()
     {
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning disable CS8602
         if (!IsProcessAlive() || _proc.Handle == IntPtr.Zero)
             return;
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning restore CS8602
 
         _ = CloseHandle(_proc.Handle);
 
@@ -226,22 +228,6 @@ public sealed partial class Memory : NativeMethods, IDisposable
         };
 
         _addressRegister.Clear();
-    }
-
-    /// <summary>
-    /// Creates a code cave to write custom opcodes in target process.
-    /// </summary>
-    /// <param name="memAddress">Address, module name and offesets</param>
-    /// <param name="newBytes">The opcodes to write in the code cave</param>
-    /// <param name="replaceCount">The number of bytes being replaced</param>
-    /// <param name="size">size of the allocated region</param>
-    /// <remarks>Please ensure that you use the proper replaceCount
-    /// if you replace halfway in an instruction you may cause bad things</remarks>
-    /// <returns>Created code cave address</returns>
-    public Task<UIntPtr> CreateOrResumeCodeCaveAsync(MemoryAddress memAddress, byte[] newBytes,
-        int replaceCount, uint size = 0x1000)
-    {
-        return Task.Run(() => CreateOrResumeCodeCave(memAddress, newBytes, replaceCount, size));
     }
 
     /// <summary>
@@ -274,20 +260,20 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
         {
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning disable CS8602
             caveAddress = VirtualAllocEx(_proc.Handle, FindFreeBlockForRegion(targetAddress, size), size,
                 MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning restore CS8602
 
             if (caveAddress == UIntPtr.Zero)
                 targetAddress = UIntPtr.Add(targetAddress, 0x10000);
         }
 
         if (caveAddress == UIntPtr.Zero)
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning disable CS8602
             caveAddress = VirtualAllocEx(_proc.Handle, UIntPtr.Zero, size, MEM_COMMIT | MEM_RESERVE,
                                          PAGE_EXECUTE_READWRITE);
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
+#pragma warning restore CS8602
 
         int nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;
 

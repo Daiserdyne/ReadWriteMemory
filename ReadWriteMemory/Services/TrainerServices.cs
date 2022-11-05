@@ -19,10 +19,12 @@ public class TrainerServices
 
     private static IDictionary<string, ITrainer> GetAllImplementedTrainers()
     {
+        var trainerRegister = new Dictionary<string, ITrainer>();
+
         var entryAssembly = Assembly.GetEntryAssembly();
 
         if (entryAssembly is null)
-            return new Dictionary<string, ITrainer>();
+            return trainerRegister;
 
         var implementedTrainers = (from t in entryAssembly.GetTypes()
                                    where t.GetInterfaces().Contains(typeof(ITrainer))
@@ -30,9 +32,7 @@ public class TrainerServices
                                    select Activator.CreateInstance(t) as ITrainer).ToList();
 
         if (!implementedTrainers.Any())
-            return new Dictionary<string, ITrainer>();
-
-        var trainerRegister = new Dictionary<string, ITrainer>();
+            return trainerRegister;
 
         foreach (var trainer in implementedTrainers)
             trainerRegister.Add(trainer.TrainerName, trainer);
