@@ -2,13 +2,20 @@
 
 internal static class BackgroundService
 {
-    internal static async void ExecuteTaskAsync(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
+    internal static async Task ExecuteTaskAsync(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
     {
         await Task.Factory.StartNew(() =>
         {
             while (!ct.IsCancellationRequested)
             {
-                taskToExecute.Invoke();
+                try
+                {
+                    taskToExecute.Invoke();
+                }
+                catch
+                {
+                    break;
+                }
 
                 Thread.Sleep(repeatTime);
             }

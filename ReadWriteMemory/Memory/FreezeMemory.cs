@@ -54,7 +54,7 @@ public sealed partial class Memory
                 break;
         }
 
-        BackgroundService.ExecuteTaskAsync(() =>
+        _ = BackgroundService.ExecuteTaskAsync(() =>
         {
             if (!WriteProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
                 freezeToken.Cancel();

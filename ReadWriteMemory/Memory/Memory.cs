@@ -11,7 +11,13 @@ public sealed partial class Memory : NativeMethods, IDisposable
 {
     #region Fields
 
+    public delegate void ProcessStateHasChanged(bool newProcessState);
+    public event ProcessStateHasChanged? Process_OnStateChanged;
+
     private ProcessInformation? _proc;
+
+    private bool _isProcessRunning;
+    private CancellationTokenSource? _checkProcessStateTokenSrc;
 
     private static readonly object _mem = new();
     private static Memory? _instance;
@@ -35,29 +41,69 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
     #endregion
 
+    private void StartProcessManagerService()
+    {
+        _checkProcessStateTokenSrc = new();
+
+        _ = BackgroundService.ExecuteTaskAsync(() =>
+        {
+            bool oldState = _isProcessRunning;
+
+            while (!_checkProcessStateTokenSrc.IsCancellationRequested)
+            {
+                if (Process.GetProcessesByName(_proc.ProcessName).Any())
+                {
+                    _isProcessRunning = true;
+
+                    if (_proc.Handle == IntPtr.Zero)
+                        OpenProcess();
+
+                    if (oldState != _isProcessRunning)
+                    {
+                        Process_OnStateChanged?.Invoke(_isProcessRunning);
+                        oldState = _isProcessRunning;
+                    }
+
+                    continue;
+                }
+
+                _isProcessRunning = false;
+
+                if (_proc.Handle != IntPtr.Zero)
+                {
+                    _proc = new()
+                    {
+                        ProcessName = _proc.ProcessName
+                    };
+
+                    _addressRegister.Clear();
+
+                    _logger?.Warn($"Target process \"{_proc.ProcessName}\" isn't running anymore.");
+                }
+
+                if (oldState != _isProcessRunning)
+                {
+                    Process_OnStateChanged?.Invoke(_isProcessRunning);
+                    oldState = _isProcessRunning;
+                }
+            }
+        }, TimeSpan.FromMilliseconds(250), _checkProcessStateTokenSrc.Token);
+    }
+
     #region C'tor
 
     /// <summary>
-    /// Creates a instance of the memory object and opens the process.
+    /// Creates a instance of the memory object.
     /// </summary>
     /// <param name="processName"></param>
     public Memory(string processName)
     {
-        OpenProcess(processName);
-
-        BackgroundService.ExecuteTaskAsync(() =>
+        _proc = new()
         {
-            if (!IsProcessAlive())
-            {
-                if (_proc is not null)
-                    _proc = null;
+            ProcessName = processName
+        };
 
-                if (_addressRegister.Count != 0)
-                    _addressRegister.Clear();
-
-                OpenProcess(processName);
-            }
-        }, TimeSpan.FromMilliseconds(500), new CancellationTokenSource().Token);
+        StartProcessManagerService();
     }
 
     #endregion
@@ -100,26 +146,16 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     /// <returns>Process opened successfully or failed.</returns>
     /// <param name="processName">Show reason open process fails</param>
-    private bool OpenProcess(string processName)
+    private bool OpenProcess()
     {
-        var procId = Process.GetProcessesByName(processName).FirstOrDefault()?.Id;
+        int? tmpPid = Process.GetProcessesByName(_proc.ProcessName)[0]?.Id;
 
-        int pid = procId ?? 0;
-
-        if (procId is null)
-        {
-            _logger?.Warn($"Target process \"{processName}\" isn't running. Waiting...");
-
-            return false;
-        }
-
-        _proc ??= new();
-        _proc.ProcessName = processName;
-        _proc.Process = Process.GetProcessById(pid);
-
-        if (!IsProcessAlive())
+        if (tmpPid is null)
             return false;
 
+        int pid = (int)tmpPid;
+
+        _proc.Process = Process.GetProcessById(pid);        
         _proc.Handle = OpenProcess(true, pid);
 
         if (_proc.Handle == IntPtr.Zero)
@@ -128,7 +164,10 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
             _logger?.Error($"Opening process failed. Process handle was {IntPtr.Zero}. Error code: {error}");
 
-            _proc = null;
+            _proc = new()
+            {
+                ProcessName = _proc.ProcessName
+            };
 
             return false;
         }
@@ -140,7 +179,10 @@ public sealed partial class Memory : NativeMethods, IDisposable
             _logger?.Error("Target process or operation system are not 64 bit.\n" +
                 "This library only supports 64-bit processes and os.");
 
-            _proc = null;
+            _proc = new()
+            {
+                ProcessName = _proc.ProcessName
+            };
 
             return false;
         }
@@ -151,14 +193,17 @@ public sealed partial class Memory : NativeMethods, IDisposable
         {
             _logger?.Error("Couldn't get main module from target process.");
 
-            _proc = null;
+            _proc = new()
+            {
+                ProcessName = _proc.ProcessName
+            };
 
             return false;
         }
 
         _proc.MainModule = mainModule;
 
-        _logger?.Info($"Target process \"{processName}\" opened successfully.");
+        _logger?.Info($"Target process \"{_proc.ProcessName}\" opened successfully.");
 
         return true;
     }
@@ -175,7 +220,11 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         _ = CloseHandle(_proc.Handle);
 
-        _proc = null;
+        _proc = new()
+        {
+            ProcessName = _proc.ProcessName
+        };
+
         _addressRegister.Clear();
     }
 
@@ -366,6 +415,8 @@ public sealed partial class Memory : NativeMethods, IDisposable
         CloseProcess();
 
         _addressRegister.Clear();
+        _checkProcessStateTokenSrc?.Cancel();
+        Process_OnStateChanged = null;
         _logger = null;
         _proc = null;
         _instance = null;

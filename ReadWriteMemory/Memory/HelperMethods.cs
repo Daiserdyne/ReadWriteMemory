@@ -387,6 +387,12 @@ public sealed partial class Memory
 
     private bool IsProcessAlive()
     {
-        return _proc is not null && Process.GetProcessesByName(_proc.ProcessName) is not null;
+        if (_isProcessRunning == false)
+        {
+            _logger?.Warn($"Target process \"{_proc.ProcessName}\" isn't running.");
+            return false;
+        }
+
+        return _isProcessRunning;
     }
 }

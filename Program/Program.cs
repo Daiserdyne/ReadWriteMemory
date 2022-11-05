@@ -39,29 +39,14 @@ internal class Program
 
         memory.Logger.MemoryLogger_OnLogging += Logger_MemoryLogger_OnLogging;
 
-        var trainer = TrainerServices.ImplementedTrainers;
+        memory.Process_OnStateChanged += Memory_Process_OnStateChanged;
 
-        MemoryAddress one = new(0x0426C5C8, "Poppy_Playtime-Win64-Shipping.exe", 0x80, 0x110, 0x578, 0x1c0);
-        MemoryAddress two = new(0x0426C5C8, "Poppy_Playtime-Win64-Shipping.exe", 0x80, 0x110, 0x578, 0x1c4);
-        MemoryAddress three = new(0x0426C5C8, "Poppy_Playtime-Win64-Shipping.exe", 0x80, 0x110, 0x578, 0x1c8);
-        MemoryAddress four = new(0x0426C5C8, "Poppy_Playtime-Win64-Shipping.exe", 0x80, 0x110, 0x578, 0x1cc);
+        var trainer = TrainerServices.ImplementedTrainers;
 
         while (true)
         {
             switch (Console.ReadLine())
             {
-                case "pop":
-                    var a = memory.ReadFloat(one);
-                    var b = memory.ReadFloat(two);
-                    var c = memory.ReadFloat(three);
-                    var d = memory.ReadFloat(four);
-
-                    var q = new Quaternion((float)a, (float)b, (float)c, (float)d);
-
-                    memory.TeleportForward(new MemoryAddress(0x0426C5C8, "Poppy_Playtime-Win64-Shipping.exe", 0x90, 0x110, 0x290, 0x1D0),
-                        q, 1000f);
-                    break;
-
                 case "dn":
                     memory.WriteBytes(_noCollisionX, new byte[] { 0xFF, 0x90, 0xE8, 0x0A, 0x00, 0x00 });
                     memory.WriteBytes(_noCollisionY, new byte[] { 0xE9, 0x69, 0x16, 0x00, 0x00 });
@@ -118,6 +103,11 @@ internal class Program
                     break;
             }
         }
+    }
+
+    private static void Memory_Process_OnStateChanged(bool newProcessState)
+    {
+        Console.WriteLine(newProcessState);
     }
 
     private static async void Logger_MemoryLogger_OnLogging(MemoryLogger.LoggingType type, string message)
