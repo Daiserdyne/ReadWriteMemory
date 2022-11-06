@@ -403,7 +403,7 @@ public sealed partial class Memory
 
     private bool IsProcessAlive()
     {
-        if (_currentProcessState == false)
+        if (_procState.CurrentProcessState == false)
         {
 #pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
             _logger?.Warn($"Target process \"{_proc.ProcessName}\" isn't running.");
@@ -411,6 +411,6 @@ public sealed partial class Memory
             return false;
         }
 
-        return _currentProcessState;
+        return _procState.CurrentProcessState;
     }
 }

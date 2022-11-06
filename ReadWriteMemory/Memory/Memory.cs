@@ -9,6 +9,12 @@ namespace ReadWriteMemory;
 
 public sealed partial class Memory : NativeMethods, IDisposable
 {
+    #region Constants
+
+    private const short CoordinatesLength = 3;
+
+    #endregion
+
     #region Fields
 
     public delegate void ProcessStateHasChanged(bool newProcessState);
@@ -16,14 +22,12 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
     private ProcessInformation? _proc;
 
-    private bool _currentProcessState;
-    private CancellationTokenSource? _checkProcessStateTokenSrc;
-
     private static readonly object _mem = new();
     private static Memory? _instance;
 
     private MemoryLogger? _logger;
 
+    private readonly ProcessState _procState = new();
     private readonly List<MemoryAddressTable> _addressRegister = new();
     private readonly byte[] _buffer = new byte[8];
 
@@ -94,16 +98,14 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
     private void StartProcessManagerService()
     {
-        _checkProcessStateTokenSrc = new();
+        bool oldProcessState = _procState.CurrentProcessState;
 
-        bool oldProcessState = _currentProcessState;
-
-        _ = BackgroundService.ExecuteTaskAsync(() =>
+        _ = BackgroundService.ExecuteTaskInfiniteAsync(() =>
         {
 #pragma warning disable CS8602
             if (Process.GetProcessesByName(_proc.ProcessName).Any())
             {
-                _currentProcessState = true;
+                _procState.CurrentProcessState = true;
 
                 if (_proc.Handle == IntPtr.Zero)
                     OpenProcess();
@@ -114,7 +116,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
             }
 #pragma warning restore CS8602
 
-            _currentProcessState = false;
+            _procState.CurrentProcessState = false;
 
             if (_proc.Handle != IntPtr.Zero)
             {
@@ -129,15 +131,15 @@ public sealed partial class Memory : NativeMethods, IDisposable
             }
 
             TriggerStateChangedEvent(ref oldProcessState);
-        }, TimeSpan.FromMilliseconds(250), _checkProcessStateTokenSrc.Token);
+        }, TimeSpan.FromMilliseconds(250), ProcessState.ProcessStateTokenSrc.Token);
     }
 
     private void TriggerStateChangedEvent(ref bool oldState)
     {
-        if (oldState != _currentProcessState)
+        if (oldState != _procState.CurrentProcessState)
         {
-            Process_OnStateChanged?.Invoke(_currentProcessState);
-            oldState = _currentProcessState;
+            Process_OnStateChanged?.Invoke(_procState.CurrentProcessState);
+            oldState = _procState.CurrentProcessState;
         }
     }
 
@@ -401,7 +403,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         CloseProcess();
 
         _addressRegister.Clear();
-        _checkProcessStateTokenSrc?.Cancel();
+        ProcessState.ProcessStateTokenSrc.Cancel();
         Process_OnStateChanged = null;
         _logger = null;
         _proc = null;
