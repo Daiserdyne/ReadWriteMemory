@@ -1,7 +1,6 @@
 ﻿using ReadWriteMemory.Models;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace ReadWriteMemory;
 
@@ -174,6 +173,7 @@ public sealed partial class Memory
             WriteProcessMemory(ref coordsAddresses[i], ref buffer);
         }
 
+        //todo: find msg bug
         _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} where written.");
 
         return false;
