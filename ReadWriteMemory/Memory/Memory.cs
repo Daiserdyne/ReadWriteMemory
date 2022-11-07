@@ -7,6 +7,10 @@ using System.Runtime.InteropServices;
 
 namespace ReadWriteMemory;
 
+/// <summary>
+/// This is the main component of the <see cref="ReadWriteMemory"/> package. This class includes a lot of powerfull
+/// read and write operations to manipulate the memory of an process.
+/// </summary>
 public sealed partial class Memory : NativeMethods, IDisposable
 {
     #region Constants
@@ -17,13 +21,18 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
     #region Fields
 
+    /// <summary>
+    /// Delegate for the <see cref="Process_OnStateChanged"/> event.
+    /// </summary>
+    /// <param name="newProcessState"></param>
     public delegate void ProcessStateHasChanged(bool newProcessState);
+
+    /// <summary>
+    /// This event will be triggered when the process state changes.
+    /// </summary>
     public event ProcessStateHasChanged? Process_OnStateChanged;
 
-    private ProcessInformation? _proc;
-
-    private static readonly object _mem = new();
-    private static Memory? _instance;
+    private ProcessInformation _proc;
 
     private MemoryLogger? _logger;
 
@@ -58,51 +67,17 @@ public sealed partial class Memory : NativeMethods, IDisposable
             ProcessName = processName
         };
 
-        StartProcessManagerService();
+        StartProcessStateService();
     }
 
     #endregion
 
-    #region Singelton
-
-    /// <summary>
-    /// Creates a singleton instance of the memory object and opens the process.
-    /// </summary>
-    /// <param name="processName"></param>
-    /// <returns>The created instance of the <see cref="Memory"/> object.</returns>
-    public static Memory Instance(string processName)
-    {
-        lock (_mem)
-        {
-            return _instance ??= new(processName);
-        }
-    }
-
-    /// <summary>
-    /// Returns you the <see cref="Memory"/> instance you created before with the <see cref="Instance(string)"/> Method.
-    /// </summary>
-    /// <param name="processName"></param>
-    public static Memory GetCreatedInstance()
-    {
-        lock (_mem)
-        {
-            if (_instance is null)
-                throw new NullReferenceException("Can't return a memory instance. You need to create a valid instance first by using the " +
-                    "Memory.Instance(string processName) Method.");
-
-            return _instance;
-        }
-    }
-
-    #endregion
-
-    private void StartProcessManagerService()
+    private void StartProcessStateService()
     {
         bool oldProcessState = _procState.CurrentProcessState;
 
         _ = BackgroundService.ExecuteTaskInfiniteAsync(() =>
         {
-#pragma warning disable CS8602
             if (Process.GetProcessesByName(_proc.ProcessName).Any())
             {
                 _procState.CurrentProcessState = true;
@@ -114,7 +89,6 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
                 return;
             }
-#pragma warning restore CS8602
 
             _procState.CurrentProcessState = false;
 
@@ -131,7 +105,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
             }
 
             TriggerStateChangedEvent(ref oldProcessState);
-        }, TimeSpan.FromMilliseconds(250), ProcessState.ProcessStateTokenSrc.Token);
+        }, TimeSpan.FromMilliseconds(250), _procState.ProcessStateTokenSrc.Token);
     }
 
     private void TriggerStateChangedEvent(ref bool oldState)
@@ -143,16 +117,9 @@ public sealed partial class Memory : NativeMethods, IDisposable
         }
     }
 
-    /// <summary>
-    /// Open the PC game process with all security and access rights.
-    /// </summary>
-    /// <returns>Process opened successfully or failed.</returns>
-    /// <param name="processName">Show reason open process fails</param>
     private bool OpenProcess()
     {
-#pragma warning disable CS8602
         int? tmpPid = Process.GetProcessesByName(_proc.ProcessName)[0]?.Id;
-#pragma warning restore CS8602
 
         if (tmpPid is null)
             return false;
@@ -217,10 +184,8 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     public void CloseProcess()
     {
-#pragma warning disable CS8602
         if (!IsProcessAlive() || _proc.Handle == IntPtr.Zero)
             return;
-#pragma warning restore CS8602
 
         _ = CloseHandle(_proc.Handle);
 
@@ -262,20 +227,16 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
         {
-#pragma warning disable CS8602
             caveAddress = VirtualAllocEx(_proc.Handle, FindFreeBlockForRegion(targetAddress, size), size,
                 MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-#pragma warning restore CS8602
 
             if (caveAddress == UIntPtr.Zero)
                 targetAddress = UIntPtr.Add(targetAddress, 0x10000);
         }
 
         if (caveAddress == UIntPtr.Zero)
-#pragma warning disable CS8602
             caveAddress = VirtualAllocEx(_proc.Handle, UIntPtr.Zero, size, MEM_COMMIT | MEM_RESERVE,
                                          PAGE_EXECUTE_READWRITE);
-#pragma warning restore CS8602
 
         int nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;
 
@@ -395,18 +356,16 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     public void Dispose()
     {
-        foreach (var trainer in TrainerServices.ImplementedTrainers.Values.Where(x => x.DisableWhenDispose))
-            trainer.Disable();
+        foreach (var trainer in TrainerServices.GetAllImplementedTrainers().Values
+            .Where(x => x.DisableWhenDispose)) trainer.Disable();
 
         CloseAllCodeCaves();
         UnfreezeAllValues();
         CloseProcess();
 
         _addressRegister.Clear();
-        ProcessState.ProcessStateTokenSrc.Cancel();
+        _procState.ProcessStateTokenSrc.Cancel();
         Process_OnStateChanged = null;
         _logger = null;
-        _proc = null;
-        _instance = null;
     }
 }

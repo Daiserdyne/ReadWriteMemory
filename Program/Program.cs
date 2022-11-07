@@ -4,6 +4,7 @@ using ReadWriteMemory;
 using ReadWriteMemory.Logging;
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
+using ReadWriteMemory.Trainer.Interface;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -22,7 +23,7 @@ internal class Program
     private readonly static MemoryAddress _noCollisionX = new(0xEF3113, "Outlast2.exe");
     private readonly static MemoryAddress _noCollisionY = new(0xEF3119, "Outlast2.exe");
 
-    private static readonly Memory memory = Memory.Instance("Outlast2");
+    private static readonly Memory memory = new Memory("Outlast2");
 
 
     [DllImport("user32.dll")]
@@ -42,7 +43,10 @@ internal class Program
 
         memory.Process_OnStateChanged += Memory_Process_OnStateChanged;
 
-        var trainer = TrainerServices.ImplementedTrainers;
+        var trainer = new Dictionary<string, ITrainer>()
+        {
+            { nameof(FreezeAllEnemies), new FreezeAllEnemies(memory) }
+        };
 
         while (true)
         {

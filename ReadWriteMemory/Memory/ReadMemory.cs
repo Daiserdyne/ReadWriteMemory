@@ -14,10 +14,8 @@ public sealed partial class Memory
 
         var buffer = new byte[2];
 
-#pragma warning disable CS8602
         if (ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
             return BitConverter.ToInt16(buffer, 0);
-#pragma warning restore CS8602
 
         return null;
     }
@@ -31,10 +29,8 @@ public sealed partial class Memory
 
         var buffer = new byte[4];
 
-#pragma warning disable CS8602
         if (ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
             return BitConverter.ToInt32(buffer, 0);
-#pragma warning restore CS8602
 
         return null;
     }
@@ -48,10 +44,8 @@ public sealed partial class Memory
 
         var buffer = new byte[8];
 
-#pragma warning disable CS8602
         if (ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
             return BitConverter.ToInt64(buffer, 0);
-#pragma warning restore CS8602
 
         return null;
     }
@@ -65,10 +59,8 @@ public sealed partial class Memory
 
         var buffer = new byte[4];
 
-#pragma warning disable CS8602
         if (ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
             return BitConverter.ToSingle(buffer, 0);
-#pragma warning restore CS8602
 
         return null;
     }
@@ -82,10 +74,8 @@ public sealed partial class Memory
 
         var buffer = new byte[8];
 
-#pragma warning disable CS8602
         if (ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
             return BitConverter.ToDouble(buffer, 0);
-#pragma warning restore CS8602
 
         return null;
     }
@@ -112,10 +102,8 @@ public sealed partial class Memory
         for (int i = 0; i < coordsAddresses.Length; i++)
         {
             var buffer = new byte[4];
-#pragma warning disable CS8602
             if (ReadProcessMemory(_proc.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
                 successCounter++;
-#pragma warning restore CS8602
 
             coordValues[i] = BitConverter.ToSingle(buffer, 0);
         }
@@ -146,10 +134,8 @@ public sealed partial class Memory
         for (int i = 0; i < coordsAddresses.Length; i++)
         {
             var buffer = new byte[4];
-#pragma warning disable CS8602
             if (ReadProcessMemory(_proc.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
                 successCounter++;
-#pragma warning restore CS8602
 
             coordValues[i] = BitConverter.ToSingle(buffer, 0);
         }

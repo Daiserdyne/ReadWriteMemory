@@ -44,7 +44,6 @@ public sealed partial class Memory
         var current = minAddress;
         var caveAddress = UIntPtr.Zero;
 
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
         while (VirtualQueryEx(_proc.Handle, current, out MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
         {
             if ((long)memoryInfos.BaseAddress > (long)maxAddress)
@@ -115,7 +114,6 @@ public sealed partial class Memory
             if ((long)previous >= (long)current)
                 return caveAddress; // Overflow
         }
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         return caveAddress;
     }
@@ -125,15 +123,13 @@ public sealed partial class Memory
         if (!IsProcessAlive())
             return false;
 
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
         return VirtualFreeEx(_proc.Handle, address, (UIntPtr)0, 0x8000);
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
     }
 
     /// <summary>
     /// Checks if a code cave was created in the past with the given memory address.
     /// </summary>
-    /// <param name="tableIndex"></param>
+    /// <param name="memAddress"></param>
     /// <param name="caveAddress"></param>
     /// <returns></returns>
     private bool IsCodeCaveOpen(MemoryAddress memAddress, out UIntPtr caveAddress)
@@ -223,7 +219,6 @@ public sealed partial class Memory
 
         if (offsets is not null && offsets.Length != 0)
         {
-#pragma warning disable CS8602
             ReadProcessMemory(_proc.Handle, targetAddress, _buffer, (UIntPtr)_buffer.Length, IntPtr.Zero);
             targetAddress = (UIntPtr)BitConverter.ToInt64(_buffer);
 
@@ -237,7 +232,6 @@ public sealed partial class Memory
 
                 ReadProcessMemory(_proc.Handle, UIntPtr.Add(targetAddress, offsets[i]), _buffer,
                     (UIntPtr)_buffer.Length, IntPtr.Zero);
-#pragma warning restore CS8602
 
                 targetAddress = (UIntPtr)BitConverter.ToInt64(_buffer);
             }
@@ -263,10 +257,8 @@ public sealed partial class Memory
         if (!IsProcessAlive())
             return IntPtr.Zero;
 
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
         var moduleAddress = _proc.Process.Modules.Cast<ProcessModule>()
             .FirstOrDefault(module => module.ModuleName?.ToLower() == moduleName.ToLower())?.BaseAddress;
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         return moduleAddress ?? IntPtr.Zero;
     }
@@ -335,10 +327,8 @@ public sealed partial class Memory
 
         var bytes = new byte[length];
 
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
         return ReadProcessMemory(_proc.Handle, address,
             bytes, (UIntPtr)length, IntPtr.Zero) == true ? bytes : Array.Empty<byte>();
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
     }
 
     private UIntPtr CalculateTargetAddress(MemoryAddress memoryAddress)
@@ -387,10 +377,8 @@ public sealed partial class Memory
 
     private bool WriteProcessMemory(ref UIntPtr targetAddress, ref byte[] buffer)
     {
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
         var success = WriteProcessMemory(_proc.Handle, targetAddress, buffer,
             (UIntPtr)buffer.Length, IntPtr.Zero);
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
 
         if (!success)
         {
@@ -405,9 +393,7 @@ public sealed partial class Memory
     {
         if (_procState.CurrentProcessState == false)
         {
-#pragma warning disable CS8602 // Dereferenzierung eines möglichen Nullverweises.
             _logger?.Warn($"Target process \"{_proc.ProcessName}\" isn't running.");
-#pragma warning restore CS8602 // Dereferenzierung eines möglichen Nullverweises.
             return false;
         }
 

@@ -6,9 +6,11 @@ namespace Program.Trainer;
 
 public class FreezeAllEnemies : ITrainer
 {
-    public FreezeAllEnemies()
+    private readonly Memory _memory;
+
+    public FreezeAllEnemies(Memory memory)
     {
-        Console.WriteLine("Im init");
+        _memory = memory;
     }
 
     public string TrainerName => nameof(FreezeAllEnemies);
@@ -17,7 +19,6 @@ public class FreezeAllEnemies : ITrainer
 
     public bool DisableWhenDispose => false;
 
-    private readonly Memory _memory = Memory.Instance("Outlast2");
     private readonly MemoryAddress _XCoords = new(0x219FF58, "Outlast2.exe", 0x250, 0x88);
 
     public async Task Disable(params string[]? args)

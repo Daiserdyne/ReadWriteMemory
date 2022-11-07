@@ -12,4 +12,5 @@ internal sealed class CodeCaveTable
 	internal UIntPtr CaveAddress { get; }
 	internal byte[] OriginalOpcodes { get; }
     internal byte[] JmpBytes { get; }
+	//internal bool IsPaused { get; set; }
 }

@@ -3,5 +3,7 @@
 internal class ProcessState
 {
     internal bool CurrentProcessState { get; set; }
-    internal static CancellationTokenSource ProcessStateTokenSrc => new();
+#pragma warning disable CA1822
+    internal CancellationTokenSource ProcessStateTokenSrc => new();
+#pragma warning restore CA1822
 }

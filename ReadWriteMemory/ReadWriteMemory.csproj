@@ -9,9 +9,15 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.0.1</Version>
+		<Version>1.0.3</Version>
 		<Authors>Timm3D</Authors>
 		<Product>ReadWriteMemory</Product>
 		<Description>A powerfull memory editing dll.</Description>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<ApplicationIcon>Icon\icon.ico</ApplicationIcon>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Content Include="Icon\icon.ico" />
+	</ItemGroup>
 </Project>

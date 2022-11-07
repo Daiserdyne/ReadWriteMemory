@@ -22,13 +22,11 @@ public sealed partial class Memory
 
         var buffer = new byte[8];
 
-#pragma warning disable CS8602
         if (!ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
         {
             _logger?.Error("Couldn't read value from memory address.");
             return false;
         }
-#pragma warning restore CS8602
 
         int tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
 
@@ -44,8 +42,8 @@ public sealed partial class Memory
 
         switch (refreshRateInMilliseconds)
         {
-            case < 10:
-                refreshRateInMilliseconds = 10;
+            case < 5:
+                refreshRateInMilliseconds = 5;
                 break;
 
                 // Delete this case maybe
