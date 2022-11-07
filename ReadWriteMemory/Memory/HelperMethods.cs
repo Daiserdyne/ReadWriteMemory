@@ -57,6 +57,7 @@ public sealed partial class Memory
                 {
                     // The whole size can not be used
                     tmpAddress = memoryInfos.BaseAddress;
+
                     int offset = (int)(sysInfo.allocationGranularity -
                                        (long)tmpAddress % sysInfo.allocationGranularity);
 

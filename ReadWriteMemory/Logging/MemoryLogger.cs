@@ -5,6 +5,9 @@ public sealed class MemoryLogger : IDisposable
     public delegate void MemLogger(LoggingType type, string message);
     public event MemLogger? MemoryLogger_OnLogging;
 
+    /// <summary>
+    /// Shows which type of log you get.
+    /// </summary>
     public enum LoggingType : short
     {
         Info,
@@ -27,6 +30,7 @@ public sealed class MemoryLogger : IDisposable
         MemoryLogger_OnLogging?.Invoke(LoggingType.Error, message);
     }
 
+/// <inheritdoc/>
     public void Dispose()
     {
         MemoryLogger_OnLogging = null;

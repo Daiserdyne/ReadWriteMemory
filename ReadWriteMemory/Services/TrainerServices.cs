@@ -22,10 +22,10 @@ public class TrainerServices
         if (entryAssembly is null)
             return trainerRegister;
 
-        var implementedTrainers = (from t in entryAssembly.GetTypes()
-                                   where t.GetInterfaces().Contains(typeof(ITrainer))
-                                         && t.GetConstructor(Type.EmptyTypes) != null
-                                   select Activator.CreateInstance(t) as ITrainer).ToList();
+        var implementedTrainers = (from type in entryAssembly.GetTypes()
+                                   where type.GetInterfaces().Contains(typeof(ITrainer))
+                                         && type.GetConstructor(Type.EmptyTypes) != null
+                                   select Activator.CreateInstance(type) as ITrainer).ToList();
 
         if (!implementedTrainers.Any())
             return trainerRegister;
