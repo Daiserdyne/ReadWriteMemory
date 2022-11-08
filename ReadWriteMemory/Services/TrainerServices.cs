@@ -8,6 +8,24 @@ namespace ReadWriteMemory.Services;
 /// </summary>
 public class TrainerServices
 {
+    private static object? _mem;
+    private static Memory? _memory;
+
+    /// <summary>
+    /// Gives you a thread-safe singleton instance of the <see cref="Memory"/> object.
+    /// </summary>
+    /// <param name="processName"></param>
+    /// <returns></returns>
+    public static Memory GetSingletonInstance(string processName)
+    {
+        if (_mem is null) _mem = new();
+
+        lock (_mem)
+        {
+            return _memory ??= new(processName);
+        }
+    }
+
     /// <summary>
     /// <para>Returns a Dictionary of all classes which have implemented the <seealso cref="ITrainer"/> interface in your entry assembly.</para>
     /// The key is the <see cref="ITrainer.TrainerName"/> and the value the instantiated Trainer.

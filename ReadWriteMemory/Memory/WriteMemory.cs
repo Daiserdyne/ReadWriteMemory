@@ -6,6 +6,12 @@ namespace ReadWriteMemory;
 
 public sealed partial class Memory
 {
+    /// <summary>
+    /// Das ist der kleine Buba
+    /// </summary>
+    /// <param name="memAddress"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
     public bool WriteMemory(MemoryAddress memAddress, object value)
     {
         var targetAddress = CalculateTargetAddress(memAddress);
