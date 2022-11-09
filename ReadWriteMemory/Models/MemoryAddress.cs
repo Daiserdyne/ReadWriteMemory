@@ -4,9 +4,9 @@
 /// This model class stores a memory <paramref name="address"/>, the associated <paramref name="offsets"/> <c>and/or</c> <paramref name="moduleName"/>. 
 /// This will be needed to calculate the base address and read/write to/from the targets process memory.
 /// <example>
-/// <code>MemoryAddress memoryAddress = new(0x1234567, "target_module.exe", new int[] { 0x20, 0x30, 0x40 })</code>
-/// <code>MemoryAddress memoryAddress = new(0x1234567, "target_module.dll")</code>
-/// <code>MemoryAddress memoryAddress = new(0x1234567, new int[] { 0x20, 0x30, 0x40 })</code>
+/// <code>MemoryAddress memoryAddress = new(0x1234567, "elonMusk.exe", 0x42, 0x420, 0x69)</code>
+/// <code>MemoryAddress memoryAddress = new(0x1234567, "falconheavy.dll")</code>
+/// <code>MemoryAddress memoryAddress = new(0x1234567, 0x42, 0x420, 0x69)</code>
 /// <code>MemoryAddress memoryAddress = new(0x1234567)</code>
 /// </example>
 /// <para>See <seealso cref="MemoryAddress(long, int[])"/></para> 
@@ -18,8 +18,8 @@ public sealed class MemoryAddress
     /// This model class stores a memory <paramref name="address"/>, the associated <paramref name="offsets"/> and <paramref name="moduleName"/>. 
     /// This will be needed to calculate the base address and read/write to/from the targets process memory.
     /// <example>
-    /// <code>MemoryAddress memoryAddress = new(0x1234567, "target_module.exe", new int[] { 0x20, 0x30, 0x40 })</code>
-    /// <code>MemoryAddress memoryAddress = new(0x1234567, "target_module.dll")</code>
+    /// <code>MemoryAddress memoryAddress = new(0x1234567, "elonMusk.exe", 0x42, 0x420, 0x69)</code>
+    /// <code>MemoryAddress memoryAddress = new(0x1234567, "falconheavy.dll")</code>
     /// </example>
     /// See also: <seealso cref="MemoryAddress(long, int[])"/>
     /// </summary>
@@ -38,7 +38,7 @@ public sealed class MemoryAddress
     /// This will be needed to calculate 
     /// the base address and read/write to/from the targets process memory.
     /// <example>
-    /// <code>MemoryAddress memoryAddress = new(0x1234567, new int[] { 0x20, 0x30, 0x40 })</code>
+    /// <code>MemoryAddress memoryAddress = new(0x1234567, 0x42, 0x420, 0x69)</code>
     /// <code>MemoryAddress memoryAddress = new(0x1234567)</code>
     /// </example>
     /// See also: <seealso cref="MemoryAddress(long, string, int[]?)"/>

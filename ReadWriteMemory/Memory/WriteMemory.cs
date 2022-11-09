@@ -52,14 +52,14 @@ public sealed partial class Memory
         if (targetXAddress == UIntPtr.Zero || targetYAddress == UIntPtr.Zero || targetZAddress == UIntPtr.Zero)
             return false;
 
-        var coordsAddresses = new UIntPtr[CoordinatesLength]
+        var coordsAddresses = new UIntPtr[Vector3Length]
         {
             targetXAddress,
             targetYAddress,
             targetZAddress
         };
 
-        var valuesToWrite = new float[CoordinatesLength]
+        var valuesToWrite = new float[Vector3Length]
         {
             newCoords.X,
             newCoords.Y,
@@ -68,7 +68,7 @@ public sealed partial class Memory
 
         int successCounter = 0;
 
-        for (int i = 0; i < CoordinatesLength; i++)
+        for (int i = 0; i < Vector3Length; i++)
         {
             var buffer = BitConverter.GetBytes(valuesToWrite[i]);
 
@@ -76,10 +76,10 @@ public sealed partial class Memory
                 successCounter++;
         }
 
-        if (successCounter == CoordinatesLength)
+        if (successCounter == Vector3Length)
             return true;
 
-        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{CoordinatesLength} where written.");
+        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} where written.");
 
         return false;
     }
@@ -91,14 +91,14 @@ public sealed partial class Memory
         if (targetAddress == UIntPtr.Zero)
             return false;
 
-        var coordsAddresses = new UIntPtr[CoordinatesLength]
+        var coordsAddresses = new UIntPtr[Vector3Length]
         {
             targetAddress,
             targetAddress + 4,
             targetAddress + 8
         };
 
-        var valuesToWrite = new float[CoordinatesLength]
+        var valuesToWrite = new float[Vector3Length]
         {
             coords.X,
             coords.Y,
@@ -107,7 +107,7 @@ public sealed partial class Memory
 
         int successCounter = 0;
 
-        for (int i = 0; i < CoordinatesLength; i++)
+        for (int i = 0; i < Vector3Length; i++)
         {
             var buffer = BitConverter.GetBytes(valuesToWrite[i]);
 
@@ -115,10 +115,10 @@ public sealed partial class Memory
                 successCounter++;
         }
 
-        if (successCounter == CoordinatesLength)
+        if (successCounter == Vector3Length)
             return true;
 
-        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{CoordinatesLength} where written.");
+        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} where written.");
 
         return false;
     }
@@ -162,14 +162,14 @@ public sealed partial class Memory
 
         var newPosition = CalculateNewPosition(camRotations, new Vector3(coordValues), distance);
 
-        coordValues = new float[CoordinatesLength]
+        coordValues = new float[Vector3Length]
         {
             newPosition.X,
             newPosition.Y,
             newPosition.Z
         };
 
-        for (int i = 0; i < CoordinatesLength; i++)
+        for (int i = 0; i < Vector3Length; i++)
         {
             var buffer = BitConverter.GetBytes(coordValues[i]);
 
@@ -177,7 +177,7 @@ public sealed partial class Memory
         }
 
         //todo: find msg bug
-        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{CoordinatesLength} where written.");
+        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} where written.");
 
         return false;
     }

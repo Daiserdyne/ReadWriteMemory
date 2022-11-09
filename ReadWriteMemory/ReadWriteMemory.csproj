@@ -1,23 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net6.0-windows</TargetFramework>
+		<TargetFramework>net7.0-windows</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<Platforms>x64</Platforms>
 		<WindowsPackageType>None</WindowsPackageType>
+		<PublishSingleFile>True</PublishSingleFile>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.0.3</Version>
+		<Version>1.0.4</Version>
 		<Authors>Timm3D</Authors>
 		<Product>ReadWriteMemory</Product>
 		<Description>A powerfull memory editing dll.</Description>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<ApplicationIcon>Icon\icon.ico</ApplicationIcon>
 	</PropertyGroup>
-
-	<ItemGroup>
-	  <Content Include="Icon\icon.ico" />
-	</ItemGroup>
 </Project>

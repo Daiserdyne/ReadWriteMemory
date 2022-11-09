@@ -52,6 +52,11 @@ internal class Program
         {
             switch (Console.ReadLine())
             {
+                case "readfloat":
+                    if (memory.ReadMemory(_XCoords, Memory.MemoryDataTypes.Float, out var value))
+                        Console.WriteLine(value);
+                    break;
+
                 case "z":
                     memory.WriteMemory(_XCoords, -4054.958008f);
                     break;
@@ -67,12 +72,9 @@ internal class Program
                     break;
 
                 case "r":
-                    var r = memory.ReadCoordinates(_XCoords);
+                    if (memory.ReadFloatCoordinates(_XCoords, out var coordinates))
+                        Console.WriteLine($"X: {coordinates.X} Y: {coordinates.Y} Z: {coordinates.Z}");
 
-                    if (r is null)
-                        break;
-
-                    Console.WriteLine($"X: {r.Value.X} Y: {r.Value.Y} Z: {r.Value.Z} ");
                     break;
 
                 case "t":

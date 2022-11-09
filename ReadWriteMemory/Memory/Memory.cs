@@ -15,7 +15,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 {
     #region Constants
 
-    private const short CoordinatesLength = 3;
+    private const short Vector3Length = 3;
 
     #endregion
 
