@@ -19,6 +19,12 @@ public sealed partial class Memory
         if (targetAddress == UIntPtr.Zero)
             return false;
 
+        if (value is byte[])
+        {
+            var byteArrayBuffer = (byte[]) value;
+            return WriteProcessMemory(ref targetAddress, ref byteArrayBuffer);
+        }
+
         var length = Marshal.SizeOf(value);
 
         var buffer = new byte[length];
@@ -191,21 +197,6 @@ public sealed partial class Memory
 
     //    return false;
     //}
-
-    /// <summary>
-    /// Writes bytes in to the given <paramref name="memoryAddress"/>.
-    /// </summary>
-    /// <param name="memoryAddress">Target address you want to write to</param>
-    /// <param name="bytesToWrite">Byte array to write to</param>
-    public bool WriteBytes(MemoryAddress memoryAddress, byte[] bytesToWrite)
-    {
-        var targetAddress = CalculateTargetAddress(memoryAddress);
-
-        if (targetAddress == UIntPtr.Zero)
-            return false;
-
-        return WriteProcessMemory(ref targetAddress, ref bytesToWrite);
-    }
 
     /// <summary>
     /// Writes a byte array to a given address

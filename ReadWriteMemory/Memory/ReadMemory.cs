@@ -158,6 +158,7 @@ public sealed partial class Memory
     /// <para><c>Note: </c>This only works if the coordinate addresses are of type <see cref="float"/> and next to each other in the memory.</para>
     /// </summary>
     /// <param name="xCoordAddress"></param>
+    /// <param name="coordinates"></param>
     /// <returns>A <see cref="Vector3"/> struct where the read coords are stored. If the function fails, 
     /// it returns an empty <see cref="Vector3"/>.</returns>
     public bool ReadFloatCoordinates(MemoryAddress xCoordAddress, out Vector3 coordinates)

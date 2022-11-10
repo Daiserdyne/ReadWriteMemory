@@ -1,6 +1,6 @@
 ﻿namespace ReadWriteMemory.Models;
 
-internal class ProcessState
+internal sealed class ProcessState
 {
     internal bool CurrentProcessState { get; set; }
 #pragma warning disable CA1822

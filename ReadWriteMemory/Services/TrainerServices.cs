@@ -6,7 +6,7 @@ namespace ReadWriteMemory.Services;
 /// <summary>
 /// Contains some usefull trainer helper-methods.
 /// </summary>
-public class TrainerServices
+public sealed class TrainerServices
 {
     private static object? _mem;
     private static Memory? _memory;
