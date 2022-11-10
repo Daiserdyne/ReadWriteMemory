@@ -32,18 +32,14 @@ public sealed partial class Memory
         return WriteProcessMemory(ref targetAddress, ref buffer);
     }
 
-    public bool WriteCoordinates(MemoryAddress memoryAddress, float newXCoord, float newYCoord, float newZCoord)
-    {
-        return WriteCoordinates(memoryAddress, new Vector3(newXCoord, newYCoord, newZCoord));
-    }
-
-    public bool WriteCoordinates(MemoryAddress xAddress, MemoryAddress yAddress, MemoryAddress zAddress, 
-        float newXCoord, float newYCoord, float newZCoord)
-    {
-        return WriteCoordinates(xAddress, yAddress, zAddress, new Vector3(newXCoord, newYCoord, newZCoord));
-    }
-
-    public bool WriteCoordinates(MemoryAddress xAddress, MemoryAddress yAddress, MemoryAddress zAddress, Vector3 newCoords)
+    /// <summary>
+    /// Writes <c>X</c>, <c>Y</c> and <c>Z</c> coordinates to the given memory addresses.
+    /// </summary>
+    /// <param name="xAddress"></param>
+    /// <param name="yAddress"></param>
+    /// <param name="zAddress"></param>
+    /// <param name="newCoords"></param>
+    public bool WriteFloatCoordinates(MemoryAddress xAddress, MemoryAddress yAddress, MemoryAddress zAddress, Vector3 newCoords)
     {
         var targetXAddress = CalculateTargetAddress(xAddress);
         var targetYAddress = CalculateTargetAddress(yAddress);
@@ -84,9 +80,23 @@ public sealed partial class Memory
         return false;
     }
 
-    public bool WriteCoordinates(MemoryAddress xAddress, Vector3 coords)
+    /// <summary>
+    /// Writes The <c>X</c>, <c>Y</c> and <c>Z</c> coordinates with the given memory-<paramref name="xCoordAddress"/>.
+    /// It will take your given <c>X</c> address and add 4 bytes for <c>Y</c> and 8 bytes for <c>Z</c>
+    /// to get all three coordinates.
+    /// <para><c>Behind the scenes:</c></para>
+    /// <example>
+    /// <code>var xAddress = <paramref name="xCoordAddress"/></code>
+    /// <code>var yAddress = <paramref name="xCoordAddress"/> + 4;</code>
+    /// <code>var zAddress = <paramref name="xCoordAddress"/> + 8;</code>
+    /// </example>
+    /// <para><c>Note: </c>This only works if the coordinate addresses are of type <see cref="float"/> and next to each other in the memory.</para>
+    /// </summary>
+    /// <param name="xCoordAddress"></param>
+    /// <param name="coords"></param>
+    public bool WriteFloatCoordinates(MemoryAddress xCoordAddress, Vector3 coords)
     {
-        var targetAddress = CalculateTargetAddress(xAddress);
+        var targetAddress = CalculateTargetAddress(xCoordAddress);
 
         if (targetAddress == UIntPtr.Zero)
             return false;
@@ -130,57 +140,57 @@ public sealed partial class Memory
     /// <param name="camRotations"></param>
     /// <param name="distance"></param>
     /// <returns></returns>
-    public bool TeleportForward(MemoryAddress memoryAddress, Quaternion camRotations, float distance)
-    {
-        var targetAddress = CalculateTargetAddress(memoryAddress);
+    //public bool TeleportForward(MemoryAddress memoryAddress, Quaternion camRotations, float distance)
+    //{
+    //    var targetAddress = CalculateTargetAddress(memoryAddress);
 
-        if (targetAddress == UIntPtr.Zero)
-            return false;
+    //    if (targetAddress == UIntPtr.Zero)
+    //        return false;
 
-        var coordsAddresses = new UIntPtr[3]
-        {
-            targetAddress,
-            targetAddress + 4,
-            targetAddress + 8
-        };
+    //    var coordsAddresses = new UIntPtr[3]
+    //    {
+    //        targetAddress,
+    //        targetAddress + 4,
+    //        targetAddress + 8
+    //    };
 
-        var coordValues = new float[3];
-        int successCounter = 0;
+    //    var coordValues = new float[3];
+    //    int successCounter = 0;
 
-        for (int i = 0; i < coordsAddresses.Length; i++)
-        {
-            var buffer = new byte[4];
+    //    for (int i = 0; i < coordsAddresses.Length; i++)
+    //    {
+    //        var buffer = new byte[4];
 
-            if (ReadProcessMemory(_proc.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
-                successCounter++;
+    //        if (ReadProcessMemory(_proc.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+    //            successCounter++;
 
-            coordValues[i] = BitConverter.ToSingle(buffer, 0);
-        }
+    //        coordValues[i] = BitConverter.ToSingle(buffer, 0);
+    //    }
 
-        if (successCounter != coordsAddresses.Length)
-            return false;
+    //    if (successCounter != coordsAddresses.Length)
+    //        return false;
 
-        var newPosition = CalculateNewPosition(camRotations, new Vector3(coordValues), distance);
+    //    var newPosition = CalculateNewPosition(camRotations, new Vector3(coordValues), distance);
 
-        coordValues = new float[Vector3Length]
-        {
-            newPosition.X,
-            newPosition.Y,
-            newPosition.Z
-        };
+    //    coordValues = new float[Vector3Length]
+    //    {
+    //        newPosition.X,
+    //        newPosition.Y,
+    //        newPosition.Z
+    //    };
 
-        for (int i = 0; i < Vector3Length; i++)
-        {
-            var buffer = BitConverter.GetBytes(coordValues[i]);
+    //    for (int i = 0; i < Vector3Length; i++)
+    //    {
+    //        var buffer = BitConverter.GetBytes(coordValues[i]);
 
-            WriteProcessMemory(ref coordsAddresses[i], ref buffer);
-        }
+    //        WriteProcessMemory(ref coordsAddresses[i], ref buffer);
+    //    }
 
-        //todo: find msg bug
-        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} where written.");
+    //    //todo: find msg bug
+    //    _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} where written.");
 
-        return false;
-    }
+    //    return false;
+    //}
 
     /// <summary>
     /// Writes bytes in to the given <paramref name="memoryAddress"/>.

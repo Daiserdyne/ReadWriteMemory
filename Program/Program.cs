@@ -78,7 +78,7 @@ internal class Program
                     break;
 
                 case "t":
-                    memory.WriteCoordinates(_XCoords, new Vector3(-3746.308105f, 3277.897461f, -20000));
+                    memory.WriteFloatCoordinates(_XCoords, new Vector3(-3746.308105f, 3277.897461f, -20000));
                     break;
 
                 case "f":

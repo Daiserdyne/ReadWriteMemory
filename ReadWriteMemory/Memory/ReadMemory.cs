@@ -6,6 +6,8 @@ namespace ReadWriteMemory;
 
 public sealed partial class Memory
 {
+    #region Enums
+
     /// <summary>
     /// A enum of all supported <see cref="Memory"/> data types.
     /// </summary>
@@ -37,8 +39,10 @@ public sealed partial class Memory
         String
     }
 
+    #endregion
+
     /// <summary>
-    /// This will read out the <paramref name="value"/> of the given <see cref="MemoryAddress"/> and returns the read value in the given <see cref="MemoryDataTypes"/>.
+    /// This will read out the <paramref name="value"/> of the given <see cref="MemoryAddress"/> and returns the read value in the given type.
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="type"></param>
@@ -57,7 +61,7 @@ public sealed partial class Memory
 
         if (ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
         {
-            GetTargetMemoryValue(type, buffer, ref value);
+            ConvertTargetValue(type, buffer, ref value);
 
             return true;
         }
@@ -65,7 +69,7 @@ public sealed partial class Memory
         return false;
     }
 
-    private void GetTargetMemoryValue(MemoryDataTypes type, byte[] buffer, ref object value)
+    private void ConvertTargetValue(MemoryDataTypes type, byte[] buffer, ref object value)
     {
         switch (type)
         {
@@ -99,7 +103,7 @@ public sealed partial class Memory
     /// <param name="coordinates"></param>
     /// <returns>A <see cref="Vector3"/> struct where the read coords are stored. If the function fails, 
     /// it returns an empty <see cref="Vector3"/>.</returns>
-    public bool ReadCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, out Vector3 coordinates)
+    public bool ReadFloatCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, out Vector3 coordinates)
     {
         coordinates = new();
 

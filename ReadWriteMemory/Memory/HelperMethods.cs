@@ -107,7 +107,7 @@ public sealed partial class Memory
                 memoryInfos.RegionSize += sysInfo.allocationGranularity - memoryInfos.RegionSize % sysInfo.allocationGranularity;
 
             UIntPtr previous = current;
-            current = new UIntPtr((ulong)memoryInfos.BaseAddress + (ulong)memoryInfos.RegionSize);
+            current = new UIntPtr(memoryInfos.BaseAddress + (ulong)memoryInfos.RegionSize);
 
             if ((long)current >= (long)maxAddress)
                 return caveAddress;

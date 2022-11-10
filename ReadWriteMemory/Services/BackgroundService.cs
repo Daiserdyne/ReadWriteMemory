@@ -4,7 +4,7 @@ internal static class BackgroundService
 {
     internal static async Task ExecuteTaskInfiniteAsync(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
     {
-        await Task.Factory.StartNew(() =>
+        await Task.Run(async () =>
         {
             while (!ct.IsCancellationRequested)
             {
@@ -17,7 +17,7 @@ internal static class BackgroundService
                     break;
                 }
 
-                Thread.Sleep(repeatTime);
+                await Task.Delay(repeatTime);
             }
         }, ct);
     }
