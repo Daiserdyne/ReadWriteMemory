@@ -15,6 +15,5 @@
 		<Product>ReadWriteMemory</Product>
 		<Description>A powerfull memory editing dll.</Description>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<ApplicationIcon>Icon\icon.ico</ApplicationIcon>
 	</PropertyGroup>
 </Project>

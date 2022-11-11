@@ -4,6 +4,7 @@ using ReadWriteMemory.NativeImports;
 using ReadWriteMemory.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ReadWriteMemory;
 
@@ -133,7 +134,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         {
             var error = Marshal.GetLastWin32Error();
 
-            _logger?.Error($"Opening process failed. Process handle was {IntPtr.Zero}. Error code: {error}");
+            _logger?.Error($"Getting handle to access process memory failed. Error code: {error}");
 
             _proc = new()
             {
@@ -174,7 +175,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         _proc.MainModule = mainModule;
 
-        _logger?.Info($"Target process \"{_proc.ProcessName}\" opened successfully.");
+        _logger?.Info($"Attaching to targetprocess \"{_proc.ProcessName}\" was successfully.");
 
         return true;
     }
@@ -188,6 +189,8 @@ public sealed partial class Memory : NativeMethods, IDisposable
             return;
 
         _ = CloseHandle(_proc.Handle);
+
+        _logger?.Info($"Detaching from targetprocess \"{_proc.ProcessName}\" was successfully.");
 
         _proc = new()
         {
@@ -272,7 +275,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         WriteBytes(targetAddress, jmpBytes);
 
         _logger?.Info($"Code cave created for address 0x{memAddress.Address:x16}.\nCustom code at cave address: " +
-            $"0x{caveAddress:x16}. Opcodes patched.\n");
+            $"0x{caveAddress:x16}.");
 
         return caveAddress;
     }

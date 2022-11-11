@@ -47,11 +47,11 @@ internal class Program
 
         while (true)
         {
-            if (await Hotkeys.HotKeyPressedAsync(Hotkeys.Hotkey.VK_F1))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Hotkey.VK_F1))
             {
                 Console.WriteLine("F1");
             }
-            if (await Hotkeys.HotKeyPressedAsync(0x71, false))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Hotkey.VK_F2, false))
             {
                 Console.WriteLine("F2");
             }

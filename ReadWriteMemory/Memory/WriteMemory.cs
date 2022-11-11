@@ -19,11 +19,8 @@ public sealed partial class Memory
         if (targetAddress == UIntPtr.Zero)
             return false;
 
-        if (value is byte[])
-        {
-            var byteArrayBuffer = (byte[]) value;
+        if (value is byte[] byteArrayBuffer)
             return WriteProcessMemory(ref targetAddress, ref byteArrayBuffer);
-        }
 
         var length = Marshal.SizeOf(value);
 
@@ -34,6 +31,8 @@ public sealed partial class Memory
         Marshal.StructureToPtr(value, pointer, true);
         Marshal.Copy(pointer, buffer, 0, length);
         Marshal.FreeHGlobal(pointer);
+
+        _logger?.Info($"Writing value \"{value}\" to target address: 0x{targetAddress:x16} was successfull.");
 
         return WriteProcessMemory(ref targetAddress, ref buffer);
     }
@@ -79,9 +78,12 @@ public sealed partial class Memory
         }
 
         if (successCounter == Vector3Length)
+        {
+            _logger?.Info($"Writing coordinates was successfull.");
             return true;
+        }
 
-        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} where written.");
+        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} were written.");
 
         return false;
     }
@@ -132,9 +134,12 @@ public sealed partial class Memory
         }
 
         if (successCounter == Vector3Length)
+        {
+            _logger?.Info($"Writing coordinates was successfull.");
             return true;
+        }
 
-        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} where written.");
+        _logger?.Error($"Couldn't write to all coords. Only {successCounter}/{Vector3Length} were written.");
 
         return false;
     }
