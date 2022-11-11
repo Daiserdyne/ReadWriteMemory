@@ -4,10 +4,7 @@ using ReadWriteMemory;
 using ReadWriteMemory.Hotkeys;
 using ReadWriteMemory.Logging;
 using ReadWriteMemory.Models;
-using ReadWriteMemory.Services;
 using ReadWriteMemory.Trainer.Interface;
-using System.Numerics;
-using System.Runtime.InteropServices;
 
 namespace Program;
 
@@ -45,15 +42,29 @@ internal class Program
             { nameof(FreezeAllEnemies), new FreezeAllEnemies(memory) }
         };
 
+        bool freezeEnemies = false;
+
         while (true)
         {
             if (await Hotkeys.KeyPressedAsync(Hotkeys.Hotkey.VK_F1))
             {
-                Console.WriteLine("F1");
+                if (memory.ReadMemory(_XCoords, Memory.MemoryDataTypes.Float, out var value))
+                    Console.WriteLine(value);
             }
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Hotkey.VK_F2, false))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Hotkey.VK_F2))
             {
-                Console.WriteLine("F2");
+                freezeEnemies = !freezeEnemies;
+
+                if (freezeEnemies)
+                {
+                    _ = await memory.CreateOrResumeCodeCaveAsync(_movementXAddress, _movementX, 9);
+                    _ = await memory.CreateOrResumeCodeCaveAsync(_movementYAddress, _movementY, 5);
+                }
+                else
+                {
+                    memory.PauseOpenedCodeCave(_movementXAddress);
+                    memory.PauseOpenedCodeCave(_movementYAddress);
+                }
             }
 
             Thread.Sleep(1);
@@ -106,8 +117,7 @@ internal class Program
         //            break;
 
         //        case "d":
-        //            memory.PauseOpenedCodeCave(_movementXAddress);
-        //            memory.PauseOpenedCodeCave(_movementYAddress);
+
         //            break;
 
         //        case "c":

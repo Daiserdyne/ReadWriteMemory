@@ -313,6 +313,8 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         WriteBytes(baseAddress, caveTable.OriginalOpcodes);
 
+        _logger?.Info($"Code cave for target address: 0x{baseAddress:x16} was paused. Allocaded memory remains. Cave address is: 0x{caveTable.CaveAddress:x16}");
+
         return true;
     }
 

@@ -1,26 +1,33 @@
 ﻿using ReadWriteMemory.Models;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ReadWriteMemory;
 
 public sealed partial class Memory
 {
     /// <summary>
-    /// Das ist der kleine Buba
+    /// This will write the given <paramref name="value"/> to the target <paramref name="memoryAddress"/>.
     /// </summary>
-    /// <param name="memAddress"></param>
+    /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public bool WriteMemory(MemoryAddress memAddress, object value)
+    public bool WriteMemory(MemoryAddress memoryAddress, object value)
     {
-        var targetAddress = CalculateTargetAddress(memAddress);
+        var targetAddress = CalculateTargetAddress(memoryAddress);
 
         if (targetAddress == UIntPtr.Zero)
             return false;
 
-        if (value is byte[] byteArrayBuffer)
+        if (value is byte[] byteArrayBuffer) 
             return WriteProcessMemory(ref targetAddress, ref byteArrayBuffer);
+        
+        if (value is string rawStringBuffer)
+        {
+            var stringBuffer = Encoding.UTF8.GetBytes(rawStringBuffer);
+            return WriteProcessMemory(ref targetAddress, ref stringBuffer);
+        }
 
         var length = Marshal.SizeOf(value);
 
@@ -144,6 +151,14 @@ public sealed partial class Memory
         return false;
     }
 
+    private void WriteBytes(UIntPtr address, byte[] buffer)
+    {
+        if (!IsProcessAlive())
+            return;
+
+        WriteProcessMemory(_proc.Handle, address, buffer, (UIntPtr)buffer.Length, out _);
+    }
+
     /// <summary>
     /// Buggy
     /// </summary>
@@ -202,17 +217,4 @@ public sealed partial class Memory
 
     //    return false;
     //}
-
-    /// <summary>
-    /// Writes a byte array to a given address
-    /// </summary>
-    /// <param name="address">Address to write to</param>
-    /// <param name="write">Byte array to write to</param>
-    private void WriteBytes(UIntPtr address, byte[] write)
-    {
-        if (!IsProcessAlive())
-            return;
-
-        WriteProcessMemory(_proc.Handle, address, write, (UIntPtr)write.Length, out _);
-    }
 }

@@ -47,7 +47,7 @@ public sealed partial class Memory
     /// <param name="memoryAddress"></param>
     /// <param name="type"></param>
     /// <param name="value"></param>
-    /// <returns>The value of the address, parsed to the given <see cref="MemoryDataTypes"/>. If the function fails, it will return <c>0</c> or <c>""</c>.</returns>
+    /// <returns>The value of the address, parsed to the given <see cref="MemoryDataTypes"/>. If the function fails, it will return <c>0</c>.</returns>
     public bool ReadMemory(MemoryAddress memoryAddress, MemoryDataTypes type, out object value)
     {
         value = 0;
@@ -71,7 +71,7 @@ public sealed partial class Memory
         return false;
     }
 
-    private void ConvertTargetValue(MemoryDataTypes type, byte[] buffer, ref object value)
+    private static void ConvertTargetValue(MemoryDataTypes type, byte[] buffer, ref object value)
     {
         switch (type)
         {
