@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
@@ -170,6 +171,6 @@ public sealed partial class Memory
             return;
         }
 
-        WriteProcessMemory(_targetProcess.Handle, address, buffer, (UIntPtr)buffer.Length, out _);
+        Win32.WriteProcessMemory(_targetProcess.Handle, address, buffer, (UIntPtr)buffer.Length, out _);
     }
 }

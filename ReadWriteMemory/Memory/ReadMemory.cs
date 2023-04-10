@@ -1,6 +1,7 @@
 ﻿using ReadWriteMemory.Models;
 using System.Numerics;
 using System.Text;
+using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
@@ -66,7 +67,7 @@ public sealed partial class Memory
 
         var buffer = new byte[readBufferSize];
 
-        if (ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+        if (Win32.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
         {
             ConvertTargetValue(type, buffer, ref value);
 
@@ -130,7 +131,7 @@ public sealed partial class Memory
         {
             var buffer = new byte[4];
 
-            if (ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            if (Win32.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
             {
                 successCounter++;
             }
@@ -192,7 +193,7 @@ public sealed partial class Memory
         {
             var buffer = new byte[4];
 
-            if (ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            if (Win32.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
             {
                 successCounter++;
             }

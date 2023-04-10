@@ -2,6 +2,7 @@
 using ReadWriteMemory.Models;
 using System.Diagnostics;
 using System.Numerics;
+using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
@@ -33,7 +34,7 @@ public sealed partial class Memory
         var minAddress = UIntPtr.Subtract(baseAddress, 0x70000000);
         var maxAddress = UIntPtr.Add(baseAddress, 0x70000000);
 
-        GetSystemInfo(out SYSTEM_INFO sysInfo);
+        Win32.GetSystemInfo(out Win32.SYSTEM_INFO sysInfo);
 
         if ((long)minAddress > (long)sysInfo.maximumApplicationAddress ||
             (long)minAddress < (long)sysInfo.minimumApplicationAddress)
@@ -50,14 +51,14 @@ public sealed partial class Memory
         var current = minAddress;
         var caveAddress = UIntPtr.Zero;
 
-        while (VirtualQueryEx(_targetProcess.Handle, current, out MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
+        while (Win32.VirtualQueryEx(_targetProcess.Handle, current, out Win32.MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
         {
             if ((long)memoryInfos.BaseAddress > (long)maxAddress)
             {
                 return UIntPtr.Zero;  // No memory found, let windows handle
             }
 
-            if (memoryInfos.State == MEM_FREE && memoryInfos.RegionSize > size)
+            if (memoryInfos.State == Win32.MEM_FREE && memoryInfos.RegionSize > size)
             {
                 UIntPtr tmpAddress;
 
@@ -148,7 +149,7 @@ public sealed partial class Memory
             return false;
         }
 
-        return VirtualFreeEx(_targetProcess.Handle, address, 0, 0x8000);
+        return Win32.VirtualFreeEx(_targetProcess.Handle, address, 0, 0x8000);
     }
 
     /// <summary>
@@ -262,7 +263,7 @@ public sealed partial class Memory
 
         if (offsets is not null && offsets.Length != 0)
         {
-            ReadProcessMemory(_targetProcess.Handle, targetAddress, _buffer, (UIntPtr)_buffer.Length, IntPtr.Zero);
+            Win32.ReadProcessMemory(_targetProcess.Handle, targetAddress, _buffer, (UIntPtr)_buffer.Length, IntPtr.Zero);
 
             targetAddress = (UIntPtr)BitConverter.ToInt64(_buffer);
 
@@ -274,7 +275,7 @@ public sealed partial class Memory
                     break;
                 }
 
-                ReadProcessMemory(_targetProcess.Handle, UIntPtr.Add(targetAddress, offsets[i]), _buffer,
+                Win32.ReadProcessMemory(_targetProcess.Handle, UIntPtr.Add(targetAddress, offsets[i]), _buffer,
                     (UIntPtr)_buffer.Length, IntPtr.Zero);
 
                 targetAddress = (UIntPtr)BitConverter.ToInt64(_buffer);
@@ -381,7 +382,7 @@ public sealed partial class Memory
 
         var bytes = new byte[length];
 
-        return ReadProcessMemory(_targetProcess.Handle, address,
+        return Win32.ReadProcessMemory(_targetProcess.Handle, address,
             bytes, (UIntPtr)length, IntPtr.Zero) == true ? bytes : Array.Empty<byte>();
     }
 
@@ -435,12 +436,12 @@ public sealed partial class Memory
 
     private bool WriteProcessMemory(ref UIntPtr targetAddress, ref byte[] buffer)
     {
-        var success = WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer,
+        var success = Win32.WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer,
             (UIntPtr)buffer.Length, IntPtr.Zero);
 
         if (!success)
         {
-            _logger?.Error(LogMessages.WritingToMemoryFailed);
+            _logger?.Error("Writing to process memory failed. ReadProcessMemory returned false.");
             return false;
         }
 

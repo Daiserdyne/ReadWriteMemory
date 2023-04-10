@@ -1,9 +1,9 @@
 ﻿using ReadWriteMemory.Logging;
 using ReadWriteMemory.Models;
-using ReadWriteMemory.NativeImports;
 using ReadWriteMemory.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
@@ -11,7 +11,7 @@ namespace ReadWriteMemory;
 /// This is the main component of the <see cref="ReadWriteMemory"/> package. This class includes a lot of powerfull
 /// read and write operations to manipulate the memory of an process.
 /// </summary>
-public sealed partial class Memory : NativeMethods, IDisposable
+public sealed partial class Memory : IDisposable
 {
     #region Fields
 
@@ -122,7 +122,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         var pid = process.First().Id;
 
         _targetProcess.Process = Process.GetProcessById(pid);
-        _targetProcess.Handle = OpenProcess(true, pid);
+        _targetProcess.Handle = Win32.OpenProcess(true, pid);
 
         if (_targetProcess.Handle == IntPtr.Zero)
         {
@@ -139,7 +139,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
         }
 
         if (!(Environment.Is64BitOperatingSystem
-            && IsWow64Process(_targetProcess.Handle, out bool isWow64)
+            && Win32.IsWow64Process(_targetProcess.Handle, out bool isWow64)
             && isWow64 is false))
         {
             _logger?.Error("Target process or operation system are not 64 bit.\n" +
@@ -184,7 +184,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
             return;
         }
 
-        CloseHandle(_targetProcess.Handle);
+        Win32.CloseHandle(_targetProcess.Handle);
 
         _logger?.Info($"Detaching from targetprocess \"{_targetProcess.ProcessName}\" was successfully.");
 
@@ -228,8 +228,8 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
         {
-            caveAddress = VirtualAllocEx(_targetProcess.Handle, FindFreeBlockForRegion(targetAddress, size), size,
-                MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+            caveAddress = Win32.VirtualAllocEx(_targetProcess.Handle, FindFreeBlockForRegion(targetAddress, size), size,
+                Win32.MEM_COMMIT | Win32.MEM_RESERVE, Win32.PAGE_EXECUTE_READWRITE);
 
             if (caveAddress == UIntPtr.Zero)
             {
@@ -239,7 +239,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         if (caveAddress == UIntPtr.Zero)
         {
-            caveAddress = VirtualAllocEx(_targetProcess.Handle, UIntPtr.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+            caveAddress = Win32.VirtualAllocEx(_targetProcess.Handle, UIntPtr.Zero, size, Win32.MEM_COMMIT | Win32.MEM_RESERVE, Win32.PAGE_EXECUTE_READWRITE);
         }
 
         int nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;

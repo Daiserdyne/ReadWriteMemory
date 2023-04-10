@@ -1,5 +1,6 @@
 ﻿using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
+using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
@@ -24,7 +25,7 @@ public sealed partial class Memory
 
         var buffer = new byte[8];
 
-        if (!ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+        if (!Win32.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
         {
             _logger?.Error("Couldn't read value from memory address.");
             return false;
@@ -44,19 +45,18 @@ public sealed partial class Memory
 
         switch (refreshRateInMilliseconds)
         {
-            case < 5:
-                refreshRateInMilliseconds = 5;
+            case < 1:
+                refreshRateInMilliseconds = 1;
                 break;
 
-                // Delete this case maybe
             case > int.MaxValue:
                 refreshRateInMilliseconds = int.MaxValue;
                 break;
         }
 
-        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        BackgroundService.ExecuteTaskInfinite(() =>
         {
-            if (!WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            if (!Win32.WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
             {
                 freezeToken.Cancel();
             }
@@ -84,7 +84,7 @@ public sealed partial class Memory
 
         if (tableIndex == -1)
         {
-            _logger?.Warn("There is no value to unfreeze");
+            _logger?.Warn("There is no value to unfreeze.");
             return false;
         }
 
@@ -92,7 +92,7 @@ public sealed partial class Memory
 
         if (freezeToken is null)
         {
-            _logger?.Error("There is no value to unfreeze");
+            _logger?.Error("There is no value to unfreeze.");
             return false;
         }
 

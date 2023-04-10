@@ -1,9 +1,8 @@
 ﻿namespace ReadWriteMemory.Models;
 
-internal sealed class ProcessState
+internal sealed record ProcessState
 {
     internal bool CurrentProcessState { get; set; }
-#pragma warning disable CA1822
+
     internal CancellationTokenSource ProcessStateTokenSrc => new();
-#pragma warning restore CA1822
 }
