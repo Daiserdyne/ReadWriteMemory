@@ -403,37 +403,6 @@ public sealed partial class Memory
         return targetAddress;
     }
 
-    private static Vector3 CalculateNewPosition(Quaternion rotation, Vector3 currentPosition, float distance)
-    {
-        Vector3 forward = new(0f, 0f, 1f);
-
-        var num1 = rotation.X * 2f;
-        var num2 = rotation.Y * 2f;
-        var num3 = rotation.Z * 2f;
-        var num4 = rotation.X * num1;
-        var num5 = rotation.Y * num2;
-        var num6 = rotation.Z * num3;
-        var num7 = rotation.X * num2;
-        var num8 = rotation.X * num3;
-        var num9 = rotation.Y * num3;
-        var num10 = rotation.W * num1;
-        var num11 = rotation.W * num2;
-        var num12 = rotation.W * num3;
-
-        Vector3 direction;
-
-        direction.X = (float)((1.0 - ((double)num5 + (double)num6)) * forward.X + ((double)num7 - (double)num12) *
-            forward.Y + ((double)num8 + (double)num11) * forward.Z);
-
-        direction.Y = (float)(((double)num7 + (double)num12) * forward.X + (1.0 - ((double)num4 + (double)num6)) *
-            forward.Y + ((double)num9 - (double)num10) * forward.Z);
-
-        direction.Z = (float)(((double)num8 - (double)num11) * forward.X + ((double)num9 + (double)num10)
-            * forward.Y + (1.0 - ((double)num4 + (double)num5)) * forward.Z);
-
-        return currentPosition + (direction * distance);
-    }
-
     private bool WriteProcessMemory(ref UIntPtr targetAddress, ref byte[] buffer)
     {
         var success = Win32.WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer,
@@ -446,6 +415,17 @@ public sealed partial class Memory
         }
 
         return true;
+    }
+
+    private static Vector3 CalculateNewPosition(Quaternion rotation, Vector3 currentPosition, float distance)
+    {
+        var forward = Vector3.UnitZ;
+
+        var direction = Vector3.Transform(forward, rotation);
+
+        var newPosition = currentPosition + (direction * distance);
+
+        return newPosition;
     }
 
     private bool IsProcessAlive()

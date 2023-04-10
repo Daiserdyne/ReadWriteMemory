@@ -23,7 +23,7 @@ internal class Program
 
     private static readonly Memory memory = new("Outlast2");
 
-    private static void CurrentDomain_ProcessExit(object? sender, EventArgs e)
+    private static void OnApplicationExit(object? sender, EventArgs e)
     {
         memory.Logger.MemoryLogger_OnLogging -= Logger_MemoryLogger_OnLogging;
         memory.Dispose();
@@ -32,7 +32,26 @@ internal class Program
 
     protected internal static async Task Main()
     {
-        AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
+        //// Erstelle eine Quaternion-Rotation
+        //Quaternion rotation = Quaternion.CreateFromYawPitchRoll(
+        //    (float)(Math.PI / -178.2587128f), // 30 Grad in Bogenmaß
+        //    (float)0, // -15 Grad in Bogenmaß
+        //    0f);
+
+        //// Erstelle eine aktuelle Position
+        //Vector3 currentPosition = new Vector3(1406.96228f, -19125f, -1801.138916f);
+
+        //// Definiere eine Distanz
+        //float distance = 400f;
+
+        //// Berechne die neue Position des Objekts
+        //Vector3 newPosition = CalculateNewPosition(rotation, currentPosition, distance);
+
+        //// Gib die neue Position auf der Konsole aus
+        //Console.WriteLine($"Neue Position: {newPosition}");
+
+
+        AppDomain.CurrentDomain.ProcessExit += OnApplicationExit;
 
         memory.Logger.MemoryLogger_OnLogging += Logger_MemoryLogger_OnLogging;
 
@@ -70,72 +89,6 @@ internal class Program
 
             Thread.Sleep(1);
         }
-
-        //while (true)
-        //{
-        //    switch (Console.ReadLine())
-        //    {
-        //        case "readfloat":
-        //            if (memory.ReadMemory(_XCoords, Memory.MemoryDataTypes.Float, out var value))
-        //                Console.WriteLine(value);
-        //            break;
-
-        //        case "z":
-        //            memory.WriteMemory(_XCoords, -4054.958008f);
-        //            break;
-
-        //        case "dn":
-        //            memory.WriteMemory(_noCollisionX, new byte[] { 0xFF, 0x90, 0xE8, 0x0A, 0x00, 0x00 });
-        //            memory.WriteMemory(_noCollisionY, new byte[] { 0xE9, 0x69, 0x16, 0x00, 0x00 });
-        //            break;
-
-        //        case "n":
-        //            memory.WriteMemory(_noCollisionX, new byte[] { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 });
-        //            memory.WriteMemory(_noCollisionY, new byte[] { 0x90, 0x90, 0x90, 0x90, 0x90 });
-        //            break;
-
-        //        case "r":
-        //            if (memory.ReadFloatCoordinates(_XCoords, out var coordinates))
-        //                Console.WriteLine($"X: {coordinates.X} Y: {coordinates.Y} Z: {coordinates.Z}");
-
-        //            break;
-
-        //        case "t":
-        //            memory.WriteFloatCoordinates(_XCoords, new Vector3(-3746.308105f, 3277.897461f, -20000));
-        //            break;
-
-        //        case "f":
-        //            await trainer["FreezeAllEnemies"].Enable();
-        //            break;
-
-        //        case "u":
-        //            await trainer["FreezeAllEnemies"].Disable();
-        //            break;
-
-        //        case "a":
-        //            _ = await memory.CreateOrResumeCodeCaveAsync(_movementXAddress, _movementX, 9);
-        //            _ = await memory.CreateOrResumeCodeCaveAsync(_movementYAddress, _movementY, 5);
-        //            break;
-
-        //        case "d":
-
-        //            break;
-
-        //        case "c":
-        //            memory.CloseCodeCave(_movementXAddress);
-        //            memory.CloseCodeCave(_movementYAddress);
-        //            break;
-
-        //        case "exit":
-        //            memory.Logger.MemoryLogger_OnLogging -= Logger_MemoryLogger_OnLogging;
-        //            memory.Dispose();
-        //            return;
-
-        //        default:
-        //            Console.WriteLine("Unknown command.");
-        //            break;
-        //    }
-        //}
     }
 
     private static void Memory_Process_OnStateChanged(bool newProcessState)
