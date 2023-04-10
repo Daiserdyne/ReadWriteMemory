@@ -226,7 +226,7 @@ public sealed partial class Memory
             return UIntPtr.Zero;
         }
 
-        var baseAddress = UIntPtr.Zero;
+        UIntPtr baseAddress;
 
         var savedBaseAddress = GetBaseAddressByMemoryAddress(memAddress);
 

@@ -18,10 +18,7 @@ public sealed class TrainerServices
     /// <returns></returns>
     public static Memory GetSingletonInstance(string processName)
     {
-        if (_mem is null)
-        {
-            _mem = new();
-        }
+        _mem ??= new();
 
         lock (_mem)
         {
