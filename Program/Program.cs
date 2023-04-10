@@ -27,6 +27,7 @@ internal class Program
     {
         memory.Logger.MemoryLogger_OnLogging -= Logger_MemoryLogger_OnLogging;
         memory.Dispose();
+
     }
 
     protected internal static async Task Main()

@@ -135,10 +135,14 @@ public static partial class Hotkeys
         if (GetAsyncKeyState(targetKey) < 0)
         {
             if (!waitForKeyRelease)
+            {
                 return true;
+            }
 
             while (GetAsyncKeyState(targetKey) < 0)
+            {
                 await Task.Delay(1);
+            }
 
             return true;
         }
@@ -157,10 +161,14 @@ public static partial class Hotkeys
         if (GetAsyncKeyState(keyCode) < 0)
         {
             if (!waitForKeyRelease)
+            {
                 return true;
+            }
 
             while (GetAsyncKeyState(keyCode) < 0)
+            {
                 await Task.Delay(1);
+            }
 
             return true;
         }

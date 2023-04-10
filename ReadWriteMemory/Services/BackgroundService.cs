@@ -2,9 +2,9 @@
 
 internal static class BackgroundService
 {
-    internal static async Task ExecuteTaskInfiniteAsync(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
+    internal static Task ExecuteTaskInfinite(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
     {
-        await Task.Run(async () =>
+        Task.Run(async () =>
         {
             while (!ct.IsCancellationRequested)
             {
@@ -20,5 +20,7 @@ internal static class BackgroundService
                 await Task.Delay(repeatTime);
             }
         }, ct);
+
+        return Task.CompletedTask;
     }
 }

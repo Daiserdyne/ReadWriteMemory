@@ -16,13 +16,15 @@ public sealed partial class Memory
     public bool FreezeValue(MemoryAddress memoryAddress, uint refreshRateInMilliseconds = 100)
     {
         if (!IsProcessAlive())
+        {
             return false;
+        }
 
         var targetAddress = CalculateTargetAddress(memoryAddress);
 
         var buffer = new byte[8];
 
-        if (!ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+        if (!ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
         {
             _logger?.Error("Couldn't read value from memory address.");
             return false;
@@ -52,10 +54,12 @@ public sealed partial class Memory
                 break;
         }
 
-        _ = BackgroundService.ExecuteTaskInfiniteAsync(() =>
+        _ = BackgroundService.ExecuteTaskInfinite(() =>
         {
-            if (!WriteProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            if (!WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            {
                 freezeToken.Cancel();
+            }
         }, TimeSpan.FromMilliseconds(refreshRateInMilliseconds), freezeToken.Token);
 
         _logger?.Info($"The value of the memory address 0x{(UIntPtr)memoryAddress.Address:x16} has been freezed with " +
@@ -72,7 +76,9 @@ public sealed partial class Memory
     public bool UnfreezeValue(MemoryAddress memoryAddress)
     {
         if (!IsProcessAlive())
+        {
             return false;
+        }
 
         int tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
 

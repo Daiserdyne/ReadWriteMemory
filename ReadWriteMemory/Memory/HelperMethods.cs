@@ -26,7 +26,9 @@ public sealed partial class Memory
     private UIntPtr FindFreeBlockForRegion(UIntPtr baseAddress, uint size)
     {
         if (!IsProcessAlive())
+        {
             return UIntPtr.Zero;
+        }
 
         var minAddress = UIntPtr.Subtract(baseAddress, 0x70000000);
         var maxAddress = UIntPtr.Add(baseAddress, 0x70000000);
@@ -35,19 +37,25 @@ public sealed partial class Memory
 
         if ((long)minAddress > (long)sysInfo.maximumApplicationAddress ||
             (long)minAddress < (long)sysInfo.minimumApplicationAddress)
+        {
             minAddress = sysInfo.minimumApplicationAddress;
+        }
 
         if ((long)maxAddress < (long)sysInfo.minimumApplicationAddress ||
             (long)maxAddress > (long)sysInfo.maximumApplicationAddress)
+        {
             maxAddress = sysInfo.maximumApplicationAddress;
+        }
 
         var current = minAddress;
         var caveAddress = UIntPtr.Zero;
 
-        while (VirtualQueryEx(_proc.Handle, current, out MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
+        while (VirtualQueryEx(_targetProcess.Handle, current, out MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
         {
             if ((long)memoryInfos.BaseAddress > (long)maxAddress)
+            {
                 return UIntPtr.Zero;  // No memory found, let windows handle
+            }
 
             if (memoryInfos.State == MEM_FREE && memoryInfos.RegionSize > size)
             {
@@ -72,7 +80,9 @@ public sealed partial class Memory
                             tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - offset - size));
 
                             if ((long)tmpAddress > (long)baseAddress)
+                            {
                                 tmpAddress = baseAddress;
+                            }
 
                             // decrease tmpAddress until its alligned properly
                             tmpAddress = UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
@@ -80,7 +90,9 @@ public sealed partial class Memory
 
                         // if the difference is closer then use that
                         if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
+                        {
                             caveAddress = tmpAddress;
+                        }
                     }
                 }
                 else
@@ -92,28 +104,38 @@ public sealed partial class Memory
                         tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - size));
 
                         if ((long)tmpAddress > (long)baseAddress)
+                        {
                             tmpAddress = baseAddress;
+                        }
 
                         tmpAddress =
                             UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
                     }
 
                     if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
+                    {
                         caveAddress = tmpAddress;
+                    }
                 }
             }
 
             if (memoryInfos.RegionSize % sysInfo.allocationGranularity > 0)
+            {
                 memoryInfos.RegionSize += sysInfo.allocationGranularity - memoryInfos.RegionSize % sysInfo.allocationGranularity;
+            }
 
             UIntPtr previous = current;
             current = new UIntPtr(memoryInfos.BaseAddress + (ulong)memoryInfos.RegionSize);
 
             if ((long)current >= (long)maxAddress)
+            {
                 return caveAddress;
+            }
 
             if ((long)previous >= (long)current)
+            {
                 return caveAddress; // Overflow
+            }
         }
 
         return caveAddress;
@@ -122,9 +144,11 @@ public sealed partial class Memory
     private bool DeallocateMemory(UIntPtr address)
     {
         if (!IsProcessAlive())
+        {
             return false;
+        }
 
-        return VirtualFreeEx(_proc.Handle, address, (UIntPtr)0, 0x8000);
+        return VirtualFreeEx(_targetProcess.Handle, address, 0, 0x8000);
     }
 
     /// <summary>
@@ -140,12 +164,16 @@ public sealed partial class Memory
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
         if (tableIndex == -1)
+        {
             return false;
+        }
 
         var caveTable = _addressRegister[tableIndex].CodeCaveTable;
 
         if (caveTable is null)
+        {
             return false;
+        }
 
         WriteBytes(_addressRegister[tableIndex].BaseAddress, caveTable.JmpBytes);
         caveAddress = caveTable.CaveAddress;
@@ -165,14 +193,18 @@ public sealed partial class Memory
             var caveTable = memoryTable.CodeCaveTable;
 
             if (caveTable is null)
+            {
                 return;
+            }
 
             WriteBytes(baseAddress, caveTable.OriginalOpcodes);
 
             var deallocation = DeallocateMemory(caveTable.CaveAddress);
 
             if (!deallocation)
+            {
                 _logger?.Warn("Couldn't free memory.");
+            }
         }
     }
 
@@ -189,38 +221,49 @@ public sealed partial class Memory
     private UIntPtr GetTargetAddress(MemoryAddress memAddress)
     {
         if (!IsProcessAlive())
+        {
             return UIntPtr.Zero;
+        }
 
-        UIntPtr baseAddress = UIntPtr.Zero;
+        var baseAddress = UIntPtr.Zero;
 
         var savedBaseAddress = GetBaseAddressByMemoryAddress(memAddress);
 
         if (savedBaseAddress != UIntPtr.Zero)
-            baseAddress = savedBaseAddress;
-
-        if (baseAddress == UIntPtr.Zero)
         {
-            IntPtr moduleAddress = IntPtr.Zero;
+            baseAddress = savedBaseAddress;
+        }
+        else
+        {
+            var moduleAddress = IntPtr.Zero;
 
             string moduleName = memAddress.ModuleName;
 
             if (moduleName != string.Empty)
+            {
                 moduleAddress = GetModuleAddressByName(moduleName);
+            }
 
             var address = memAddress.Address;
 
             if (moduleAddress != IntPtr.Zero)
-                baseAddress = (UIntPtr)((long)moduleAddress + address);
+            {
+                baseAddress = (UIntPtr)(moduleAddress + address);
+            }
             else
+            {
                 baseAddress = (UIntPtr)memAddress.Address;
+            }
         }
 
-        UIntPtr targetAddress = baseAddress;
+        var targetAddress = baseAddress;
+
         int[]? offsets = memAddress.Offsets;
 
         if (offsets is not null && offsets.Length != 0)
         {
-            ReadProcessMemory(_proc.Handle, targetAddress, _buffer, (UIntPtr)_buffer.Length, IntPtr.Zero);
+            ReadProcessMemory(_targetProcess.Handle, targetAddress, _buffer, (UIntPtr)_buffer.Length, IntPtr.Zero);
+
             targetAddress = (UIntPtr)BitConverter.ToInt64(_buffer);
 
             for (int i = 0; i < offsets.Length; i++)
@@ -231,7 +274,7 @@ public sealed partial class Memory
                     break;
                 }
 
-                ReadProcessMemory(_proc.Handle, UIntPtr.Add(targetAddress, offsets[i]), _buffer,
+                ReadProcessMemory(_targetProcess.Handle, UIntPtr.Add(targetAddress, offsets[i]), _buffer,
                     (UIntPtr)_buffer.Length, IntPtr.Zero);
 
                 targetAddress = (UIntPtr)BitConverter.ToInt64(_buffer);
@@ -256,9 +299,11 @@ public sealed partial class Memory
     private IntPtr GetModuleAddressByName(string moduleName)
     {
         if (!IsProcessAlive())
+        {
             return IntPtr.Zero;
+        }
 
-        var moduleAddress = _proc.Process.Modules.Cast<ProcessModule>()
+        var moduleAddress = _targetProcess.Process.Modules.Cast<ProcessModule>()
             .FirstOrDefault(module => module.ModuleName?.ToLower() == moduleName.ToLower())?.BaseAddress;
 
         return moduleAddress ?? IntPtr.Zero;
@@ -271,10 +316,12 @@ public sealed partial class Memory
     /// <returns></returns>
     private static string CreateUniqueAddressHash(MemoryAddress memAddres)
     {
-        string offsetSequence = string.Empty;
+        var offsetSequence = string.Empty;
 
         if (memAddres.Offsets is not null)
+        {
             offsetSequence = string.Concat(memAddres.Offsets);
+        }
 
         return memAddres.Address + memAddres.ModuleName + offsetSequence;
     }
@@ -286,12 +333,14 @@ public sealed partial class Memory
     /// <returns>Base address of given memory address object.</returns>
     private UIntPtr GetBaseAddressByMemoryAddress(MemoryAddress memAddress)
     {
-        string addressHash = CreateUniqueAddressHash(memAddress);
+        var addressHash = CreateUniqueAddressHash(memAddress);
 
         foreach (var addrTable in _addressRegister)
         {
             if (addrTable.UniqueAddressHash == addressHash)
+            {
                 return addrTable.BaseAddress;
+            }
         }
 
         return UIntPtr.Zero;
@@ -304,12 +353,14 @@ public sealed partial class Memory
     /// <returns>The index from the given memory address in the addressRegister.</returns>
     private int GetAddressIndexByMemoryAddress(MemoryAddress memAddress)
     {
-        string addressHash = CreateUniqueAddressHash(memAddress);
+        var addressHash = CreateUniqueAddressHash(memAddress);
 
         for (int i = 0; i < _addressRegister.Count; i++)
         {
             if (_addressRegister[i].UniqueAddressHash == addressHash)
+            {
                 return i;
+            }
         }
 
         return -1;
@@ -324,23 +375,29 @@ public sealed partial class Memory
     private byte[] ReadBytes(UIntPtr address, int length)
     {
         if (!IsProcessAlive())
+        {
             return Array.Empty<byte>();
+        }
 
         var bytes = new byte[length];
 
-        return ReadProcessMemory(_proc.Handle, address,
+        return ReadProcessMemory(_targetProcess.Handle, address,
             bytes, (UIntPtr)length, IntPtr.Zero) == true ? bytes : Array.Empty<byte>();
     }
 
     private UIntPtr CalculateTargetAddress(MemoryAddress memoryAddress)
     {
         if (!IsProcessAlive())
+        {
             return UIntPtr.Zero;
+        }
 
         var targetAddress = GetTargetAddress(memoryAddress);
 
         if (targetAddress == UIntPtr.Zero)
+        {
             return UIntPtr.Zero;
+        }
 
         return targetAddress;
     }
@@ -378,7 +435,7 @@ public sealed partial class Memory
 
     private bool WriteProcessMemory(ref UIntPtr targetAddress, ref byte[] buffer)
     {
-        var success = WriteProcessMemory(_proc.Handle, targetAddress, buffer,
+        var success = WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer,
             (UIntPtr)buffer.Length, IntPtr.Zero);
 
         if (!success)
@@ -394,7 +451,7 @@ public sealed partial class Memory
     {
         if (_procState.CurrentProcessState == false)
         {
-            _logger?.Warn($"Target process \"{_proc.ProcessName}\" isn't running.");
+            _logger?.Warn($"Target process \"{_targetProcess.ProcessName}\" isn't running.");
             return false;
         }
 

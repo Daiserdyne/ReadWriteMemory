@@ -4,7 +4,6 @@ using ReadWriteMemory.NativeImports;
 using ReadWriteMemory.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ReadWriteMemory;
 
@@ -14,12 +13,6 @@ namespace ReadWriteMemory;
 /// </summary>
 public sealed partial class Memory : NativeMethods, IDisposable
 {
-    #region Constants
-
-    private const short Vector3Length = 3;
-
-    #endregion
-
     #region Fields
 
     /// <summary>
@@ -33,8 +26,7 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     public event ProcessStateHasChanged? Process_OnStateChanged;
 
-    private ProcessInformation _proc;
-
+    private ProcessInformation _targetProcess;
     private MemoryLogger? _logger;
 
     private readonly ProcessState _procState = new();
@@ -63,50 +55,50 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// <param name="processName"></param>
     public Memory(string processName)
     {
-        _proc = new()
+        _targetProcess = new()
         {
             ProcessName = processName
         };
 
-        StartProcessStateService();
+        var oldProcessState = _procState.CurrentProcessState;
+
+        BackgroundService.ExecuteTaskInfinite(() => StartProcessStateMonitorService(ref oldProcessState),
+            TimeSpan.FromMilliseconds(250), _procState.ProcessStateTokenSrc.Token);
     }
 
     #endregion
 
-    private void StartProcessStateService()
+    private void StartProcessStateMonitorService(ref bool oldProcessState)
     {
-        bool oldProcessState = _procState.CurrentProcessState;
-
-        _ = BackgroundService.ExecuteTaskInfiniteAsync(() =>
+        if (Process.GetProcessesByName(_targetProcess.ProcessName).Any())
         {
-            if (Process.GetProcessesByName(_proc.ProcessName).Any())
+            _procState.CurrentProcessState = true;
+
+            if (_targetProcess.Handle == IntPtr.Zero)
             {
-                _procState.CurrentProcessState = true;
-
-                if (_proc.Handle == IntPtr.Zero)
-                    OpenProcess();
-
-                TriggerStateChangedEvent(ref oldProcessState);
-
-                return;
-            }
-
-            _procState.CurrentProcessState = false;
-
-            if (_proc.Handle != IntPtr.Zero)
-            {
-                _proc = new()
-                {
-                    ProcessName = _proc.ProcessName
-                };
-
-                _addressRegister.Clear();
-
-                _logger?.Warn($"Target process \"{_proc.ProcessName}\" isn't running anymore.");
+                OpenProcess();
             }
 
             TriggerStateChangedEvent(ref oldProcessState);
-        }, TimeSpan.FromMilliseconds(250), _procState.ProcessStateTokenSrc.Token);
+
+            return;
+        }
+
+        _procState.CurrentProcessState = false;
+
+        if (_targetProcess.Handle != IntPtr.Zero)
+        {
+            _targetProcess = new()
+            {
+                ProcessName = _targetProcess.ProcessName
+            };
+
+            _addressRegister.Clear();
+
+            _logger?.Warn($"Target process \"{_targetProcess.ProcessName}\" isn't running anymore.");
+        }
+
+        TriggerStateChangedEvent(ref oldProcessState);
     }
 
     private void TriggerStateChangedEvent(ref bool oldState)
@@ -120,62 +112,64 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
     private bool OpenProcess()
     {
-        int? tmpPid = Process.GetProcessesByName(_proc.ProcessName)[0]?.Id;
+        var process = Process.GetProcessesByName(_targetProcess.ProcessName);
 
-        if (tmpPid is null)
+        if (process is null || !process.Any())
+        {
             return false;
+        }
 
-        int pid = (int)tmpPid;
+        var pid = process.First().Id;
 
-        _proc.Process = Process.GetProcessById(pid);
-        _proc.Handle = OpenProcess(true, pid);
+        _targetProcess.Process = Process.GetProcessById(pid);
+        _targetProcess.Handle = OpenProcess(true, pid);
 
-        if (_proc.Handle == IntPtr.Zero)
+        if (_targetProcess.Handle == IntPtr.Zero)
         {
             var error = Marshal.GetLastWin32Error();
 
             _logger?.Error($"Getting handle to access process memory failed. Error code: {error}");
 
-            _proc = new()
+            _targetProcess = new()
             {
-                ProcessName = _proc.ProcessName
+                ProcessName = _targetProcess.ProcessName
             };
 
             return false;
         }
 
         if (!(Environment.Is64BitOperatingSystem
-            && IsWow64Process(_proc.Handle, out bool isWow64)
+            && IsWow64Process(_targetProcess.Handle, out bool isWow64)
             && isWow64 is false))
         {
             _logger?.Error("Target process or operation system are not 64 bit.\n" +
                 "This library only supports 64-bit processes and os.");
 
-            _proc = new()
+            _targetProcess = new()
             {
-                ProcessName = _proc.ProcessName
+                ProcessName = _targetProcess.ProcessName
             };
 
             return false;
         }
 
-        var mainModule = _proc.Process?.MainModule;
+        var mainModule = _targetProcess.Process?.MainModule;
 
         if (mainModule is null)
         {
             _logger?.Error("Couldn't get main module from target process.");
 
-            _proc = new()
+            _targetProcess = new()
             {
-                ProcessName = _proc.ProcessName
+                ProcessName = _targetProcess.ProcessName
             };
 
             return false;
         }
 
-        _proc.MainModule = mainModule;
+        _targetProcess.MainModule = mainModule;
 
-        _logger?.Info($"Attaching to targetprocess \"{_proc.ProcessName}\" was successfully.");
+        _logger?.Info($"Attaching to targetprocess \"{_targetProcess.ProcessName}\" was successfully.");
 
         return true;
     }
@@ -185,16 +179,18 @@ public sealed partial class Memory : NativeMethods, IDisposable
     /// </summary>
     public void CloseProcess()
     {
-        if (!IsProcessAlive() || _proc.Handle == IntPtr.Zero)
-            return;
-
-        _ = CloseHandle(_proc.Handle);
-
-        _logger?.Info($"Detaching from targetprocess \"{_proc.ProcessName}\" was successfully.");
-
-        _proc = new()
+        if (!IsProcessAlive() || _targetProcess.Handle == IntPtr.Zero)
         {
-            ProcessName = _proc.ProcessName
+            return;
+        }
+
+        CloseHandle(_targetProcess.Handle);
+
+        _logger?.Info($"Detaching from targetprocess \"{_targetProcess.ProcessName}\" was successfully.");
+
+        _targetProcess = new()
+        {
+            ProcessName = _targetProcess.ProcessName
         };
 
         _addressRegister.Clear();
@@ -216,7 +212,9 @@ public sealed partial class Memory : NativeMethods, IDisposable
         uint size = 0x1000)
     {
         if (replaceCount < 5 || !IsProcessAlive())
+        {
             return UIntPtr.Zero;
+        }
 
         if (IsCodeCaveOpen(memAddress, out var caveAddr))
         {
@@ -230,16 +228,19 @@ public sealed partial class Memory : NativeMethods, IDisposable
 
         for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
         {
-            caveAddress = VirtualAllocEx(_proc.Handle, FindFreeBlockForRegion(targetAddress, size), size,
+            caveAddress = VirtualAllocEx(_targetProcess.Handle, FindFreeBlockForRegion(targetAddress, size), size,
                 MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
             if (caveAddress == UIntPtr.Zero)
+            {
                 targetAddress = UIntPtr.Add(targetAddress, 0x10000);
+            }
         }
 
         if (caveAddress == UIntPtr.Zero)
-            caveAddress = VirtualAllocEx(_proc.Handle, UIntPtr.Zero, size, MEM_COMMIT | MEM_RESERVE,
-                                         PAGE_EXECUTE_READWRITE);
+        {
+            caveAddress = VirtualAllocEx(_targetProcess.Handle, UIntPtr.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+        }
 
         int nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;
 
@@ -268,8 +269,10 @@ public sealed partial class Memory : NativeMethods, IDisposable
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
         if (tableIndex != -1)
+        {
             _addressRegister[tableIndex].CodeCaveTable =
                 new(ReadBytes(targetAddress, replaceCount), caveAddress, jmpBytes);
+        }
 
         WriteBytes(caveAddress, caveBytes);
         WriteBytes(targetAddress, jmpBytes);
@@ -292,7 +295,9 @@ public sealed partial class Memory : NativeMethods, IDisposable
     public bool PauseOpenedCodeCave(MemoryAddress memAddress)
     {
         if (!IsProcessAlive())
+        {
             return false;
+        }
 
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
@@ -325,7 +330,9 @@ public sealed partial class Memory : NativeMethods, IDisposable
     public bool CloseCodeCave(MemoryAddress memAddress)
     {
         if (!IsProcessAlive())
+        {
             return false;
+        }
 
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
@@ -349,7 +356,9 @@ public sealed partial class Memory : NativeMethods, IDisposable
         var deallocation = DeallocateMemory(caveTable.CaveAddress);
 
         if (!deallocation)
+        {
             _logger?.Info($"Couldn't free allocated code cave at address: {caveTable.CaveAddress:x16}");
+        }
 
         _addressRegister[tableIndex].CodeCaveTable = null;
 
@@ -362,7 +371,10 @@ public sealed partial class Memory : NativeMethods, IDisposable
     public void Dispose()
     {
         foreach (var trainer in TrainerServices.GetAllImplementedTrainers().Values
-            .Where(x => x.DisableWhenDispose)) trainer.Disable();
+            .Where(x => x.DisableWhenDispose))
+        {
+            trainer.Disable();
+        }
 
         CloseAllCodeCaves();
         UnfreezeAllValues();
