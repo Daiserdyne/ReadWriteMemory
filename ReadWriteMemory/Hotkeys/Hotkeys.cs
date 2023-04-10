@@ -19,7 +19,7 @@ public static partial class Hotkeys
     /// <summary>
     /// Virtual-Key Codes.
     /// </summary>
-    public enum Hotkey : int
+    public enum Key : int
     {
         VK_LBUTTON = 0X01,
         VK_RBUTTON = 0X02,
@@ -128,7 +128,7 @@ public static partial class Hotkeys
     /// </summary>
     /// <param name="key"></param>
     /// <param name="waitForKeyRelease"></param>
-    public static async Task<bool> KeyPressedAsync(Hotkey key, bool waitForKeyRelease = true)
+    public static async Task<bool> KeyPressedAsync(Key key, bool waitForKeyRelease = true)
     {
         int targetKey = (int) key;
 

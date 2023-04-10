@@ -1,5 +1,8 @@
 ﻿namespace ReadWriteMemory.Trainer.Interface;
 
+/// <summary>
+/// Standard interface for trainer.
+/// </summary>
 public interface ITrainer
 {
     /// <summary>

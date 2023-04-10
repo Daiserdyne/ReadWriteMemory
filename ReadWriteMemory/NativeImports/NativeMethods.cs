@@ -225,7 +225,9 @@ public class NativeMethods
     protected static extern bool Process32Next([In] IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
 
     [DllImport("ntdll.dll", SetLastError = true)]
-    protected static extern NTSTATUS NtCreateThreadEx(out IntPtr hProcess, AccessMask desiredAccess, IntPtr objectAttributes, UIntPtr processHandle, IntPtr startAddress, IntPtr parameter, ThreadCreationFlags inCreateSuspended, int stackZeroBits, int sizeOfStack, int maximumStackSize, IntPtr attributeList);
+    protected static extern NTSTATUS NtCreateThreadEx(out IntPtr hProcess, AccessMask desiredAccess, IntPtr objectAttributes, 
+        UIntPtr processHandle, IntPtr startAddress, IntPtr parameter, ThreadCreationFlags inCreateSuspended, int stackZeroBits,
+        int sizeOfStack, int maximumStackSize, IntPtr attributeList);
 
 
     protected enum NTSTATUS

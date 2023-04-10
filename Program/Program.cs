@@ -46,12 +46,12 @@ internal class Program
 
         while (true)
         {
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Hotkey.VK_F1))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F1))
             {
                 if (memory.ReadMemory(_XCoords, Memory.MemoryDataTypes.Float, out var value))
                     Console.WriteLine(value);
             }
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Hotkey.VK_F2))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F2))
             {
                 freezeEnemies = !freezeEnemies;
 

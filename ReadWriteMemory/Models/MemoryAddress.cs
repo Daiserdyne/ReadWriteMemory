@@ -53,6 +53,8 @@ public sealed class MemoryAddress
     }
 
     internal long Address { get; }
+
     internal string ModuleName { get; }
+
     internal int[]? Offsets { get; }
 }
