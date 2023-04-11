@@ -54,7 +54,7 @@ public sealed partial class Memory
                 break;
         }
 
-        BackgroundService.ExecuteTaskInfinite(() =>
+        _ = BackgroundService.ExecuteTaskInfinite(() =>
         {
             if (!Win32.WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
             {

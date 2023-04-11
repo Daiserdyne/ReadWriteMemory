@@ -140,6 +140,9 @@ internal sealed class Win32
     [DllImport("kernel32.dll")]
     internal static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] byte[] lpBuffer, UIntPtr nSize, IntPtr lpNumberOfBytesRead);
 
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, [Out] byte[] lpBuffer, int dwSize, out IntPtr lpNumberOfBytesRead);
+
     [DllImport("kernel32.dll")]
     internal static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] byte[] lpBuffer, UIntPtr nSize, out ulong lpNumberOfBytesRead);
 
@@ -154,6 +157,9 @@ internal sealed class Win32
         uint flAllocationType,
         uint flProtect
     );
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, int dwSize, uint flAllocationType, MemoryProtection flProtect);
 
     [DllImport("kernel32.dll")]
     internal static extern bool VirtualProtectEx(IntPtr hProcess, UIntPtr lpAddress,

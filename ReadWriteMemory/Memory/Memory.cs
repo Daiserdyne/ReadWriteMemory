@@ -62,7 +62,7 @@ public sealed partial class Memory : IDisposable
 
         var oldProcessState = _procState.CurrentProcessState;
 
-        BackgroundService.ExecuteTaskInfinite(() => StartProcessStateMonitorService(ref oldProcessState),
+        _ = BackgroundService.ExecuteTaskInfinite(() => StartProcessStateMonitorService(ref oldProcessState),
             TimeSpan.FromMilliseconds(250), _procState.ProcessStateTokenSrc.Token);
     }
 
@@ -279,6 +279,64 @@ public sealed partial class Memory : IDisposable
 
         _logger?.Info($"Code cave created for address 0x{memAddress.Address:x16}.\nCustom code at cave address: " +
             $"0x{caveAddress:x16}.");
+
+        return caveAddress;
+    }
+
+    public UIntPtr CreateOrResumeCodeCave2(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
+    {
+        if (replaceCount < 5 || !IsProcessAlive())
+        {
+            return UIntPtr.Zero;
+        }
+
+        if (IsCodeCaveOpen(memAddress, out var caveAddr))
+        {
+            _logger?.Info($"Resuming code cave for address 0x{(UIntPtr)memAddress.Address:x16}.\nCave address: 0x{caveAddr:x16}\n");
+            return caveAddr;
+        }
+
+        var targetAddress = GetTargetAddress(memAddress);
+
+        var caveAddress = UIntPtr.Zero;
+
+        // Reserve a memory region of the desired size without committing any physical pages to it
+        var caveBaseAddress = Win32.VirtualAllocEx(_targetProcess.Handle, UIntPtr.Zero, size, Win32.MEM_RESERVE, Win32.PAGE_EXECUTE_READWRITE);
+
+        for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
+        {
+            caveAddress = Win32.VirtualAllocEx(_targetProcess.Handle, FindFreeBlockForRegion(targetAddress, size), size, Win32.MEM_COMMIT | Win32.MEM_RESERVE, Win32.PAGE_EXECUTE_READWRITE);
+
+            if (caveAddress == UIntPtr.Zero)
+            {
+                targetAddress = UIntPtr.Add(targetAddress, 0x10000);
+            }
+        }
+
+        if (caveAddress == UIntPtr.Zero)
+        {
+            caveAddress = caveBaseAddress;
+        }
+
+        int nopsNeeded = Math.Max(replaceCount - 5, 0);
+
+        // (to - from - 5)
+        int offset = (int)((long)caveAddress - (long)targetAddress - 5);
+
+        byte[] jmpBytes = new byte[5 + nopsNeeded];
+        jmpBytes[0] = 0xE9;
+        BitConverter.GetBytes(offset).CopyTo(jmpBytes, 1);
+        Buffer.BlockCopy(new byte[nopsNeeded], 0, jmpBytes, 5, nopsNeeded);
+
+        byte[] caveBytes = new byte[5];
+        caveBytes[0] = 0xE9;
+        BitConverter.GetBytes((int)((long)targetAddress - (long)caveAddress - 5)).CopyTo(caveBytes, 1);
+        newBytes.CopyTo(caveBytes, 5);
+
+        WriteBytes(caveAddress, caveBytes);
+        WriteBytes(targetAddress, jmpBytes);
+
+        _logger?.Info($"Created code cave for address 0x{(UIntPtr)memAddress.Address:x16}.\nCave address: 0x{caveAddress:x16}\n");
 
         return caveAddress;
     }
