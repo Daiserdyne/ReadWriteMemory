@@ -198,6 +198,21 @@ public sealed partial class Memory : IDisposable
     }
 
     /// <summary>
+    /// Creates a code cave to write custom opcodes in target process.
+    /// </summary>
+    /// <param name="memAddress">Address, module name and offesets</param>
+    /// <param name="newBytes">The opcodes to write in the code cave</param>
+    /// <param name="replaceCount">The number of bytes being replaced</param>
+    /// <param name="size">size of the allocated region</param>
+    /// <remarks>Please ensure that you use the proper replaceCount
+    /// if you replace halfway in an instruction you may cause bad things</remarks>
+    /// <returns>Created code cave address</returns>
+    public Task<UIntPtr> CreateOrResumeCodeCaveAsync(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
+    {
+        return Task.Run(() => CreateOrResumeCodeCave(memAddress, newBytes, replaceCount, size));
+    }
+
+    /// <summary>
     /// Creates a code cave to write custom opcodes in target process. 
     /// If you created a code cave in the past with the same memory address, it will
     /// jump back to your cave address.
@@ -209,8 +224,7 @@ public sealed partial class Memory : IDisposable
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Created code cave address</returns>
-    public UIntPtr CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newBytes, int replaceCount,
-        uint size = 0x1000)
+    public UIntPtr CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
     {
         if (replaceCount < 5 || !IsProcessAlive())
         {
@@ -229,7 +243,7 @@ public sealed partial class Memory : IDisposable
 
         for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
         {
-            caveAddress = Win32.VirtualAllocEx(_targetProcess.Handle, FindFreeBlockForRegion(targetAddress, size), size,
+            caveAddress = Win32.VirtualAllocEx(_targetProcess.Handle, FindFreeBlockForRegion(targetAddress, size, _targetProcess), size,
                 Win32.MEM_COMMIT | Win32.MEM_RESERVE, Win32.PAGE_EXECUTE_READWRITE);
 
             if (caveAddress == UIntPtr.Zero)
@@ -284,64 +298,6 @@ public sealed partial class Memory : IDisposable
         return caveAddress;
     }
 
-    public UIntPtr CreateOrResumeCodeCave2(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
-    {
-        if (replaceCount < 5 || !IsProcessAlive())
-        {
-            return UIntPtr.Zero;
-        }
-
-        if (IsCodeCaveOpen(memAddress, out var caveAddr))
-        {
-            _logger?.Info($"Resuming code cave for address 0x{(UIntPtr)memAddress.Address:x16}.\nCave address: 0x{caveAddr:x16}\n");
-            return caveAddr;
-        }
-
-        var targetAddress = GetTargetAddress(memAddress);
-
-        var caveAddress = UIntPtr.Zero;
-
-        // Reserve a memory region of the desired size without committing any physical pages to it
-        var caveBaseAddress = Win32.VirtualAllocEx(_targetProcess.Handle, UIntPtr.Zero, size, Win32.MEM_RESERVE, Win32.PAGE_EXECUTE_READWRITE);
-
-        for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
-        {
-            caveAddress = Win32.VirtualAllocEx(_targetProcess.Handle, FindFreeBlockForRegion(targetAddress, size), size, Win32.MEM_COMMIT | Win32.MEM_RESERVE, Win32.PAGE_EXECUTE_READWRITE);
-
-            if (caveAddress == UIntPtr.Zero)
-            {
-                targetAddress = UIntPtr.Add(targetAddress, 0x10000);
-            }
-        }
-
-        if (caveAddress == UIntPtr.Zero)
-        {
-            caveAddress = caveBaseAddress;
-        }
-
-        int nopsNeeded = Math.Max(replaceCount - 5, 0);
-
-        // (to - from - 5)
-        int offset = (int)((long)caveAddress - (long)targetAddress - 5);
-
-        byte[] jmpBytes = new byte[5 + nopsNeeded];
-        jmpBytes[0] = 0xE9;
-        BitConverter.GetBytes(offset).CopyTo(jmpBytes, 1);
-        Buffer.BlockCopy(new byte[nopsNeeded], 0, jmpBytes, 5, nopsNeeded);
-
-        byte[] caveBytes = new byte[5];
-        caveBytes[0] = 0xE9;
-        BitConverter.GetBytes((int)((long)targetAddress - (long)caveAddress - 5)).CopyTo(caveBytes, 1);
-        newBytes.CopyTo(caveBytes, 5);
-
-        WriteBytes(caveAddress, caveBytes);
-        WriteBytes(targetAddress, jmpBytes);
-
-        _logger?.Info($"Created code cave for address 0x{(UIntPtr)memAddress.Address:x16}.\nCave address: 0x{caveAddress:x16}\n");
-
-        return caveAddress;
-    }
-
     /// <summary>
     /// Restores the original opcodes to the memory address without dealloacating the memory.
     /// So your code-bytes stay in the memory at the cave address. The advantage is that you
@@ -380,6 +336,120 @@ public sealed partial class Memory : IDisposable
         _logger?.Info($"Code cave for target address: 0x{baseAddress:x16} was paused. Allocaded memory remains. Cave address is: 0x{caveTable.CaveAddress:x16}");
 
         return true;
+    }
+
+    private static UIntPtr FindFreeBlockForRegion(UIntPtr baseAddress, uint size, ProcessInformation processInformation)
+    {
+        var minAddress = UIntPtr.Subtract(baseAddress, 0x70000000);
+        var maxAddress = UIntPtr.Add(baseAddress, 0x70000000);
+
+        Win32.GetSystemInfo(out Win32.SYSTEM_INFO sysInfo);
+
+        if ((long)minAddress > (long)sysInfo.maximumApplicationAddress ||
+            (long)minAddress < (long)sysInfo.minimumApplicationAddress)
+        {
+            minAddress = sysInfo.minimumApplicationAddress;
+        }
+
+        if ((long)maxAddress < (long)sysInfo.minimumApplicationAddress ||
+            (long)maxAddress > (long)sysInfo.maximumApplicationAddress)
+        {
+            maxAddress = sysInfo.maximumApplicationAddress;
+        }
+
+        var current = minAddress;
+        var caveAddress = UIntPtr.Zero;
+
+        while (Win32.VirtualQueryEx(processInformation.Handle, current, out Win32.MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
+        {
+            if ((long)memoryInfos.BaseAddress > (long)maxAddress)
+            {
+                return UIntPtr.Zero;  // No memory found, let windows handle
+            }
+
+            if (memoryInfos.State == Win32.MEM_FREE && memoryInfos.RegionSize > size)
+            {
+                UIntPtr tmpAddress;
+
+                if ((long)memoryInfos.BaseAddress % sysInfo.allocationGranularity > 0)
+                {
+                    // The whole size can not be used
+                    tmpAddress = memoryInfos.BaseAddress;
+
+                    int offset = (int)(sysInfo.allocationGranularity -
+                                       (long)tmpAddress % sysInfo.allocationGranularity);
+
+                    // Check if there is enough left
+                    if (memoryInfos.RegionSize - offset >= size)
+                    {
+                        // yup there is enough
+                        tmpAddress = UIntPtr.Add(tmpAddress, offset);
+
+                        if ((long)tmpAddress < (long)baseAddress)
+                        {
+                            tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - offset - size));
+
+                            if ((long)tmpAddress > (long)baseAddress)
+                            {
+                                tmpAddress = baseAddress;
+                            }
+
+                            // decrease tmpAddress until its alligned properly
+                            tmpAddress = UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
+                        }
+
+                        // if the difference is closer then use that
+                        if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
+                        {
+                            caveAddress = tmpAddress;
+                        }
+                    }
+                }
+                else
+                {
+                    tmpAddress = memoryInfos.BaseAddress;
+
+                    if ((long)tmpAddress < (long)baseAddress)
+                    {
+                        tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - size));
+
+                        if ((long)tmpAddress > (long)baseAddress)
+                        {
+                            tmpAddress = baseAddress;
+                        }
+
+                        tmpAddress =
+                            UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
+                    }
+
+                    if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
+                    {
+                        caveAddress = tmpAddress;
+                    }
+                }
+            }
+
+            if (memoryInfos.RegionSize % sysInfo.allocationGranularity > 0)
+            {
+                memoryInfos.RegionSize += sysInfo.allocationGranularity - memoryInfos.RegionSize % sysInfo.allocationGranularity;
+            }
+
+            var previous = current;
+
+            current = new UIntPtr(memoryInfos.BaseAddress + (ulong)memoryInfos.RegionSize);
+
+            if ((long)current >= (long)maxAddress)
+            {
+                return caveAddress;
+            }
+
+            if ((long)previous >= (long)current)
+            {
+                return caveAddress; // Overflow
+            }
+        }
+
+        return caveAddress;
     }
 
     /// <summary>
