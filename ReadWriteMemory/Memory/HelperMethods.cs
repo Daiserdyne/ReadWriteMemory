@@ -1,5 +1,4 @@
-﻿using ReadWriteMemory.Logging;
-using ReadWriteMemory.Models;
+﻿using ReadWriteMemory.Models;
 using System.Diagnostics;
 using System.Numerics;
 using Win32 = ReadWriteMemory.NativeImports.Win32;

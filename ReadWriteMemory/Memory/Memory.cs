@@ -60,6 +60,7 @@ public sealed partial class Memory : IDisposable
             ProcessName = processName
         };
 
+        // ProcessState in ProcessInformation einbauen.
         var oldProcessState = _procState.CurrentProcessState;
 
         _ = BackgroundService.ExecuteTaskInfinite(() => StartProcessStateMonitorService(ref oldProcessState),

@@ -34,7 +34,7 @@ public sealed partial class Memory
         int tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
 
         if (_addressRegister[tableIndex].FreezeTokenSrc is not null)
-        {
+        { 
             _logger?.Info("This value is allready freezed.");
             return false;
         }
