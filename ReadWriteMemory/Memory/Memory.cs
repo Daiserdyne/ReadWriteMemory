@@ -29,7 +29,6 @@ public sealed partial class Memory : IDisposable
     private ProcessInformation _targetProcess;
     private MemoryLogger? _logger;
 
-    private readonly ProcessState _procState = new();
     private readonly List<MemoryAddressTable> _addressRegister = new();
     private readonly byte[] _buffer = new byte[8];
 
@@ -61,10 +60,10 @@ public sealed partial class Memory : IDisposable
         };
 
         // ProcessState in ProcessInformation einbauen.
-        var oldProcessState = _procState.CurrentProcessState;
+        var oldProcessState = _targetProcess.ProcessState.CurrentProcessState;
 
         _ = BackgroundService.ExecuteTaskInfinite(() => StartProcessStateMonitorService(ref oldProcessState),
-            TimeSpan.FromMilliseconds(250), _procState.ProcessStateTokenSrc.Token);
+            TimeSpan.FromMilliseconds(250), _targetProcess.ProcessState.ProcessStateTokenSrc.Token);
     }
 
     #endregion
@@ -73,7 +72,7 @@ public sealed partial class Memory : IDisposable
     {
         if (Process.GetProcessesByName(_targetProcess.ProcessName).Any())
         {
-            _procState.CurrentProcessState = true;
+            _targetProcess.ProcessState.CurrentProcessState = true;
 
             if (_targetProcess.Handle == IntPtr.Zero)
             {
@@ -85,7 +84,7 @@ public sealed partial class Memory : IDisposable
             return;
         }
 
-        _procState.CurrentProcessState = false;
+        _targetProcess.ProcessState.CurrentProcessState = false;
 
         if (_targetProcess.Handle != IntPtr.Zero)
         {
@@ -104,10 +103,10 @@ public sealed partial class Memory : IDisposable
 
     private void TriggerStateChangedEvent(ref bool oldState)
     {
-        if (oldState != _procState.CurrentProcessState)
+        if (oldState != _targetProcess.ProcessState.CurrentProcessState)
         {
-            Process_OnStateChanged?.Invoke(_procState.CurrentProcessState);
-            oldState = _procState.CurrentProcessState;
+            Process_OnStateChanged?.Invoke(_targetProcess.ProcessState.CurrentProcessState);
+            oldState = _targetProcess.ProcessState.CurrentProcessState;
         }
     }
 
@@ -198,22 +197,7 @@ public sealed partial class Memory : IDisposable
     }
 
     /// <summary>
-    /// Creates a code cave to write custom opcodes in target process.
-    /// </summary>
-    /// <param name="memAddress">Address, module name and offesets</param>
-    /// <param name="newBytes">The opcodes to write in the code cave</param>
-    /// <param name="replaceCount">The number of bytes being replaced</param>
-    /// <param name="size">size of the allocated region</param>
-    /// <remarks>Please ensure that you use the proper replaceCount
-    /// if you replace halfway in an instruction you may cause bad things</remarks>
-    /// <returns>Created code cave address</returns>
-    public Task<UIntPtr> CreateOrResumeCodeCaveAsync(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
-    {
-        return Task.Run(() => CreateOrResumeCodeCave(memAddress, newBytes, replaceCount, size));
-    }
-
-    /// <summary>
-    /// Creates a code cave to write custom opcodes in target process. 
+    /// Creates a code cave to inject custom code in target process. 
     /// If you created a code cave in the past with the same memory address, it will
     /// jump back to your cave address.
     /// </summary>
@@ -223,7 +207,24 @@ public sealed partial class Memory : IDisposable
     /// <param name="size">size of the allocated region</param>
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
-    /// <returns>Created code cave address</returns>
+    /// <returns>Code cave address</returns>
+    public Task<UIntPtr> CreateOrResumeCodeCaveAsync(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
+    {
+        return Task.Run(() => CreateOrResumeCodeCave(memAddress, newBytes, replaceCount, size));
+    }
+
+    /// <summary>
+    /// Creates a code cave to inject custom code in target process. 
+    /// If you created a code cave in the past with the same memory address, it will
+    /// jump back to your cave address.
+    /// </summary>
+    /// <param name="memAddress">Address, module name and offesets</param>
+    /// <param name="newBytes">The opcodes to write in the code cave</param>
+    /// <param name="replaceCount">The number of bytes being replaced</param>
+    /// <param name="size">size of the allocated region</param>
+    /// <remarks>Please ensure that you use the proper replaceCount
+    /// if you replace halfway in an instruction you may cause bad things</remarks>
+    /// <returns>Cave address</returns>
     public UIntPtr CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
     {
         if (replaceCount < 5 || !IsProcessAlive())
@@ -239,63 +240,16 @@ public sealed partial class Memory : IDisposable
 
         var targetAddress = GetTargetAddress(memAddress);
 
-        var caveAddress = UIntPtr.Zero;
-
-        for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
-        {
-            caveAddress = Win32.VirtualAllocEx(_targetProcess.Handle, FindFreeBlockForRegion(targetAddress, size, _targetProcess), size,
-                Win32.MEM_COMMIT | Win32.MEM_RESERVE, Win32.PAGE_EXECUTE_READWRITE);
-
-            if (caveAddress == UIntPtr.Zero)
-            {
-                targetAddress = UIntPtr.Add(targetAddress, 0x10000);
-            }
-        }
-
-        if (caveAddress == UIntPtr.Zero)
-        {
-            caveAddress = Win32.VirtualAllocEx(_targetProcess.Handle, UIntPtr.Zero, size, Win32.MEM_COMMIT | Win32.MEM_RESERVE, Win32.PAGE_EXECUTE_READWRITE);
-        }
-
-        int nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;
-
-        // (to - from - 5)
-        int offset = (int)((long)caveAddress - (long)targetAddress - 5);
-
-        byte[] jmpBytes = new byte[5 + nopsNeeded];
-
-        jmpBytes[0] = 0xE9;
-
-        BitConverter.GetBytes(offset).CopyTo(jmpBytes, 1);
-
-        for (var i = 5; i < jmpBytes.Length; i++)
-        {
-            jmpBytes[i] = 0x90;
-        }
-
-        byte[] caveBytes = new byte[5 + newBytes.Length];
-        offset = (int)((long)targetAddress + jmpBytes.Length - ((long)caveAddress + newBytes.Length) - 5);
-
-        newBytes.CopyTo(caveBytes, 0);
-        caveBytes[newBytes.Length] = 0xE9;
-
-        BitConverter.GetBytes(offset).CopyTo(caveBytes, newBytes.Length + 1);
+        var codeCaveTable = CodeCave.CreateCodeCaveAndInjectCode(targetAddress, _targetProcess.Handle, newBytes, replaceCount, size);
 
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
         if (tableIndex != -1)
         {
-            _addressRegister[tableIndex].CodeCaveTable =
-                new(ReadBytes(targetAddress, replaceCount), caveAddress, jmpBytes);
+            _addressRegister[tableIndex].CodeCaveTable = codeCaveTable;
         }
 
-        WriteBytes(caveAddress, caveBytes);
-        WriteBytes(targetAddress, jmpBytes);
-
-        _logger?.Info($"Code cave created for address 0x{memAddress.Address:x16}.\nCustom code at cave address: " +
-            $"0x{caveAddress:x16}.");
-
-        return caveAddress;
+        return codeCaveTable.CaveAddress;
     }
 
     /// <summary>
@@ -336,120 +290,6 @@ public sealed partial class Memory : IDisposable
         _logger?.Info($"Code cave for target address: 0x{baseAddress:x16} was paused. Allocaded memory remains. Cave address is: 0x{caveTable.CaveAddress:x16}");
 
         return true;
-    }
-
-    private static UIntPtr FindFreeBlockForRegion(UIntPtr baseAddress, uint size, ProcessInformation processInformation)
-    {
-        var minAddress = UIntPtr.Subtract(baseAddress, 0x70000000);
-        var maxAddress = UIntPtr.Add(baseAddress, 0x70000000);
-
-        Win32.GetSystemInfo(out Win32.SYSTEM_INFO sysInfo);
-
-        if ((long)minAddress > (long)sysInfo.maximumApplicationAddress ||
-            (long)minAddress < (long)sysInfo.minimumApplicationAddress)
-        {
-            minAddress = sysInfo.minimumApplicationAddress;
-        }
-
-        if ((long)maxAddress < (long)sysInfo.minimumApplicationAddress ||
-            (long)maxAddress > (long)sysInfo.maximumApplicationAddress)
-        {
-            maxAddress = sysInfo.maximumApplicationAddress;
-        }
-
-        var current = minAddress;
-        var caveAddress = UIntPtr.Zero;
-
-        while (Win32.VirtualQueryEx(processInformation.Handle, current, out Win32.MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
-        {
-            if ((long)memoryInfos.BaseAddress > (long)maxAddress)
-            {
-                return UIntPtr.Zero;  // No memory found, let windows handle
-            }
-
-            if (memoryInfos.State == Win32.MEM_FREE && memoryInfos.RegionSize > size)
-            {
-                UIntPtr tmpAddress;
-
-                if ((long)memoryInfos.BaseAddress % sysInfo.allocationGranularity > 0)
-                {
-                    // The whole size can not be used
-                    tmpAddress = memoryInfos.BaseAddress;
-
-                    int offset = (int)(sysInfo.allocationGranularity -
-                                       (long)tmpAddress % sysInfo.allocationGranularity);
-
-                    // Check if there is enough left
-                    if (memoryInfos.RegionSize - offset >= size)
-                    {
-                        // yup there is enough
-                        tmpAddress = UIntPtr.Add(tmpAddress, offset);
-
-                        if ((long)tmpAddress < (long)baseAddress)
-                        {
-                            tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - offset - size));
-
-                            if ((long)tmpAddress > (long)baseAddress)
-                            {
-                                tmpAddress = baseAddress;
-                            }
-
-                            // decrease tmpAddress until its alligned properly
-                            tmpAddress = UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
-                        }
-
-                        // if the difference is closer then use that
-                        if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
-                        {
-                            caveAddress = tmpAddress;
-                        }
-                    }
-                }
-                else
-                {
-                    tmpAddress = memoryInfos.BaseAddress;
-
-                    if ((long)tmpAddress < (long)baseAddress)
-                    {
-                        tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - size));
-
-                        if ((long)tmpAddress > (long)baseAddress)
-                        {
-                            tmpAddress = baseAddress;
-                        }
-
-                        tmpAddress =
-                            UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
-                    }
-
-                    if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
-                    {
-                        caveAddress = tmpAddress;
-                    }
-                }
-            }
-
-            if (memoryInfos.RegionSize % sysInfo.allocationGranularity > 0)
-            {
-                memoryInfos.RegionSize += sysInfo.allocationGranularity - memoryInfos.RegionSize % sysInfo.allocationGranularity;
-            }
-
-            var previous = current;
-
-            current = new UIntPtr(memoryInfos.BaseAddress + (ulong)memoryInfos.RegionSize);
-
-            if ((long)current >= (long)maxAddress)
-            {
-                return caveAddress;
-            }
-
-            if ((long)previous >= (long)current)
-            {
-                return caveAddress; // Overflow
-            }
-        }
-
-        return caveAddress;
     }
 
     /// <summary>
@@ -510,7 +350,7 @@ public sealed partial class Memory : IDisposable
         CloseProcess();
 
         _addressRegister.Clear();
-        _procState.ProcessStateTokenSrc.Cancel();
+        _targetProcess.ProcessState.ProcessStateTokenSrc.Cancel();
         Process_OnStateChanged = null;
         _logger = null;
     }

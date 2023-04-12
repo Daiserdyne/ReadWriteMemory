@@ -14,5 +14,4 @@ internal sealed record CodeCaveTable
 	internal byte[] OriginalOpcodes { get; }
 
     internal byte[] JmpBytes { get; }
-	//internal bool IsPaused { get; set; }
 }

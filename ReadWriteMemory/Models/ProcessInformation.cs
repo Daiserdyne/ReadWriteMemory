@@ -13,5 +13,7 @@ internal sealed record ProcessInformation
 
     internal IntPtr Handle { get; set; } = IntPtr.Zero;
 
+    internal ProcessState ProcessState { get; set; } = new();
+
     internal ProcessModule? MainModule { get; set; }
 }

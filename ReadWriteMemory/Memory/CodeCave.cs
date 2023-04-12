@@ -1,82 +1,71 @@
 ﻿using ReadWriteMemory.Models;
-using ReadWriteMemory.NativeImports;
 using static ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
-internal static class CodeCave
+internal sealed class CodeCave
 {
-    //internal static UIntPtr CreateOrResumeCodeCave(MemoryAddress memAddress, ProcessInformation processInformation, 
-    //    byte[] newBytes, int replaceCount, uint size = 0x1000)
-    //{
-    //    if (IsCodeCaveOpen(memAddress, out var caveAddr))
-    //    {
-    //        _logger?.Info($"Resuming code cave for address 0x{(UIntPtr)memAddress.Address:x16}.\nCave address: 0x{caveAddr:x16}\n");
-    //        return caveAddr;
-    //    }
+    internal static CodeCaveTable CreateCodeCaveAndInjectCode(UIntPtr targetAddress, IntPtr targetProcessHandle, byte[] newBytes, int replaceCount, uint size = 0x1000)
+    {
+        var caveAddress = UIntPtr.Zero;
 
-    //    var targetAddress = GetTargetAddress(memAddress);
+        for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
+        {
+            caveAddress = VirtualAllocEx(targetProcessHandle, FindFreeMemoryBlock(targetAddress, size, targetProcessHandle), size,
+                MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
-    //    var caveAddress = UIntPtr.Zero;
+            if (caveAddress == UIntPtr.Zero)
+            {
+                targetAddress = UIntPtr.Add(targetAddress, 0x10000);
+            }
+        }
 
-    //    for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
-    //    {
-    //        caveAddress = VirtualAllocEx(processInformation.Handle, FindFreeBlockForRegionInMemory(targetAddress, size, processInformation), size,
-    //            MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+        if (caveAddress == UIntPtr.Zero)
+        {
+            caveAddress = VirtualAllocEx(targetProcessHandle, UIntPtr.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+        }
 
-    //        if (caveAddress == UIntPtr.Zero)
-    //        {
-    //            targetAddress = UIntPtr.Add(targetAddress, 0x10000);
-    //        }
-    //    }
+        int nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;
 
-    //    if (caveAddress == UIntPtr.Zero)
-    //    {
-    //        caveAddress = Win32.VirtualAllocEx(processInformation.Handle, UIntPtr.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-    //    }
+        // (to - from - 5)
+        int offset = (int)((long)caveAddress - (long)targetAddress - 5);
 
-    //    int nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;
+        byte[] jmpBytes = new byte[5 + nopsNeeded];
 
-    //    // (to - from - 5)
-    //    int offset = (int)((long)caveAddress - (long)targetAddress - 5);
+        jmpBytes[0] = 0xE9;
 
-    //    byte[] jmpBytes = new byte[5 + nopsNeeded];
+        BitConverter.GetBytes(offset).CopyTo(jmpBytes, 1);
 
-    //    jmpBytes[0] = 0xE9;
+        for (var i = 5; i < jmpBytes.Length; i++)
+        {
+            jmpBytes[i] = 0x90;
+        }
 
-    //    BitConverter.GetBytes(offset).CopyTo(jmpBytes, 1);
+        byte[] caveBytes = new byte[5 + newBytes.Length];
+        offset = (int)((long)targetAddress + jmpBytes.Length - ((long)caveAddress + newBytes.Length) - 5);
 
-    //    for (var i = 5; i < jmpBytes.Length; i++)
-    //    {
-    //        jmpBytes[i] = 0x90;
-    //    }
+        newBytes.CopyTo(caveBytes, 0);
+        caveBytes[newBytes.Length] = 0xE9;
 
-    //    byte[] caveBytes = new byte[5 + newBytes.Length];
-    //    offset = (int)((long)targetAddress + jmpBytes.Length - ((long)caveAddress + newBytes.Length) - 5);
+        BitConverter.GetBytes(offset).CopyTo(caveBytes, newBytes.Length + 1);
 
-    //    newBytes.CopyTo(caveBytes, 0);
-    //    caveBytes[newBytes.Length] = 0xE9;
+        var readBytes = new byte[replaceCount];
 
-    //    BitConverter.GetBytes(offset).CopyTo(caveBytes, newBytes.Length + 1);
+        _ = ReadProcessMemory(targetProcessHandle, targetAddress, readBytes, (UIntPtr)replaceCount, IntPtr.Zero) 
+            == true ? readBytes : Array.Empty<byte>();
 
-    //    var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
+        var caveTable = new CodeCaveTable(readBytes, caveAddress, jmpBytes);
 
-    //    if (tableIndex != -1)
-    //    {
-    //        _addressRegister[tableIndex].CodeCaveTable =
-    //            new(ReadBytes(targetAddress, replaceCount), caveAddress, jmpBytes);
-    //    }
+        WriteProcessMemory(targetProcessHandle, caveAddress, caveBytes, (UIntPtr)caveBytes.Length, out _);
+        WriteProcessMemory(targetProcessHandle, targetAddress, jmpBytes, (UIntPtr)jmpBytes.Length, out _);
 
-    //    WriteBytes(caveAddress, caveBytes);
-    //    WriteBytes(targetAddress, jmpBytes);
+        //_logger?.Info($"Code cave created for address 0x{memAddress.Address:x16}.\nCustom code at cave address: " +
+        //    $"0x{caveAddress:x16}.");
 
-    //    _logger?.Info($"Code cave created for address 0x{memAddress.Address:x16}.\nCustom code at cave address: " +
-    //        $"0x{caveAddress:x16}.");
+        return caveTable;
+    }
 
-    //    return caveAddress;
-    //}
-
-    private static UIntPtr FindFreeBlockForRegionInMemory(UIntPtr baseAddress, uint size, ProcessInformation processInformation)
+    private static UIntPtr FindFreeMemoryBlock(UIntPtr baseAddress, uint size, IntPtr processHandle)
     {
         var minAddress = UIntPtr.Subtract(baseAddress, 0x70000000);
         var maxAddress = UIntPtr.Add(baseAddress, 0x70000000);
@@ -98,66 +87,16 @@ internal static class CodeCave
         var current = minAddress;
         var caveAddress = UIntPtr.Zero;
 
-        while (VirtualQueryEx(processInformation.Handle, current, out MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
+        while (VirtualQueryEx(processHandle, current, out MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
         {
             if ((long)memoryInfos.BaseAddress > (long)maxAddress)
             {
                 return UIntPtr.Zero;
             }
 
-            if (memoryInfos.State == Win32.MEM_FREE && memoryInfos.RegionSize > size)
+            if (memoryInfos.State == MEM_FREE && memoryInfos.RegionSize > size)
             {
-                UIntPtr tmpAddress;
-
-                if ((long)memoryInfos.BaseAddress % sysInfo.allocationGranularity > 0)
-                {
-                    tmpAddress = memoryInfos.BaseAddress;
-
-                    int offset = (int)(sysInfo.allocationGranularity - (long)tmpAddress % sysInfo.allocationGranularity);
-
-                    if (memoryInfos.RegionSize - offset >= size)
-                    {
-                        tmpAddress = UIntPtr.Add(tmpAddress, offset);
-
-                        if ((long)tmpAddress < (long)baseAddress)
-                        {
-                            tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - offset - size));
-
-                            if ((long)tmpAddress > (long)baseAddress)
-                            {
-                                tmpAddress = baseAddress;
-                            }
-
-                            tmpAddress = UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
-                        }
-
-                        if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
-                        {
-                            caveAddress = tmpAddress;
-                        }
-                    }
-                }
-                else
-                {
-                    tmpAddress = memoryInfos.BaseAddress;
-
-                    if ((long)tmpAddress < (long)baseAddress)
-                    {
-                        tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - size));
-
-                        if ((long)tmpAddress > (long)baseAddress)
-                        {
-                            tmpAddress = baseAddress;
-                        }
-
-                        tmpAddress = UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
-                    }
-
-                    if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
-                    {
-                        caveAddress = tmpAddress;
-                    }
-                }
+                CalculateCaveAddress(baseAddress, size, sysInfo, ref caveAddress, memoryInfos);
             }
 
             if (memoryInfos.RegionSize % sysInfo.allocationGranularity > 0)
@@ -181,5 +120,62 @@ internal static class CodeCave
         }
 
         return caveAddress;
+    }
+
+    private static nuint CalculateCaveAddress(nuint baseAddress, uint size, SYSTEM_INFO sysInfo, ref nuint caveAddress, MEMORY_BASIC_INFORMATION memoryInfos)
+    {
+        nuint tmpAddress;
+
+        if ((long)memoryInfos.BaseAddress % sysInfo.allocationGranularity > 0)
+        {
+            tmpAddress = memoryInfos.BaseAddress;
+
+            int offset = (int)(sysInfo.allocationGranularity - (long)tmpAddress % sysInfo.allocationGranularity);
+
+            if (memoryInfos.RegionSize - offset >= size)
+            {
+                tmpAddress = UIntPtr.Add(tmpAddress, offset);
+
+                if ((long)tmpAddress < (long)baseAddress)
+                {
+                    tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - offset - size));
+
+                    if ((long)tmpAddress > (long)baseAddress)
+                    {
+                        tmpAddress = baseAddress;
+                    }
+
+                    tmpAddress = UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
+                }
+
+                if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
+                {
+                    caveAddress = tmpAddress;
+                }
+            }
+        }
+        else
+        {
+            tmpAddress = memoryInfos.BaseAddress;
+
+            if ((long)tmpAddress < (long)baseAddress)
+            {
+                tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - size));
+
+                if ((long)tmpAddress > (long)baseAddress)
+                {
+                    tmpAddress = baseAddress;
+                }
+
+                tmpAddress = UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
+            }
+
+            if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
+            {
+                caveAddress = tmpAddress;
+            }
+        }
+
+        return tmpAddress;
     }
 }

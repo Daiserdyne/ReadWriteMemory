@@ -295,12 +295,12 @@ public sealed partial class Memory
 
     private bool IsProcessAlive()
     {
-        if (_procState.CurrentProcessState == false)
+        if (_targetProcess.ProcessState.CurrentProcessState == false)
         {
             _logger?.Warn($"Target process \"{_targetProcess.ProcessName}\" isn't running.");
             return false;
         }
 
-        return _procState.CurrentProcessState;
+        return _targetProcess.ProcessState.CurrentProcessState;
     }
 }
