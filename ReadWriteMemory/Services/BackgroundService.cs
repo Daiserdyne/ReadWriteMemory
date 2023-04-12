@@ -1,6 +1,6 @@
 ﻿namespace ReadWriteMemory.Services;
 
-internal sealed class BackgroundService
+internal static class BackgroundService
 {
     internal static async Task ExecuteTaskInfinite(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
     {
