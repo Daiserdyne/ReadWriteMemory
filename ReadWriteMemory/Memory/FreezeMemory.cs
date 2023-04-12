@@ -45,8 +45,8 @@ public sealed partial class Memory
 
         switch (refreshRateInMilliseconds)
         {
-            case < 1:
-                refreshRateInMilliseconds = 1;
+            case < 5:
+                refreshRateInMilliseconds = 5;
                 break;
 
             case > int.MaxValue:
