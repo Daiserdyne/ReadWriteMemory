@@ -23,7 +23,7 @@ public sealed partial class Memory
     /// <param name="memAddress"></param>
     /// <param name="caveAddress"></param>
     /// <returns></returns>
-    private bool IsCodeCaveOpen(MemoryAddress memAddress, out UIntPtr caveAddress)
+    private bool IsCodeCaveAlreadyCreatedForAddress(MemoryAddress memAddress, out UIntPtr caveAddress)
     {
         caveAddress = UIntPtr.Zero;
 

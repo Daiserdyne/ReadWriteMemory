@@ -1,13 +1,15 @@
 ﻿using ReadWriteMemory.Models;
 using static ReadWriteMemory.NativeImports.Win32;
 
-namespace ReadWriteMemory;
+namespace ReadWriteMemory.Utilities;
 
-internal sealed class CodeCave
+internal sealed class CodeCaveFactory
 {
-    internal static CodeCaveTable CreateCodeCaveAndInjectCode(UIntPtr targetAddress, IntPtr targetProcessHandle, byte[] newBytes, int replaceCount, uint size = 0x1000)
+    internal static bool CreateCodeCaveAndLoadCustomCode(UIntPtr targetAddress, IntPtr targetProcessHandle, byte[] newCode, int replaceCount,
+        out UIntPtr caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 0x1000)
     {
-        var caveAddress = UIntPtr.Zero;
+        caveAddress = UIntPtr.Zero;
+        originalOpcodes = new byte[0];
 
         for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
         {
@@ -30,7 +32,7 @@ internal sealed class CodeCave
         // (to - from - 5)
         int offset = (int)((long)caveAddress - (long)targetAddress - 5);
 
-        byte[] jmpBytes = new byte[5 + nopsNeeded];
+        jmpBytes = new byte[5 + nopsNeeded];
 
         jmpBytes[0] = 0xE9;
 
@@ -41,17 +43,17 @@ internal sealed class CodeCave
             jmpBytes[i] = 0x90;
         }
 
-        byte[] caveBytes = new byte[5 + newBytes.Length];
-        offset = (int)((long)targetAddress + jmpBytes.Length - ((long)caveAddress + newBytes.Length) - 5);
+        byte[] caveBytes = new byte[5 + newCode.Length];
+        offset = (int)((long)targetAddress + jmpBytes.Length - ((long)caveAddress + newCode.Length) - 5);
 
-        newBytes.CopyTo(caveBytes, 0);
-        caveBytes[newBytes.Length] = 0xE9;
+        newCode.CopyTo(caveBytes, 0);
+        caveBytes[newCode.Length] = 0xE9;
 
-        BitConverter.GetBytes(offset).CopyTo(caveBytes, newBytes.Length + 1);
+        BitConverter.GetBytes(offset).CopyTo(caveBytes, newCode.Length + 1);
 
         var readBytes = new byte[replaceCount];
 
-        _ = ReadProcessMemory(targetProcessHandle, targetAddress, readBytes, (UIntPtr)replaceCount, IntPtr.Zero) 
+        _ = ReadProcessMemory(targetProcessHandle, targetAddress, readBytes, (UIntPtr)replaceCount, IntPtr.Zero)
             == true ? readBytes : Array.Empty<byte>();
 
         var caveTable = new CodeCaveTable(readBytes, caveAddress, jmpBytes);
@@ -62,7 +64,7 @@ internal sealed class CodeCave
         //_logger?.Info($"Code cave created for address 0x{memAddress.Address:x16}.\nCustom code at cave address: " +
         //    $"0x{caveAddress:x16}.");
 
-        return caveTable;
+        return true;
     }
 
     private static UIntPtr FindFreeMemoryBlock(UIntPtr baseAddress, uint size, IntPtr processHandle)

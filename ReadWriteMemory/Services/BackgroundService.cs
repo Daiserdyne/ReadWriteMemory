@@ -12,7 +12,7 @@ internal static class BackgroundService
             }
             catch
             {
-                break;
+                throw;
             }
 
             await Task.Delay(repeatTime, ct);

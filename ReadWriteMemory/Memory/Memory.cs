@@ -1,6 +1,7 @@
 ﻿using ReadWriteMemory.Logging;
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
+using ReadWriteMemory.Utilities;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Win32 = ReadWriteMemory.NativeImports.Win32;
@@ -214,25 +215,25 @@ public sealed partial class Memory : IDisposable
     }
 
     /// <summary>
-    /// Creates a code cave to inject custom code in target process. 
+    /// Creates a code cave to apply custom code in target process. 
     /// If you created a code cave in the past with the same memory address, it will
     /// jump back to your cave address.
     /// </summary>
     /// <param name="memAddress">Address, module name and offesets</param>
-    /// <param name="newBytes">The opcodes to write in the code cave</param>
+    /// <param name="newCode">The opcodes to write in the code cave</param>
     /// <param name="replaceCount">The number of bytes being replaced</param>
     /// <param name="size">size of the allocated region</param>
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    public UIntPtr CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
+    public UIntPtr CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newCode, int replaceCount, uint size = 0x1000)
     {
         if (replaceCount < 5 || !IsProcessAlive())
         {
             return UIntPtr.Zero;
         }
 
-        if (IsCodeCaveOpen(memAddress, out var caveAddr))
+        if (IsCodeCaveAlreadyCreatedForAddress(memAddress, out var caveAddr))
         {
             _logger?.Info($"Resuming code cave for address 0x{(UIntPtr)memAddress.Address:x16}.\nCave address: 0x{caveAddr:x16}\n");
             return caveAddr;
@@ -240,16 +241,17 @@ public sealed partial class Memory : IDisposable
 
         var targetAddress = GetTargetAddress(memAddress);
 
-        var codeCaveTable = CodeCave.CreateCodeCaveAndInjectCode(targetAddress, _targetProcess.Handle, newBytes, replaceCount, size);
+        CodeCaveFactory.CreateCodeCaveAndLoadCustomCode(targetAddress, _targetProcess.Handle, newCode, replaceCount, 
+            out var caveAddress, out var originalOpcodes, out var jmpBytes, size);
 
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
         if (tableIndex != -1)
         {
-            _addressRegister[tableIndex].CodeCaveTable = codeCaveTable;
+            _addressRegister[tableIndex].CodeCaveTable = new(originalOpcodes, caveAddress, jmpBytes);
         }
 
-        return codeCaveTable.CaveAddress;
+        return caveAddress;
     }
 
     /// <summary>
