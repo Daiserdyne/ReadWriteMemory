@@ -241,7 +241,7 @@ public sealed partial class Memory : IDisposable
 
         var targetAddress = GetTargetAddress(memAddress);
 
-        CodeCaveFactory.CreateCodeCaveAndLoadCustomCode(targetAddress, _targetProcess.Handle, newCode, replaceCount, 
+        CodeCaveFactory.CreateCodeCaveAndInjectCode(targetAddress, _targetProcess.Handle, newCode, replaceCount, 
             out var caveAddress, out var originalOpcodes, out var jmpBytes, size);
 
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);

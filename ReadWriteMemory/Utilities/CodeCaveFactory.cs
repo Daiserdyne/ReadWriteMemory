@@ -3,9 +3,9 @@ using static ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory.Utilities;
 
-internal sealed class CodeCaveFactory
+internal static class CodeCaveFactory
 {
-    internal static bool CreateCodeCaveAndLoadCustomCode(UIntPtr targetAddress, IntPtr targetProcessHandle, byte[] newCode, int replaceCount,
+    internal static bool CreateCodeCaveAndInjectCode(UIntPtr targetAddress, IntPtr targetProcessHandle, byte[] newCode, int replaceCount,
         out UIntPtr caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 0x1000)
     {
         caveAddress = UIntPtr.Zero;
