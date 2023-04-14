@@ -10,6 +10,8 @@ public sealed partial class Memory
 {
     /// <summary>
     /// This will write the given <paramref name="value"/> to the target <paramref name="memoryAddress"/>.
+    /// Don't forget to specify the type. For example if you want to write a float, add the 'f' behind the number, for
+    /// double add a 'd' so that the memory knows what type you want to write.
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>

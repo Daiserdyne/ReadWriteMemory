@@ -31,10 +31,10 @@ public sealed partial class Memory
             return false;
         }
 
-        int tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
+        var tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
 
         if (_addressRegister[tableIndex].FreezeTokenSrc is not null)
-        { 
+        {
             _logger?.Info("This value is allready freezed.");
             return false;
         }
@@ -69,6 +69,24 @@ public sealed partial class Memory
     }
 
     /// <summary>
+    /// <para>Freezes the value from the given <paramref name="memoryAddress"/>.</para>
+    /// You optionally can set the <paramref name="refreshRateInMilliseconds"/>
+    /// to a specific value you want.
+    /// Don't forget to specify the <paramref name="freezeValue"/> type. For example if you want to write a float, add the 'f' behind the number, for
+    /// double add a 'd' so that the memory knows what type you want to write.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="freezeValue"></param>
+    /// <param name="refreshRateInMilliseconds"></param>
+    /// <returns></returns>
+    public bool FreezeValue(MemoryAddress memoryAddress, object freezeValue, uint refreshRateInMilliseconds = 100)
+    {
+        WriteMemory(memoryAddress, freezeValue);
+
+        return FreezeValue(memoryAddress, refreshRateInMilliseconds);
+    }
+
+    /// <summary>
     /// Unfreezes a value from the given <paramref name="memoryAddress"/>.
     /// </summary>
     /// <param name="memoryAddress"></param>
@@ -80,7 +98,7 @@ public sealed partial class Memory
             return false;
         }
 
-        int tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
+        var tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
 
         if (tableIndex == -1)
         {

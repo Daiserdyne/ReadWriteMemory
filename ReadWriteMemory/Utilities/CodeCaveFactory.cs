@@ -1,36 +1,33 @@
-﻿using ReadWriteMemory.Models;
-using static ReadWriteMemory.NativeImports.Win32;
+﻿using static ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory.Utilities;
 
 internal static class CodeCaveFactory
 {
-    internal static bool CreateCodeCaveAndInjectCode(UIntPtr targetAddress, IntPtr targetProcessHandle, byte[] newCode, int replaceCount,
-        out UIntPtr caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 0x1000)
+    internal static bool CreateCodeCaveAndInjectCode(nuint targetAddress, nint targetProcessHandle, byte[] newCode, int replaceCount,
+        out nuint caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 0x1000)
     {
-        caveAddress = UIntPtr.Zero;
-        originalOpcodes = new byte[0];
+        caveAddress = nuint.Zero;
 
-        for (var i = 0; i < 10 && caveAddress == UIntPtr.Zero; i++)
+        for (var i = 0; i < 10 && caveAddress == nuint.Zero; i++)
         {
             caveAddress = VirtualAllocEx(targetProcessHandle, FindFreeMemoryBlock(targetAddress, size, targetProcessHandle), size,
                 MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
-            if (caveAddress == UIntPtr.Zero)
+            if (caveAddress == nuint.Zero)
             {
-                targetAddress = UIntPtr.Add(targetAddress, 0x10000);
+                targetAddress = nuint.Add(targetAddress, 0x10000);
             }
         }
 
-        if (caveAddress == UIntPtr.Zero)
+        if (caveAddress == nuint.Zero)
         {
-            caveAddress = VirtualAllocEx(targetProcessHandle, UIntPtr.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+            caveAddress = VirtualAllocEx(targetProcessHandle, nuint.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
         }
 
-        int nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;
+        var nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;
 
-        // (to - from - 5)
-        int offset = (int)((long)caveAddress - (long)targetAddress - 5);
+        var offset = (int)((long)caveAddress - (long)targetAddress - 5);
 
         jmpBytes = new byte[5 + nopsNeeded];
 
@@ -43,34 +40,30 @@ internal static class CodeCaveFactory
             jmpBytes[i] = 0x90;
         }
 
-        byte[] caveBytes = new byte[5 + newCode.Length];
+        var caveBytes = new byte[5 + newCode.Length];
+
         offset = (int)((long)targetAddress + jmpBytes.Length - ((long)caveAddress + newCode.Length) - 5);
 
-        newCode.CopyTo(caveBytes, 0);
+        Buffer.BlockCopy(newCode, 0, caveBytes, 0, newCode.Length);
+
         caveBytes[newCode.Length] = 0xE9;
 
-        BitConverter.GetBytes(offset).CopyTo(caveBytes, newCode.Length + 1);
+        Buffer.BlockCopy(BitConverter.GetBytes(offset), 0, caveBytes, newCode.Length + 1, sizeof(int));
 
-        var readBytes = new byte[replaceCount];
+        originalOpcodes = new byte[replaceCount];
 
-        _ = ReadProcessMemory(targetProcessHandle, targetAddress, readBytes, (UIntPtr)replaceCount, IntPtr.Zero)
-            == true ? readBytes : Array.Empty<byte>();
+        ReadProcessMemory(targetProcessHandle, targetAddress, originalOpcodes, (nuint)replaceCount, IntPtr.Zero);
 
-        var caveTable = new CodeCaveTable(readBytes, caveAddress, jmpBytes);
-
-        WriteProcessMemory(targetProcessHandle, caveAddress, caveBytes, (UIntPtr)caveBytes.Length, out _);
-        WriteProcessMemory(targetProcessHandle, targetAddress, jmpBytes, (UIntPtr)jmpBytes.Length, out _);
-
-        //_logger?.Info($"Code cave created for address 0x{memAddress.Address:x16}.\nCustom code at cave address: " +
-        //    $"0x{caveAddress:x16}.");
+        WriteProcessMemory(targetProcessHandle, caveAddress, caveBytes, (nuint)caveBytes.Length, out _);
+        WriteProcessMemory(targetProcessHandle, targetAddress, jmpBytes, (nuint)jmpBytes.Length, out _);
 
         return true;
     }
 
-    private static UIntPtr FindFreeMemoryBlock(UIntPtr baseAddress, uint size, IntPtr processHandle)
+    private static nuint FindFreeMemoryBlock(nuint baseAddress, uint size, nint processHandle)
     {
-        var minAddress = UIntPtr.Subtract(baseAddress, 0x70000000);
-        var maxAddress = UIntPtr.Add(baseAddress, 0x70000000);
+        var minAddress = nuint.Subtract(baseAddress, 0x70000000);
+        var maxAddress = nuint.Add(baseAddress, 0x70000000);
 
         GetSystemInfo(out SYSTEM_INFO sysInfo);
 
@@ -87,18 +80,20 @@ internal static class CodeCaveFactory
         }
 
         var current = minAddress;
-        var caveAddress = UIntPtr.Zero;
+        var caveAddress = nuint.Zero;
 
         while (VirtualQueryEx(processHandle, current, out MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
         {
             if ((long)memoryInfos.BaseAddress > (long)maxAddress)
             {
-                return UIntPtr.Zero;
+                return nuint.Zero;
             }
 
             if (memoryInfos.State == MEM_FREE && memoryInfos.RegionSize > size)
             {
                 CalculateCaveAddress(baseAddress, size, sysInfo, ref caveAddress, memoryInfos);
+
+                return caveAddress;
             }
 
             if (memoryInfos.RegionSize % sysInfo.allocationGranularity > 0)
@@ -108,7 +103,7 @@ internal static class CodeCaveFactory
 
             var previous = current;
 
-            current = new UIntPtr(memoryInfos.BaseAddress + (ulong)memoryInfos.RegionSize);
+            current = new nuint(memoryInfos.BaseAddress + (ulong)memoryInfos.RegionSize);
 
             if ((long)current >= (long)maxAddress)
             {
@@ -136,18 +131,18 @@ internal static class CodeCaveFactory
 
             if (memoryInfos.RegionSize - offset >= size)
             {
-                tmpAddress = UIntPtr.Add(tmpAddress, offset);
+                tmpAddress = nuint.Add(tmpAddress, offset);
 
                 if ((long)tmpAddress < (long)baseAddress)
                 {
-                    tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - offset - size));
+                    tmpAddress = nuint.Add(tmpAddress, (int)(memoryInfos.RegionSize - offset - size));
 
                     if ((long)tmpAddress > (long)baseAddress)
                     {
                         tmpAddress = baseAddress;
                     }
 
-                    tmpAddress = UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
+                    tmpAddress = nuint.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
                 }
 
                 if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
@@ -162,14 +157,14 @@ internal static class CodeCaveFactory
 
             if ((long)tmpAddress < (long)baseAddress)
             {
-                tmpAddress = UIntPtr.Add(tmpAddress, (int)(memoryInfos.RegionSize - size));
+                tmpAddress = nuint.Add(tmpAddress, (int)(memoryInfos.RegionSize - size));
 
                 if ((long)tmpAddress > (long)baseAddress)
                 {
                     tmpAddress = baseAddress;
                 }
 
-                tmpAddress = UIntPtr.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
+                tmpAddress = nuint.Subtract(tmpAddress, (int)(tmpAddress % sysInfo.allocationGranularity));
             }
 
             if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))

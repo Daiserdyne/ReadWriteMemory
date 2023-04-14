@@ -132,6 +132,7 @@ internal sealed class Win32
     [DllImport("psapi.dll")]
     internal static extern uint GetModuleFileNameEx(IntPtr hProcess, IntPtr hModule, [Out] StringBuilder lpBaseName, [In][MarshalAs(UnmanagedType.U4)] int nSize);
     [DllImport("psapi.dll", SetLastError = true)]
+
     internal static extern bool EnumProcessModules(IntPtr hProcess,
     [Out] IntPtr lphModule,
     uint cb,
@@ -140,14 +141,14 @@ internal sealed class Win32
     [DllImport("kernel32.dll")]
     internal static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] byte[] lpBuffer, UIntPtr nSize, IntPtr lpNumberOfBytesRead);
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, [Out] byte[] lpBuffer, int dwSize, out IntPtr lpNumberOfBytesRead);
+    //[DllImport("kernel32.dll", SetLastError = true)]
+    //static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, [Out] byte[] lpBuffer, int dwSize, out IntPtr lpNumberOfBytesRead);
 
-    [DllImport("kernel32.dll")]
-    internal static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] byte[] lpBuffer, UIntPtr nSize, out ulong lpNumberOfBytesRead);
+    //[DllImport("kernel32.dll")]
+    //internal static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] byte[] lpBuffer, UIntPtr nSize, out ulong lpNumberOfBytesRead);
 
-    [DllImport("kernel32.dll")]
-    internal static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] IntPtr lpBuffer, UIntPtr nSize, out ulong lpNumberOfBytesRead);
+    //[DllImport("kernel32.dll")]
+    //internal static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] IntPtr lpBuffer, UIntPtr nSize, out ulong lpNumberOfBytesRead);
 
     [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
     internal static extern UIntPtr VirtualAllocEx(
