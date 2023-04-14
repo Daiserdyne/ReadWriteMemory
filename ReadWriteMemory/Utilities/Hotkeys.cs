@@ -21,6 +21,7 @@ public static partial class Hotkeys
     /// </summary>
     public enum Key : int
     {
+#pragma warning disable CS1591 // Fehledes XML-Kommentar für öffentlich sichtbaren Typ oder Element
         VK_LBUTTON = 0X01,
         VK_RBUTTON = 0X02,
         VK_MBUTTON = 0X04,
@@ -117,7 +118,8 @@ public static partial class Hotkeys
         VK_LSHIFT = 0XA0,
         VK_RSHIFT = 0XA1,
         VK_LCONTROL = 0XA2,
-        VK_RCONTROL = 0XA3,
+        VK_RCONTROL = 0XA3
+#pragma warning restore CS1591 // Fehledes XML-Kommentar für öffentlich sichtbaren Typ oder Element
     }
 
     #endregion
@@ -135,10 +137,14 @@ public static partial class Hotkeys
         if (GetAsyncKeyState(targetKey) < 0)
         {
             if (!waitForKeyRelease)
+            {
                 return true;
+            }
 
             while (GetAsyncKeyState(targetKey) < 0)
+            {
                 await Task.Delay(1);
+            }
 
             return true;
         }
@@ -157,10 +163,14 @@ public static partial class Hotkeys
         if (GetAsyncKeyState(keyCode) < 0)
         {
             if (!waitForKeyRelease)
+            {
                 return true;
+            }
 
             while (GetAsyncKeyState(keyCode) < 0)
+            {
                 await Task.Delay(1);
+            }
 
             return true;
         }

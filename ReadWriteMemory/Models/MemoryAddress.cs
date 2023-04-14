@@ -1,7 +1,7 @@
 ﻿namespace ReadWriteMemory.Models;
 
 /// <summary>
-/// This model class stores a memory <paramref name="address"/>, the associated <paramref name="offsets"/> <c>and/or</c> <paramref name="moduleName"/>. 
+/// This record class stores address, offsets and module name. 
 /// This will be needed to calculate the base address and read/write to/from the targets process memory.
 /// <example>
 /// <code>MemoryAddress memoryAddress = new(0x1234567, "elonMusk.exe", 0x42, 0x420, 0x69)</code>
@@ -12,16 +12,15 @@
 /// <para>See <seealso cref="MemoryAddress(long, int[])"/></para> 
 /// See <seealso cref="MemoryAddress(long, string, int[])"/>
 /// </summary>
-public sealed class MemoryAddress
+public sealed record MemoryAddress
 {
     /// <summary>
-    /// This model class stores a memory <paramref name="address"/>, the associated <paramref name="offsets"/> and <paramref name="moduleName"/>. 
+    /// This record class stores a memory <paramref name="address"/>, the associated <paramref name="offsets"/> and <paramref name="moduleName"/>. 
     /// This will be needed to calculate the base address and read/write to/from the targets process memory.
     /// <example>
     /// <code>MemoryAddress memoryAddress = new(0x1234567, "elonMusk.exe", 0x42, 0x420, 0x69)</code>
     /// <code>MemoryAddress memoryAddress = new(0x1234567, "falconheavy.dll")</code>
     /// </example>
-    /// See also: <seealso cref="MemoryAddress(long, int[])"/>
     /// </summary>
     /// <param name="address"></param>
     /// <param name="moduleName"></param>
@@ -34,14 +33,13 @@ public sealed class MemoryAddress
     }
 
     /// <summary>
-    /// This model class stores a memory <paramref name="address"/> and the associated <paramref name="offsets"/>. 
+    /// This record class stores a memory <paramref name="address"/> and the associated <paramref name="offsets"/>. 
     /// This will be needed to calculate 
     /// the base address and read/write to/from the targets process memory.
     /// <example>
     /// <code>MemoryAddress memoryAddress = new(0x1234567, 0x42, 0x420, 0x69)</code>
     /// <code>MemoryAddress memoryAddress = new(0x1234567)</code>
     /// </example>
-    /// See also: <seealso cref="MemoryAddress(long, string, int[]?)"/>
     /// </summary>
     /// <param name="address"></param>
     /// <param name="offsets"></param>

@@ -18,7 +18,7 @@ public sealed class TrainerServices
     /// <returns></returns>
     public static Memory GetSingletonInstance(string processName)
     {
-        if (_mem is null) _mem = new();
+        _mem ??= new();
 
         lock (_mem)
         {
@@ -38,7 +38,9 @@ public sealed class TrainerServices
         var entryAssembly = Assembly.GetEntryAssembly();
 
         if (entryAssembly is null)
+        {
             return trainerRegister;
+        }
 
         var implementedTrainers = (from type in entryAssembly.GetTypes()
                                    where type.GetInterfaces().Contains(typeof(ITrainer))
@@ -46,10 +48,14 @@ public sealed class TrainerServices
                                    select Activator.CreateInstance(type) as ITrainer).ToList();
 
         if (!implementedTrainers.Any())
+        {
             return trainerRegister;
+        }
 
         foreach (var trainer in implementedTrainers)
+        {
             trainerRegister.Add(trainer.TrainerName, trainer);
+        }
 
         return trainerRegister;
     }

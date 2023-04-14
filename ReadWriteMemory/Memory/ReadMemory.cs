@@ -1,6 +1,7 @@
 ﻿using ReadWriteMemory.Models;
 using System.Numerics;
 using System.Text;
+using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
@@ -36,7 +37,11 @@ public sealed partial class Memory
         /// <summary>
         /// Represents an <see cref="System.String"/>.
         /// </summary>
-        String
+        String,
+        /// <summary>
+        /// Represents an array of <see cref="System.Byte"/>.
+        /// </summary>
+        ByteArray
     }
 
     #endregion
@@ -47,19 +52,22 @@ public sealed partial class Memory
     /// <param name="memoryAddress"></param>
     /// <param name="type"></param>
     /// <param name="value"></param>
+    /// <param name="readBufferSize"></param>
     /// <returns>The value of the address, parsed to the given <see cref="MemoryDataTypes"/>. If the function fails, it will return <c>0</c>.</returns>
-    public bool ReadMemory(MemoryAddress memoryAddress, MemoryDataTypes type, out object value)
+    public bool ReadMemory(MemoryAddress memoryAddress, MemoryDataTypes type, out object value, int readBufferSize = 8)
     {
         value = 0;
 
         var targetAddress = CalculateTargetAddress(memoryAddress);
 
         if (targetAddress == UIntPtr.Zero)
+        {
             return false;
+        }
 
-        var buffer = new byte[8];
+        var buffer = new byte[readBufferSize];
 
-        if (ReadProcessMemory(_proc.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+        if (Win32.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
         {
             ConvertTargetValue(type, buffer, ref value);
 
@@ -71,29 +79,19 @@ public sealed partial class Memory
         return false;
     }
 
-    private static void ConvertTargetValue(MemoryDataTypes type, byte[] buffer, ref object value)
+    private static void ConvertTargetValue(MemoryDataTypes type, byte[] buffer, ref object value) 
     {
-        switch (type)
+        value = type switch
         {
-            case MemoryDataTypes.Int16:
-                value = BitConverter.ToInt16(buffer, 0);
-                break;
-            case MemoryDataTypes.Int32:
-                value = BitConverter.ToInt32(buffer, 0);
-                break;
-            case MemoryDataTypes.Int64:
-                value = BitConverter.ToInt64(buffer, 0);
-                break;
-            case MemoryDataTypes.Float:
-                value = BitConverter.ToSingle(buffer, 0);
-                break;
-            case MemoryDataTypes.Double:
-                value = BitConverter.ToDouble(buffer, 0);
-                break;
-            case MemoryDataTypes.String:
-                value = Encoding.UTF8.GetString(buffer);
-                break;
-        }
+            MemoryDataTypes.Int16 => BitConverter.ToInt16(buffer, 0),
+            MemoryDataTypes.Int32 => BitConverter.ToInt32(buffer, 0),
+            MemoryDataTypes.Int64 => BitConverter.ToInt64(buffer, 0),
+            MemoryDataTypes.Float => BitConverter.ToSingle(buffer, 0),
+            MemoryDataTypes.Double => BitConverter.ToDouble(buffer, 0),
+            MemoryDataTypes.String => Encoding.UTF8.GetString(buffer),
+            MemoryDataTypes.ByteArray => buffer,
+            _ => throw new ArgumentException("Invalid type", nameof(type))
+        };
     }
 
     /// <summary>
@@ -114,31 +112,37 @@ public sealed partial class Memory
         var zAddress = CalculateTargetAddress(zPosition);
 
         if (xAddress == UIntPtr.Zero || yAddress == UIntPtr.Zero || zAddress == UIntPtr.Zero)
+        {
             return false;
+        }
 
-        var coordsAddresses = new UIntPtr[Vector3Length]
+        var coordsAddresses = new UIntPtr[3]
         {
             xAddress,
             yAddress,
             zAddress
         };
 
-        var coordValues = new float[Vector3Length];
+        var coordValues = new float[3];
 
         int successCounter = 0;
 
-        for (int i = 0; i < Vector3Length; i++)
+        for (int i = 0; i < 3; i++)
         {
             var buffer = new byte[4];
 
-            if (ReadProcessMemory(_proc.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            if (Win32.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            {
                 successCounter++;
+            }
 
             coordValues[i] = BitConverter.ToSingle(buffer, 0);
         }
 
-        if (successCounter != Vector3Length)
+        if (successCounter != 3)
+        {
             return false;
+        }
 
         coordinates.X = coordValues[0];
         coordinates.Y = coordValues[1];
@@ -170,31 +174,37 @@ public sealed partial class Memory
         var targetAddress = CalculateTargetAddress(xCoordAddress);
 
         if (targetAddress == UIntPtr.Zero)
+        {
             return false;
+        }
 
-        var coordsAddresses = new UIntPtr[Vector3Length]
+        var coordsAddresses = new UIntPtr[3]
         {
             targetAddress,
             targetAddress + 4,
             targetAddress + 8
         };
 
-        var coordValues = new float[Vector3Length];
+        var coordValues = new float[3];
 
         int successCounter = 0;
 
-        for (int i = 0; i < Vector3Length; i++)
+        for (int i = 0; i < 3; i++)
         {
             var buffer = new byte[4];
 
-            if (ReadProcessMemory(_proc.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            if (Win32.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            {
                 successCounter++;
+            }
 
             coordValues[i] = BitConverter.ToSingle(buffer, 0);
         }
 
-        if (successCounter != Vector3Length)
+        if (successCounter != 3)
+        {
             return false;
+        }
 
         coordinates.X = coordValues[0];
         coordinates.Y = coordValues[1];

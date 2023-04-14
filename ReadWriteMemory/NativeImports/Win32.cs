@@ -3,44 +3,41 @@ using System.Text;
 
 namespace ReadWriteMemory.NativeImports;
 
-public class NativeMethods
+internal sealed class Win32
 {
     #region Constants
 
     // privileges
-    protected const int FULL_MEMORY_ACCESS = 0x1F0FFF;
-    protected const int PROCESS_CREATE_THREAD = 0x0002;
-    protected const int PROCESS_QUERY_INFORMATION = 0x0400;
-    protected const int PROCESS_VM_OPERATION = 0x0008;
-    protected const int PROCESS_VM_WRITE = 0x0020;
-    protected const int PROCESS_VM_READ = 0x0010;
+    internal const int FULL_MEMORY_ACCESS = 0x1F0FFF;
+    internal const int PROCESS_CREATE_THREAD = 0x0002;
+    internal const int PROCESS_QUERY_INFORMATION = 0x0400;
+    internal const int PROCESS_VM_OPERATION = 0x0008;
+    internal const int PROCESS_VM_WRITE = 0x0020;
+    internal const int PROCESS_VM_READ = 0x0010;
 
     // used for memory allocation
-    protected const uint MEM_FREE = 0x10000;
-    protected const uint MEM_COMMIT = 0x00001000;
-    protected const uint MEM_RESERVE = 0x00002000;
-
-    protected const uint PAGE_READONLY = 0x02;
-    protected const uint PAGE_READWRITE = 0x04;
-    protected const uint PAGE_WRITECOPY = 0x08;
-    protected const uint PAGE_EXECUTE_READWRITE = 0x40;
-    protected const uint PAGE_EXECUTE_WRITECOPY = 0x80;
-    protected const uint PAGE_EXECUTE = 0x10;
-    protected const uint PAGE_EXECUTE_READ = 0x20;
-
-    protected const uint PAGE_GUARD = 0x100;
-    protected const uint PAGE_NOACCESS = 0x01;
-
-    protected const uint MEM_PRIVATE = 0x20000;
-    protected const uint MEM_IMAGE = 0x1000000;
-    protected const uint MEM_MAPPED = 0x40000;
+    internal const uint MEM_FREE = 0x10000;
+    internal const uint MEM_COMMIT = 0x00001000;
+    internal const uint MEM_RESERVE = 0x00002000;
+    internal const uint PAGE_READONLY = 0x02;
+    internal const uint PAGE_READWRITE = 0x04;
+    internal const uint PAGE_WRITECOPY = 0x08;
+    internal const uint PAGE_EXECUTE_READWRITE = 0x40;
+    internal const uint PAGE_EXECUTE_WRITECOPY = 0x80;
+    internal const uint PAGE_EXECUTE = 0x10;
+    internal const uint PAGE_EXECUTE_READ = 0x20;
+    internal const uint PAGE_GUARD = 0x100;
+    internal const uint PAGE_NOACCESS = 0x01;
+    internal const uint MEM_PRIVATE = 0x20000;
+    internal const uint MEM_IMAGE = 0x1000000;
+    internal const uint MEM_MAPPED = 0x40000;
 
     #endregion
 
     [DllImport("kernel32.dll")]
-    protected static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+    internal static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
-    protected static IntPtr OpenProcess(bool bInheritHandle, int dwProcessId)
+    internal static IntPtr OpenProcess(bool bInheritHandle, int dwProcessId)
     {
         return OpenProcess(FULL_MEMORY_ACCESS, bInheritHandle, dwProcessId);
     }
@@ -49,10 +46,10 @@ public class NativeMethods
 #else
 
     [DllImport("kernel32.dll", EntryPoint = "VirtualQueryEx")]
-    protected static extern UIntPtr Native_VirtualQueryEx(IntPtr hProcess, UIntPtr lpAddress,
+    internal static extern UIntPtr Native_VirtualQueryEx(IntPtr hProcess, UIntPtr lpAddress,
         out MEMORY_BASIC_INFORMATION32 lpBuffer, UIntPtr dwLength);
 
-    protected UIntPtr VirtualQueryEx(IntPtr hProcess, UIntPtr lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer)
+    internal static UIntPtr VirtualQueryEx(IntPtr hProcess, UIntPtr lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer)
     {
         MEMORY_BASIC_INFORMATION64 tmp64 = new();
         var retVal = Native_VirtualQueryEx(hProcess, lpAddress, out tmp64, new UIntPtr((uint)Marshal.SizeOf(tmp64)));
@@ -69,26 +66,26 @@ public class NativeMethods
     }
 
     [DllImport("kernel32.dll", EntryPoint = "VirtualQueryEx")]
-    protected static extern UIntPtr Native_VirtualQueryEx(IntPtr hProcess, UIntPtr lpAddress,
+    internal static extern UIntPtr Native_VirtualQueryEx(IntPtr hProcess, UIntPtr lpAddress,
         out MEMORY_BASIC_INFORMATION64 lpBuffer, UIntPtr dwLength);
 
     [DllImport("kernel32.dll")]
-    protected static extern uint GetLastError();
+    internal static extern uint GetLastError();
 
     [DllImport("kernel32.dll")]
-    protected static extern void GetSystemInfo(out SYSTEM_INFO lpSystemInfo);
+    internal static extern void GetSystemInfo(out SYSTEM_INFO lpSystemInfo);
 
 #endif
 
     [DllImport("kernel32.dll")]
-    protected static extern IntPtr OpenThread(ThreadAccess dwDesiredAccess, bool bInheritHandle, uint dwThreadId);
+    internal static extern IntPtr OpenThread(ThreadAccess dwDesiredAccess, bool bInheritHandle, uint dwThreadId);
     [DllImport("kernel32.dll", SetLastError = true)]
-    protected static extern int SuspendThread(IntPtr hThread);
+    internal static extern int SuspendThread(IntPtr hThread);
     [DllImport("kernel32.dll")]
-    protected static extern int ResumeThread(IntPtr hThread);
+    internal static extern int ResumeThread(IntPtr hThread);
 
     [DllImport("dbghelp.dll")]
-    protected static extern bool MiniDumpWriteDump(
+    internal static extern bool MiniDumpWriteDump(
         IntPtr hProcess,
         int ProcessId,
         IntPtr hFile,
@@ -98,13 +95,13 @@ public class NativeMethods
         IntPtr CallackParam);
 
     [DllImport("user32.dll", SetLastError = true)]
-    protected static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+    internal static extern int GetWindowLong(IntPtr hWnd, int nIndex);
 
     [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = false)]
-    protected static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr w, IntPtr l);
+    internal static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr w, IntPtr l);
 
     [DllImport("kernel32.dll")]
-    protected static extern bool WriteProcessMemory(
+    internal static extern bool WriteProcessMemory(
         IntPtr hProcess,
         UIntPtr lpBaseAddress,
         string lpBuffer,
@@ -113,10 +110,10 @@ public class NativeMethods
     );
 
     [DllImport("kernel32.dll")]
-    protected static extern int GetProcessId(IntPtr handle);
+    internal static extern int GetProcessId(IntPtr handle);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-    protected static extern uint GetPrivateProfileString(
+    internal static extern uint GetPrivateProfileString(
        string lpAppName,
        string lpKeyName,
        string lpDefault,
@@ -125,7 +122,7 @@ public class NativeMethods
        string lpFileName);
 
     [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
-    protected static extern bool VirtualFreeEx(
+    internal static extern bool VirtualFreeEx(
         IntPtr hProcess,
         UIntPtr lpAddress,
         UIntPtr dwSize,
@@ -133,24 +130,27 @@ public class NativeMethods
         );
 
     [DllImport("psapi.dll")]
-    protected static extern uint GetModuleFileNameEx(IntPtr hProcess, IntPtr hModule, [Out] StringBuilder lpBaseName, [In][MarshalAs(UnmanagedType.U4)] int nSize);
+    internal static extern uint GetModuleFileNameEx(IntPtr hProcess, IntPtr hModule, [Out] StringBuilder lpBaseName, [In][MarshalAs(UnmanagedType.U4)] int nSize);
     [DllImport("psapi.dll", SetLastError = true)]
-    protected static extern bool EnumProcessModules(IntPtr hProcess,
+    internal static extern bool EnumProcessModules(IntPtr hProcess,
     [Out] IntPtr lphModule,
     uint cb,
     [MarshalAs(UnmanagedType.U4)] out uint lpcbNeeded);
 
     [DllImport("kernel32.dll")]
-    protected static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] byte[] lpBuffer, UIntPtr nSize, IntPtr lpNumberOfBytesRead);
+    internal static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] byte[] lpBuffer, UIntPtr nSize, IntPtr lpNumberOfBytesRead);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, [Out] byte[] lpBuffer, int dwSize, out IntPtr lpNumberOfBytesRead);
 
     [DllImport("kernel32.dll")]
-    protected static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] byte[] lpBuffer, UIntPtr nSize, out ulong lpNumberOfBytesRead);
+    internal static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] byte[] lpBuffer, UIntPtr nSize, out ulong lpNumberOfBytesRead);
 
     [DllImport("kernel32.dll")]
-    protected static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] IntPtr lpBuffer, UIntPtr nSize, out ulong lpNumberOfBytesRead);
+    internal static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] IntPtr lpBuffer, UIntPtr nSize, out ulong lpNumberOfBytesRead);
 
     [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
-    protected static extern UIntPtr VirtualAllocEx(
+    internal static extern UIntPtr VirtualAllocEx(
         IntPtr hProcess,
         UIntPtr lpAddress,
         uint dwSize,
@@ -158,44 +158,47 @@ public class NativeMethods
         uint flProtect
     );
 
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, int dwSize, uint flAllocationType, MemoryProtection flProtect);
+
     [DllImport("kernel32.dll")]
-    protected static extern bool VirtualProtectEx(IntPtr hProcess, UIntPtr lpAddress,
+    internal static extern bool VirtualProtectEx(IntPtr hProcess, UIntPtr lpAddress,
         IntPtr dwSize, MemoryProtection flNewProtect, out MemoryProtection lpflOldProtect);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true)]
-    protected static extern UIntPtr GetProcAddress(
+    internal static extern UIntPtr GetProcAddress(
         IntPtr hModule,
         string procName
     );
 
     [DllImport("kernel32.dll", EntryPoint = "CloseHandle")]
-    protected static extern bool _CloseHandle(IntPtr hObject);
+    internal static extern bool _CloseHandle(IntPtr hObject);
 
     [DllImport("kernel32.dll")]
-    protected static extern int CloseHandle(
+    internal static extern int CloseHandle(
     IntPtr hObject
     );
 
     [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
-    protected static extern IntPtr GetModuleHandle(
+    internal static extern IntPtr GetModuleHandle(
         string lpModuleName
     );
 
     [DllImport("kernel32", SetLastError = true, ExactSpelling = true)]
-    protected static extern int WaitForSingleObject(
+    internal static extern int WaitForSingleObject(
         IntPtr handle,
         int milliseconds
     );
 
     [DllImport("kernel32.dll")]
-    protected static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, IntPtr lpNumberOfBytesWritten);
+    internal static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, IntPtr lpNumberOfBytesWritten);
 
     // Added to avoid casting to UIntPtr
     [DllImport("kernel32.dll")]
-    protected static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, out IntPtr lpNumberOfBytesWritten);
+    internal static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, out IntPtr lpNumberOfBytesWritten);
 
     [DllImport("kernel32")]
-    protected static extern IntPtr CreateRemoteThread(
+    internal static extern IntPtr CreateRemoteThread(
       IntPtr hProcess,
       IntPtr lpThreadAttributes,
       uint dwStackSize,
@@ -206,42 +209,42 @@ public class NativeMethods
     );
 
     [DllImport("kernel32")]
-    protected static extern bool IsWow64Process(IntPtr hProcess, out bool lpSystemInfo);
+    internal static extern bool IsWow64Process(IntPtr hProcess, out bool lpSystemInfo);
 
     [DllImport("user32.dll")]
-    protected static extern bool SetForegroundWindow(IntPtr hWnd);
+    internal static extern bool SetForegroundWindow(IntPtr hWnd);
 
     [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Auto)]
-    protected static extern IntPtr CreateToolhelp32Snapshot([In] uint dwFlags, [In] uint th32ProcessID);
+    internal static extern IntPtr CreateToolhelp32Snapshot([In] uint dwFlags, [In] uint th32ProcessID);
 
     [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Auto)]
-    protected static extern bool Process32First([In] IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
+    internal static extern bool Process32First([In] IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
     [DllImport("kernel32.dll")]
-    protected static extern bool Module32First(IntPtr hSnapshot, ref MODULEENTRY32 lpme);
+    internal static extern bool Module32First(IntPtr hSnapshot, ref MODULEENTRY32 lpme);
     [DllImport("kernel32.dll")]
-    protected static extern bool Module32Next(IntPtr hSnapshot, ref MODULEENTRY32 lpme);
+    internal static extern bool Module32Next(IntPtr hSnapshot, ref MODULEENTRY32 lpme);
 
     [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Auto)]
-    protected static extern bool Process32Next([In] IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
+    internal static extern bool Process32Next([In] IntPtr hSnapshot, ref PROCESSENTRY32 lppe);
 
     [DllImport("ntdll.dll", SetLastError = true)]
-    protected static extern NTSTATUS NtCreateThreadEx(out IntPtr hProcess, AccessMask desiredAccess, IntPtr objectAttributes, 
+    internal static extern NTSTATUS NtCreateThreadEx(out IntPtr hProcess, AccessMask desiredAccess, IntPtr objectAttributes,
         UIntPtr processHandle, IntPtr startAddress, IntPtr parameter, ThreadCreationFlags inCreateSuspended, int stackZeroBits,
         int sizeOfStack, int maximumStackSize, IntPtr attributeList);
 
 
-    protected enum NTSTATUS
+    internal enum NTSTATUS
     {
         Success = 0x00
     }
 
-    protected enum AccessMask
+    internal enum AccessMask
     {
         SpecificRightsAll = 0xFFFF,
         StandardRightsAll = 0x1F0000
     }
 
-    protected enum ThreadCreationFlags
+    internal enum ThreadCreationFlags
     {
         Immediately = 0x0,
         CreateSuspended = 0x01,
@@ -249,7 +252,7 @@ public class NativeMethods
         StackSizeParamIsAReservation = 0x10000
     }
 
-    protected enum MINIDUMP_TYPE
+    internal enum MINIDUMP_TYPE
     {
         MiniDumpNormal = 0x00000000,
         MiniDumpWithDataSegs = 0x00000001,
@@ -268,7 +271,7 @@ public class NativeMethods
         MiniDumpWithCodeSegs = 0x00002000
     }
 
-    protected struct SYSTEM_INFO
+    internal struct SYSTEM_INFO
     {
         public ushort processorArchitecture;
         ushort reserved;
@@ -283,7 +286,7 @@ public class NativeMethods
         public ushort processorRevision;
     }
 
-    protected struct MEMORY_BASIC_INFORMATION32
+    internal struct MEMORY_BASIC_INFORMATION32
     {
         public UIntPtr BaseAddress;
         public UIntPtr AllocationBase;
@@ -294,7 +297,7 @@ public class NativeMethods
         public uint Type;
     }
 
-    protected struct MEMORY_BASIC_INFORMATION64
+    internal struct MEMORY_BASIC_INFORMATION64
     {
         public UIntPtr BaseAddress;
         public UIntPtr AllocationBase;
@@ -307,7 +310,7 @@ public class NativeMethods
         public uint __alignment2;
     }
 
-    protected struct MEMORY_BASIC_INFORMATION
+    internal struct MEMORY_BASIC_INFORMATION
     {
         public UIntPtr BaseAddress;
         public UIntPtr AllocationBase;
@@ -318,7 +321,7 @@ public class NativeMethods
         public uint Type;
     }
 
-    private enum SnapshotFlags : uint
+    internal enum SnapshotFlags : uint
     {
         HeapList = 0x00000001,
         Process = 0x00000002,
@@ -331,7 +334,7 @@ public class NativeMethods
     }
 
     [Flags]
-    protected enum ThreadAccess : int
+    internal enum ThreadAccess : int
     {
         TERMINATE = 0x0001,
         SUSPEND_RESUME = 0x0002,
@@ -345,7 +348,7 @@ public class NativeMethods
     }
 
     [Flags]
-    protected enum MemoryProtection : uint
+    internal enum MemoryProtection : uint
     {
         Execute = 0x10,
         ExecuteRead = 0x20,
@@ -362,7 +365,7 @@ public class NativeMethods
 
     //inner struct used only internally
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    protected struct PROCESSENTRY32
+    internal struct PROCESSENTRY32
     {
         const int MAX_PATH = 260;
         internal uint dwSize;
@@ -379,7 +382,7 @@ public class NativeMethods
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    protected struct MODULEENTRY32
+    internal struct MODULEENTRY32
     {
         internal uint dwSize;
         internal uint th32ModuleID;
@@ -396,13 +399,13 @@ public class NativeMethods
     }
 
     [DllImport("ntdll.dll", SetLastError = true)]
-    protected static extern int NtQueryInformationThread(
+    internal static extern int NtQueryInformationThread(
     IntPtr threadHandle,
     ThreadInfoClass threadInformationClass,
     IntPtr threadInformation,
     int threadInformationLength,
     IntPtr returnLengthPtr);
-    protected enum ThreadInfoClass : int
+    internal enum ThreadInfoClass : int
     {
         ThreadQuerySetWin32StartAddress = 9
     }

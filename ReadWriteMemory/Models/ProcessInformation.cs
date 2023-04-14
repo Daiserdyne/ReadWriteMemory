@@ -3,12 +3,17 @@
 namespace ReadWriteMemory.Models;
 
 /// <summary>
-/// Information about the current opened process.
+/// Holds information about the current opened process.
 /// </summary>
-internal sealed class ProcessInformation
+internal sealed record ProcessInformation
 {
     internal string ProcessName { get; set; } = string.Empty;
+
     internal Process Process { get; set; } = new();
-    internal IntPtr Handle { get; set; }
+
+    internal IntPtr Handle { get; set; } = IntPtr.Zero;
+
+    internal ProcessState ProcessState { get; set; } = new();
+
     internal ProcessModule? MainModule { get; set; }
 }
