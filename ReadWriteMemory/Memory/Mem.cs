@@ -1,8 +1,9 @@
 ﻿using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
+using System;
 using System.Diagnostics;
-using Win32 = ReadWriteMemory.NativeImports.Win32;
+//using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
@@ -10,7 +11,7 @@ namespace ReadWriteMemory;
 /// This is the main component of the <see cref="ReadWriteMemory"/> package. This class includes a lot of powerfull
 /// read and write operations to manipulate the memory of an process.
 /// </summary>
-public sealed partial class Memory : IDisposable
+public sealed partial class Mem : IDisposable
 {
     #region Fields
 
@@ -38,7 +39,7 @@ public sealed partial class Memory : IDisposable
     /// Creates a instance of the memory object.
     /// </summary>
     /// <param name="processName"></param>
-    public Memory(string processName)
+    public Mem(string processName)
     {
         _targetProcess = new()
         {
@@ -54,6 +55,16 @@ public sealed partial class Memory : IDisposable
 
     #endregion
 
+    private void GetAllProcessModules()
+    {
+        _targetProcess.Modules = new Dictionary<string, ProcessModule>();
+
+        foreach (var module in _targetProcess.Process.Modules.Cast<ProcessModule>())
+        {
+            _targetProcess.Modules.Add(module.ModuleName.ToLower(), module);
+        }
+    }
+
     private void StartProcessStateMonitorService(ref bool oldProcessState)
     {
         if (Process.GetProcessesByName(_targetProcess.ProcessName).Any())
@@ -62,7 +73,10 @@ public sealed partial class Memory : IDisposable
 
             if (_targetProcess.Handle == IntPtr.Zero)
             {
-                OpenProcess();
+                if (OpenProcess())
+                {
+                    GetAllProcessModules();
+                }
             }
 
             TriggerStateChangedEvent(ref oldProcessState);
@@ -79,6 +93,8 @@ public sealed partial class Memory : IDisposable
                 ProcessName = _targetProcess.ProcessName
             };
 
+            _targetProcess.Modules = null;
+
             _addressRegister.Clear();
         }
 
@@ -94,59 +110,6 @@ public sealed partial class Memory : IDisposable
         }
     }
 
-    private bool OpenProcess()
-    {
-        var process = Process.GetProcessesByName(_targetProcess.ProcessName);
-
-        if (process is null || !process.Any())
-        {
-            return false;
-        }
-
-        var pid = process.First().Id;
-
-        _targetProcess.Process = Process.GetProcessById(pid);
-        _targetProcess.Handle = Win32.OpenProcess(true, pid);
-
-        if (_targetProcess.Handle == IntPtr.Zero)
-        {
-            _targetProcess = new()
-            {
-                ProcessName = _targetProcess.ProcessName
-            };
-
-            return false;
-        }
-
-        if (!(Environment.Is64BitOperatingSystem
-            && Win32.IsWow64Process(_targetProcess.Handle, out bool isWow64)
-            && isWow64 is false))
-        {
-            _targetProcess = new()
-            {
-                ProcessName = _targetProcess.ProcessName
-            };
-
-            return false;
-        }
-
-        var mainModule = _targetProcess.Process?.MainModule;
-
-        if (mainModule is null)
-        {
-            _targetProcess = new()
-            {
-                ProcessName = _targetProcess.ProcessName
-            };
-
-            return false;
-        }
-
-        _targetProcess.MainModule = mainModule;
-
-        return true;
-    }
-
     /// <summary>
     /// Closes the process when finished.
     /// </summary>
@@ -157,12 +120,14 @@ public sealed partial class Memory : IDisposable
             return;
         }
 
-        Win32.CloseHandle(_targetProcess.Handle);
+        NativeImports.Win32.CloseHandle(_targetProcess.Handle);
 
         _targetProcess = new()
         {
             ProcessName = _targetProcess.ProcessName
         };
+
+        _targetProcess.Modules = null;
 
         _addressRegister.Clear();
     }
@@ -210,7 +175,7 @@ public sealed partial class Memory : IDisposable
 
         var targetAddress = GetTargetAddress(memAddress);
 
-        CodeCaveFactory.CreateCodeCaveAndInjectCode(targetAddress, _targetProcess.Handle, newCode, replaceCount, 
+        MemoryOperation.CreateCodeCaveInMemoryAndInjectCode(targetAddress, _targetProcess.Handle, newCode, replaceCount,
             out var caveAddress, out var originalOpcodes, out var jmpBytes, size);
 
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
@@ -254,7 +219,7 @@ public sealed partial class Memory : IDisposable
             return false;
         }
 
-        WriteBytes(baseAddress, caveTable.OriginalOpcodes);
+        MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.OriginalOpcodes);
 
         return true;
     }
@@ -285,13 +250,155 @@ public sealed partial class Memory : IDisposable
             return false;
         }
 
-        WriteBytes(baseAddress, caveTable.OriginalOpcodes);
-
-        var deallocation = DeallocateMemory(caveTable.CaveAddress);
+        MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.OriginalOpcodes);
 
         _addressRegister[tableIndex].CodeCaveTable = null;
 
+        var deallocation = DeallocateMemory(caveTable.CaveAddress);
+
         return deallocation;
+    }
+
+    private bool IsProcessAlive()
+    {
+        if (_targetProcess.ProcessState.CurrentProcessState == false)
+        {
+            return false;
+        }
+
+        return _targetProcess.ProcessState.CurrentProcessState;
+    }
+
+    private bool DeallocateMemory(nuint address)
+    {
+        if (!IsProcessAlive())
+        {
+            return false;
+        }
+
+        return MemoryOperation.DeallocateMemory(_targetProcess.Handle, address);
+    }
+
+    /// <summary>
+    /// Checks if a code cave was created in the past with the given memory address.
+    /// </summary>
+    /// <param name="memAddress"></param>
+    /// <param name="caveAddress"></param>
+    /// <returns></returns>
+    private bool IsCodeCaveAlreadyCreatedForAddress(MemoryAddress memAddress, out nuint caveAddress)
+    {
+        caveAddress = nuint.Zero;
+
+        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
+
+        if (tableIndex == -1)
+        {
+            return false;
+        }
+
+        var caveTable = _addressRegister[tableIndex].CodeCaveTable;
+
+        if (caveTable is null)
+        {
+            return false;
+        }
+
+        MemoryOperation.WriteProcessMemory(_targetProcess.Handle, _addressRegister[tableIndex].BaseAddress, caveTable.JmpBytes);
+
+        caveAddress = caveTable.CaveAddress;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Closes all opened code caves by patching the original bytes back and deallocating all allocated memory.
+    /// </summary>
+    private void CloseAllCodeCaves()
+    {
+        foreach (var memoryTable in _addressRegister
+            .Where(addr => addr.CodeCaveTable is not null))
+        {
+            var baseAddress = memoryTable.BaseAddress;
+            var caveTable = memoryTable.CodeCaveTable;
+
+            if (caveTable is null)
+            {
+                return;
+            }
+
+            MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.OriginalOpcodes);
+
+            DeallocateMemory(caveTable.CaveAddress);
+        }
+    }
+
+    private void UnfreezeAllValues()
+    {
+        foreach (var freezeTokenSrc in _addressRegister
+            .Where(addr => addr.FreezeTokenSrc is not null)
+            .Select(addr => addr.FreezeTokenSrc))
+        {
+            freezeTokenSrc?.Cancel();
+        }
+    }
+
+    private bool OpenProcess()
+    {
+        var process = Process.GetProcessesByName(_targetProcess.ProcessName);
+
+        if (process is null || !process.Any())
+        {
+            return false;
+        }
+
+        var pid = process.First().Id;
+
+        _targetProcess.Process = Process.GetProcessById(pid);
+        _targetProcess.Handle = NativeImports.Win32.OpenProcess(true, pid);
+
+        if (_targetProcess.Handle == IntPtr.Zero)
+        {
+            _targetProcess = new()
+            {
+                ProcessName = _targetProcess.ProcessName
+            };
+
+            _targetProcess.Modules = null;
+
+            return false;
+        }
+
+        if (!(Environment.Is64BitOperatingSystem
+            && NativeImports.Win32.IsWow64Process(_targetProcess.Handle, out bool isWow64)
+            && isWow64 is false))
+        {
+            _targetProcess = new()
+            {
+                ProcessName = _targetProcess.ProcessName
+            };
+
+            _targetProcess.Modules = null;
+
+            return false;
+        }
+
+        var mainModule = _targetProcess.Process?.MainModule;
+
+        if (mainModule is null)
+        {
+            _targetProcess = new()
+            {
+                ProcessName = _targetProcess.ProcessName
+            };
+
+            _targetProcess.Modules = null;
+
+            return false;
+        }
+
+        _targetProcess.MainModule = mainModule;
+
+        return true;
     }
 
     /// <summary>

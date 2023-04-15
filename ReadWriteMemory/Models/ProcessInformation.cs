@@ -16,4 +16,6 @@ internal sealed record ProcessInformation
     internal ProcessState ProcessState { get; set; } = new();
 
     internal ProcessModule? MainModule { get; set; }
+
+    internal IDictionary<string, ProcessModule>? Modules { get; set; }
 }

@@ -1,10 +1,9 @@
 ﻿using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
-using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
-public sealed partial class Memory
+public sealed partial class Mem
 {
     /// <summary>
     /// <para>Freezes the value from the given <paramref name="memoryAddress"/>.</para>
@@ -25,7 +24,7 @@ public sealed partial class Memory
 
         var buffer = new byte[8];
 
-        if (!Win32.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+        if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length))
         {
             return false;
         }
@@ -54,7 +53,7 @@ public sealed partial class Memory
 
         _ = BackgroundService.ExecuteTaskInfinite(() =>
         {
-            if (!Win32.WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            if (!MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer))
             {
                 freezeToken.Cancel();
             }
@@ -74,9 +73,16 @@ public sealed partial class Memory
     /// <param name="freezeValue"></param>
     /// <param name="refreshRateInMilliseconds"></param>
     /// <returns></returns>
-    public bool FreezeValue(MemoryAddress memoryAddress, object freezeValue, uint refreshRateInMilliseconds = 100)
+    public bool ChangeAndFreezeValue(MemoryAddress memoryAddress, object freezeValue, uint refreshRateInMilliseconds = 100)
     {
-        WriteMemory(memoryAddress, freezeValue);
+        var targetAddress = CalculateTargetAddress(memoryAddress);
+
+        if (targetAddress == UIntPtr.Zero)
+        {
+            return false;
+        }
+
+        MemoryOperation.WriteProcessMemoryEx(_targetProcess.Handle, targetAddress, freezeValue);
 
         return FreezeValue(memoryAddress, refreshRateInMilliseconds);
     }

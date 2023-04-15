@@ -1,16 +1,16 @@
 ﻿using ReadWriteMemory.Models;
 using System.Numerics;
 using System.Text;
-using Win32 = ReadWriteMemory.NativeImports.Win32;
+//using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
-public sealed partial class Memory
+public sealed partial class Mem
 {
     #region Enums
 
     /// <summary>
-    /// A enum of all supported <see cref="Memory"/> data types.
+    /// A enum of all supported <see cref="Mem"/> data types.
     /// </summary>
     public enum MemoryDataTypes : short
     {
@@ -53,10 +53,15 @@ public sealed partial class Memory
     /// <param name="type"></param>
     /// <param name="value"></param>
     /// <param name="readBufferSize"></param>
-    /// <returns>The value of the address, parsed to the given <see cref="MemoryDataTypes"/>. If the function fails, it will return <c>0</c>.</returns>
-    public bool ReadMemory(MemoryAddress memoryAddress, MemoryDataTypes type, out object value, int readBufferSize = 8)
+    /// <returns>The value of the address, parsed to the given <see cref="MemoryDataTypes"/>. If the function fails, it will return <c>null</c>.</returns>
+    public bool ReadProcessMemory(MemoryAddress memoryAddress, MemoryDataTypes type, out object? value, int readBufferSize = 8)
     {
-        value = 0;
+        value = null!;
+
+        if (!IsProcessAlive())
+        {
+            return false;
+        }
 
         var targetAddress = CalculateTargetAddress(memoryAddress);
 
@@ -67,7 +72,7 @@ public sealed partial class Memory
 
         var buffer = new byte[readBufferSize];
 
-        if (Win32.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+        if (MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length))
         {
             ConvertTargetValue(type, buffer, ref value);
 
@@ -129,7 +134,7 @@ public sealed partial class Memory
         {
             var buffer = new byte[4];
 
-            if (Win32.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            if (MemoryOperation.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length))
             {
                 successCounter++;
             }
@@ -191,7 +196,7 @@ public sealed partial class Memory
         {
             var buffer = new byte[4];
 
-            if (Win32.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
+            if (MemoryOperation.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length))
             {
                 successCounter++;
             }

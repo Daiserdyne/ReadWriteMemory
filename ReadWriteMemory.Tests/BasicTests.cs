@@ -5,7 +5,7 @@ namespace ReadWriteMemory.Tests;
 
 public class BasicTests
 {
-    private readonly Memory _memory;
+    private readonly Mem _memory;
 
     public BasicTests()
     {

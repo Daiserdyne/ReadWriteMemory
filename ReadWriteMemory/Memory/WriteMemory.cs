@@ -1,12 +1,9 @@
 ﻿using ReadWriteMemory.Models;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Text;
-using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
-public sealed partial class Memory
+public sealed partial class Mem
 {
     /// <summary>
     /// This will write the given <paramref name="value"/> to the target <paramref name="memoryAddress"/>.
@@ -16,8 +13,13 @@ public sealed partial class Memory
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public bool WriteMemory(MemoryAddress memoryAddress, object value)
+    public bool WriteProcessMemory(MemoryAddress memoryAddress, object value)
     {
+        if (!IsProcessAlive())
+        {
+            return false;
+        }
+
         var targetAddress = CalculateTargetAddress(memoryAddress);
 
         if (targetAddress == UIntPtr.Zero)
@@ -25,28 +27,7 @@ public sealed partial class Memory
             return false;
         }
 
-        if (value is byte[] byteArrayBuffer)
-        {
-            return WriteProcessMemory(ref targetAddress, ref byteArrayBuffer);
-        }
-
-        if (value is string rawStringBuffer)
-        {
-            var stringBuffer = Encoding.UTF8.GetBytes(rawStringBuffer);
-            return WriteProcessMemory(ref targetAddress, ref stringBuffer);
-        }
-
-        var length = Marshal.SizeOf(value);
-
-        var buffer = new byte[length];
-
-        var pointer = Marshal.AllocHGlobal(length);
-
-        Marshal.StructureToPtr(value, pointer, true);
-        Marshal.Copy(pointer, buffer, 0, length);
-        Marshal.FreeHGlobal(pointer);
-
-        return WriteProcessMemory(ref targetAddress, ref buffer);
+        return MemoryOperation.WriteProcessMemoryEx(_targetProcess.Handle, targetAddress, value);
     }
 
     /// <summary>
@@ -62,12 +43,12 @@ public sealed partial class Memory
         var targetYAddress = CalculateTargetAddress(yAddress);
         var targetZAddress = CalculateTargetAddress(zAddress);
 
-        if (targetXAddress == UIntPtr.Zero || targetYAddress == UIntPtr.Zero || targetZAddress == UIntPtr.Zero)
+        if (targetXAddress == nuint.Zero || targetYAddress == nuint.Zero || targetZAddress == nuint.Zero)
         {
             return false;
         }
 
-        var coordsAddresses = new UIntPtr[3]
+        var coordsAddresses = new nuint[3]
         {
             targetXAddress,
             targetYAddress,
@@ -83,11 +64,9 @@ public sealed partial class Memory
 
         int successCounter = 0;
 
-        for (int i = 0; i < 3; i++)
+        for (short i = 0; i < 3; i++)
         {
-            var buffer = BitConverter.GetBytes(valuesToWrite[i]);
-
-            if (WriteProcessMemory(ref coordsAddresses[i], ref buffer))
+            if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, coordsAddresses[i], valuesToWrite[i]))
             {
                 successCounter++;
             }
@@ -119,12 +98,12 @@ public sealed partial class Memory
     {
         var targetAddress = CalculateTargetAddress(xCoordAddress);
 
-        if (targetAddress == UIntPtr.Zero)
+        if (targetAddress == nuint.Zero)
         {
             return false;
         }
 
-        var coordsAddresses = new UIntPtr[3]
+        var coordsAddresses = new nuint[3]
         {
             targetAddress,
             targetAddress + 4,
@@ -140,11 +119,9 @@ public sealed partial class Memory
 
         int successCounter = 0;
 
-        for (int i = 0; i < 3; i++)
+        for (short i = 0; i < 3; i++)
         {
-            var buffer = BitConverter.GetBytes(valuesToWrite[i]);
-
-            if (WriteProcessMemory(ref coordsAddresses[i], ref buffer))
+            if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, coordsAddresses[i], valuesToWrite[i]))
             {
                 successCounter++;
             }
@@ -156,15 +133,5 @@ public sealed partial class Memory
         }
 
         return false;
-    }
-
-    private void WriteBytes(UIntPtr address, byte[] buffer)
-    {
-        if (!IsProcessAlive())
-        {
-            return;
-        }
-
-        Win32.WriteProcessMemory(_targetProcess.Handle, address, buffer, (UIntPtr)buffer.Length, out _);
     }
 }
