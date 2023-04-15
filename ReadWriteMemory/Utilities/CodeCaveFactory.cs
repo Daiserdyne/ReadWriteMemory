@@ -33,7 +33,7 @@ internal static class CodeCaveFactory
 
         jmpBytes[0] = 0xE9;
 
-        BitConverter.GetBytes(offset).CopyTo(jmpBytes, 1);
+        Buffer.BlockCopy(BitConverter.GetBytes(offset), 0, jmpBytes, 1, sizeof(int));
 
         for (var i = 5; i < jmpBytes.Length; i++)
         {

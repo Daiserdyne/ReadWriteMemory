@@ -5,12 +5,12 @@ namespace ReadWriteMemory.Hotkeys;
 /// <summary>
 /// Allows you to create hotkeys to call your code.
 /// </summary>
-public static partial class Hotkeys
+public static class Hotkeys
 {
     #region Native Methods
 
-    [LibraryImport("user32.dll")]
-    private static partial short GetAsyncKeyState(int key);
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int vKey);
 
     #endregion
 

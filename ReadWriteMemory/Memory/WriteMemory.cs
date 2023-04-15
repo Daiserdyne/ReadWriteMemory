@@ -46,8 +46,6 @@ public sealed partial class Memory
         Marshal.Copy(pointer, buffer, 0, length);
         Marshal.FreeHGlobal(pointer);
 
-        _logger?.Info($"Writing value \"{value}\" to target address: 0x{targetAddress:x16} was successfull.");
-
         return WriteProcessMemory(ref targetAddress, ref buffer);
     }
 
@@ -97,11 +95,8 @@ public sealed partial class Memory
 
         if (successCounter == 3)
         {
-            _logger?.Info($"Writing coordinates was successfull.");
             return true;
         }
-
-        _logger?.Error($"Couldn't write to all coordinate addresses. Only {successCounter}/{3} were written.");
 
         return false;
     }
@@ -157,11 +152,8 @@ public sealed partial class Memory
 
         if (successCounter == 3)
         {
-            _logger?.Info($"Writing coordinates was successfull.");
             return true;
         }
-
-        _logger?.Error($"Couldn't write to all coordinate addresses. Only {successCounter}/{3} were written.");
 
         return false;
     }

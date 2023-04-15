@@ -1,5 +1,4 @@
-﻿using ReadWriteMemory.Hotkeys;
-using ReadWriteMemory.Models;
+﻿using ReadWriteMemory.Models;
 using System.Diagnostics;
 
 namespace ReadWriteMemory.DummyTrainer;

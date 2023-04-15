@@ -27,7 +27,6 @@ public sealed partial class Memory
 
         if (!Win32.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero))
         {
-            _logger?.Error("Couldn't read value from memory address.");
             return false;
         }
 
@@ -35,7 +34,6 @@ public sealed partial class Memory
 
         if (_addressRegister[tableIndex].FreezeTokenSrc is not null)
         {
-            _logger?.Info("This value is allready freezed.");
             return false;
         }
 
@@ -61,9 +59,6 @@ public sealed partial class Memory
                 freezeToken.Cancel();
             }
         }, TimeSpan.FromMilliseconds(refreshRateInMilliseconds), freezeToken.Token);
-
-        _logger?.Info($"The value of the memory address 0x{(UIntPtr)memoryAddress.Address:x16} has been freezed with " +
-            $"a refresh rate of {refreshRateInMilliseconds}ms.");
 
         return true;
     }
@@ -102,7 +97,6 @@ public sealed partial class Memory
 
         if (tableIndex == -1)
         {
-            _logger?.Warn("There is no value to unfreeze.");
             return false;
         }
 
@@ -110,15 +104,12 @@ public sealed partial class Memory
 
         if (freezeToken is null)
         {
-            _logger?.Error("There is no value to unfreeze.");
             return false;
         }
 
         freezeToken.Cancel();
 
         _addressRegister[tableIndex].FreezeTokenSrc = null;
-
-        _logger?.Info($"The value of the memory address 0x{(UIntPtr)memoryAddress.Address:x16} has been unfreezed.");
 
         return true;
     }

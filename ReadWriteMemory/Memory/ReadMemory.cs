@@ -71,8 +71,6 @@ public sealed partial class Memory
         {
             ConvertTargetValue(type, buffer, ref value);
 
-            _logger?.Info($"Reading value \"{value}\" from target address: 0x{targetAddress:x16} was successfull.");
-
             return true;
         }
 

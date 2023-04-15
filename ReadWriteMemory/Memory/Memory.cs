@@ -1,9 +1,7 @@
-﻿using ReadWriteMemory.Logging;
-using ReadWriteMemory.Models;
+﻿using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
@@ -28,22 +26,9 @@ public sealed partial class Memory : IDisposable
     public event ProcessStateHasChanged? Process_OnStateChanged;
 
     private ProcessInformation _targetProcess;
-    private MemoryLogger? _logger;
 
     private readonly List<MemoryAddressTable> _addressRegister = new();
     private readonly byte[] _buffer = new byte[8];
-
-    #endregion
-
-    #region Properties
-
-    /// <summary>
-    /// Gives you a logger instance which allows you to see whats going on here.
-    /// </summary>
-    public MemoryLogger Logger
-    {
-        get => _logger ??= new();
-    }
 
     #endregion
 
@@ -95,8 +80,6 @@ public sealed partial class Memory : IDisposable
             };
 
             _addressRegister.Clear();
-
-            _logger?.Warn($"Target process \"{_targetProcess.ProcessName}\" isn't running anymore.");
         }
 
         TriggerStateChangedEvent(ref oldProcessState);
@@ -127,10 +110,6 @@ public sealed partial class Memory : IDisposable
 
         if (_targetProcess.Handle == IntPtr.Zero)
         {
-            var error = Marshal.GetLastWin32Error();
-
-            _logger?.Error($"Getting handle to access process memory failed. Error code: {error}");
-
             _targetProcess = new()
             {
                 ProcessName = _targetProcess.ProcessName
@@ -143,9 +122,6 @@ public sealed partial class Memory : IDisposable
             && Win32.IsWow64Process(_targetProcess.Handle, out bool isWow64)
             && isWow64 is false))
         {
-            _logger?.Error("Target process or operation system are not 64 bit.\n" +
-                "This library only supports 64-bit processes and os.");
-
             _targetProcess = new()
             {
                 ProcessName = _targetProcess.ProcessName
@@ -158,8 +134,6 @@ public sealed partial class Memory : IDisposable
 
         if (mainModule is null)
         {
-            _logger?.Error("Couldn't get main module from target process.");
-
             _targetProcess = new()
             {
                 ProcessName = _targetProcess.ProcessName
@@ -169,8 +143,6 @@ public sealed partial class Memory : IDisposable
         }
 
         _targetProcess.MainModule = mainModule;
-
-        _logger?.Info($"Attaching to targetprocess \"{_targetProcess.ProcessName}\" was successfully.");
 
         return true;
     }
@@ -186,8 +158,6 @@ public sealed partial class Memory : IDisposable
         }
 
         Win32.CloseHandle(_targetProcess.Handle);
-
-        _logger?.Info($"Detaching from targetprocess \"{_targetProcess.ProcessName}\" was successfully.");
 
         _targetProcess = new()
         {
@@ -209,7 +179,7 @@ public sealed partial class Memory : IDisposable
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Code cave address</returns>
-    public Task<UIntPtr> CreateOrResumeCodeCaveAsync(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
+    public Task<nuint> CreateOrResumeCodeCaveAsync(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
     {
         return Task.Run(() => CreateOrResumeCodeCave(memAddress, newBytes, replaceCount, size));
     }
@@ -226,16 +196,15 @@ public sealed partial class Memory : IDisposable
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    public UIntPtr CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newCode, int replaceCount, uint size = 0x1000)
+    public nuint CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newCode, int replaceCount, uint size = 0x1000)
     {
         if (replaceCount < 5 || !IsProcessAlive())
         {
-            return UIntPtr.Zero;
+            return nuint.Zero;
         }
 
         if (IsCodeCaveAlreadyCreatedForAddress(memAddress, out var caveAddr))
         {
-            _logger?.Info($"Resuming code cave for address 0x{(UIntPtr)memAddress.Address:x16}.\nCave address: 0x{caveAddr:x16}\n");
             return caveAddr;
         }
 
@@ -274,7 +243,6 @@ public sealed partial class Memory : IDisposable
 
         if (tableIndex == -1)
         {
-            _logger?.Info($"Can't pause code cave because there is currently no opened cave.");
             return false;
         }
 
@@ -283,13 +251,10 @@ public sealed partial class Memory : IDisposable
 
         if (caveTable is null)
         {
-            _logger?.Info($"Can't pause code cave because there is currently no opened cave.");
             return false;
         }
 
         WriteBytes(baseAddress, caveTable.OriginalOpcodes);
-
-        _logger?.Info($"Code cave for target address: 0x{baseAddress:x16} was paused. Allocaded memory remains. Cave address is: 0x{caveTable.CaveAddress:x16}");
 
         return true;
     }
@@ -309,7 +274,6 @@ public sealed partial class Memory : IDisposable
 
         if (tableIndex == -1)
         {
-            _logger?.Info($"Can't close code cave because there is currently no opened cave.");
             return false;
         }
 
@@ -318,18 +282,12 @@ public sealed partial class Memory : IDisposable
 
         if (caveTable is null)
         {
-            _logger?.Info($"Can't close code cave because there is currently no opened cave.");
             return false;
         }
 
         WriteBytes(baseAddress, caveTable.OriginalOpcodes);
 
         var deallocation = DeallocateMemory(caveTable.CaveAddress);
-
-        if (!deallocation)
-        {
-            _logger?.Info($"Couldn't free allocated code cave at address: {caveTable.CaveAddress:x16}");
-        }
 
         _addressRegister[tableIndex].CodeCaveTable = null;
 
@@ -354,6 +312,5 @@ public sealed partial class Memory : IDisposable
         _addressRegister.Clear();
         _targetProcess.ProcessState.ProcessStateTokenSrc.Cancel();
         Process_OnStateChanged = null;
-        _logger = null;
     }
 }

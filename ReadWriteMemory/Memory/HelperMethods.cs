@@ -7,7 +7,7 @@ namespace ReadWriteMemory;
 
 public sealed partial class Memory
 {
-    private bool DeallocateMemory(UIntPtr address)
+    private bool DeallocateMemory(nuint address)
     {
         if (!IsProcessAlive())
         {
@@ -23,9 +23,9 @@ public sealed partial class Memory
     /// <param name="memAddress"></param>
     /// <param name="caveAddress"></param>
     /// <returns></returns>
-    private bool IsCodeCaveAlreadyCreatedForAddress(MemoryAddress memAddress, out UIntPtr caveAddress)
+    private bool IsCodeCaveAlreadyCreatedForAddress(MemoryAddress memAddress, out nuint caveAddress)
     {
-        caveAddress = UIntPtr.Zero;
+        caveAddress = nuint.Zero;
 
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
 
@@ -65,12 +65,7 @@ public sealed partial class Memory
 
             WriteBytes(baseAddress, caveTable.OriginalOpcodes);
 
-            var deallocation = DeallocateMemory(caveTable.CaveAddress);
-
-            if (!deallocation)
-            {
-                _logger?.Warn("Couldn't free memory.");
-            }
+            DeallocateMemory(caveTable.CaveAddress);
         }
     }
 
@@ -84,18 +79,18 @@ public sealed partial class Memory
         }
     }
 
-    private UIntPtr GetTargetAddress(MemoryAddress memAddress)
+    private nuint GetTargetAddress(MemoryAddress memAddress)
     {
         if (!IsProcessAlive())
         {
-            return UIntPtr.Zero;
+            return nuint.Zero;
         }
 
-        UIntPtr baseAddress;
+        nuint baseAddress;
 
         var savedBaseAddress = GetBaseAddressByMemoryAddress(memAddress);
 
-        if (savedBaseAddress != UIntPtr.Zero)
+        if (savedBaseAddress != nuint.Zero)
         {
             baseAddress = savedBaseAddress;
         }
@@ -114,11 +109,11 @@ public sealed partial class Memory
 
             if (moduleAddress != IntPtr.Zero)
             {
-                baseAddress = (UIntPtr)(moduleAddress + address);
+                baseAddress = (nuint)(moduleAddress + address);
             }
             else
             {
-                baseAddress = (UIntPtr)memAddress.Address;
+                baseAddress = (nuint)memAddress.Address;
             }
         }
 
@@ -128,22 +123,22 @@ public sealed partial class Memory
 
         if (offsets is not null && offsets.Length != 0)
         {
-            Win32.ReadProcessMemory(_targetProcess.Handle, targetAddress, _buffer, (UIntPtr)_buffer.Length, IntPtr.Zero);
+            Win32.ReadProcessMemory(_targetProcess.Handle, targetAddress, _buffer, (nuint)_buffer.Length, IntPtr.Zero);
 
-            targetAddress = (UIntPtr)BitConverter.ToInt64(_buffer);
+            targetAddress = (nuint)BitConverter.ToInt64(_buffer);
 
             for (int i = 0; i < offsets.Length; i++)
             {
                 if (i == offsets.Length - 1)
                 {
-                    targetAddress = (UIntPtr)Convert.ToInt64((long)targetAddress + offsets[i]);
+                    targetAddress = (nuint)Convert.ToInt64((long)targetAddress + offsets[i]);
                     break;
                 }
 
-                Win32.ReadProcessMemory(_targetProcess.Handle, UIntPtr.Add(targetAddress, offsets[i]), _buffer,
-                    (UIntPtr)_buffer.Length, IntPtr.Zero);
+                Win32.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, offsets[i]), _buffer,
+                    (nuint)_buffer.Length, IntPtr.Zero);
 
-                targetAddress = (UIntPtr)BitConverter.ToInt64(_buffer);
+                targetAddress = (nuint)BitConverter.ToInt64(_buffer);
             }
         }
 
@@ -197,7 +192,7 @@ public sealed partial class Memory
     /// </summary>
     /// <param name="memAddress"></param>
     /// <returns>Base address of given memory address object.</returns>
-    private UIntPtr GetBaseAddressByMemoryAddress(MemoryAddress memAddress)
+    private nuint GetBaseAddressByMemoryAddress(MemoryAddress memAddress)
     {
         var addressHash = CreateUniqueAddressHash(memAddress);
 
@@ -209,7 +204,7 @@ public sealed partial class Memory
             }
         }
 
-        return UIntPtr.Zero;
+        return nuint.Zero;
     }
 
     /// <summary>
@@ -232,37 +227,18 @@ public sealed partial class Memory
         return -1;
     }
 
-    /// <summary>
-    /// Reads a byte array from a given address
-    /// </summary>
-    /// <param name="address"></param>
-    /// <param name="length"></param>
-    /// <returns></returns>
-    private byte[] ReadBytes(UIntPtr address, int length)
+    private nuint CalculateTargetAddress(MemoryAddress memoryAddress)
     {
         if (!IsProcessAlive())
         {
-            return Array.Empty<byte>();
-        }
-
-        var bytes = new byte[length];
-
-        return Win32.ReadProcessMemory(_targetProcess.Handle, address,
-            bytes, (UIntPtr)length, IntPtr.Zero) == true ? bytes : Array.Empty<byte>();
-    }
-
-    private UIntPtr CalculateTargetAddress(MemoryAddress memoryAddress)
-    {
-        if (!IsProcessAlive())
-        {
-            return UIntPtr.Zero;
+            return nuint.Zero;
         }
 
         var targetAddress = GetTargetAddress(memoryAddress);
 
-        if (targetAddress == UIntPtr.Zero)
+        if (targetAddress == nuint.Zero)
         {
-            return UIntPtr.Zero;
+            return nuint.Zero;
         }
 
         return targetAddress;
@@ -271,11 +247,10 @@ public sealed partial class Memory
     private bool WriteProcessMemory(ref UIntPtr targetAddress, ref byte[] buffer)
     {
         var success = Win32.WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer,
-            (UIntPtr)buffer.Length, IntPtr.Zero);
+            (nuint)buffer.Length, IntPtr.Zero);
 
         if (!success)
         {
-            _logger?.Error("Writing to process memory failed. ReadProcessMemory returned false.");
             return false;
         }
 
@@ -297,7 +272,6 @@ public sealed partial class Memory
     {
         if (_targetProcess.ProcessState.CurrentProcessState == false)
         {
-            _logger?.Warn($"Target process \"{_targetProcess.ProcessName}\" isn't running.");
             return false;
         }
 
