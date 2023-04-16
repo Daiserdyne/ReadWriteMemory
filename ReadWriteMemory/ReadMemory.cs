@@ -179,7 +179,7 @@ public sealed partial class Memory
     /// it returns an empty <see cref="Vector3"/>.</returns>
     public bool ReadFloatCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, out Vector3 coordinates)
     {
-        coordinates = new();
+        coordinates = Vector3.Zero;
 
         var xAddress = CalculateTargetAddress(xPosition);
         var yAddress = CalculateTargetAddress(yPosition);
@@ -243,7 +243,7 @@ public sealed partial class Memory
     /// it returns an empty <see cref="Vector3"/>.</returns>
     public bool ReadFloatCoordinates(MemoryAddress xCoordAddress, out Vector3 coordinates)
     {
-        coordinates = new();
+        coordinates = Vector3.Zero;
 
         var targetAddress = CalculateTargetAddress(xCoordAddress);
 
