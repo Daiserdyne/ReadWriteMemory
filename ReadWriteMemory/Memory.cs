@@ -1,5 +1,6 @@
 ﻿using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
+using ReadWriteMemory.Trainer.Interface;
 using ReadWriteMemory.Utilities;
 using System.Diagnostics;
 
@@ -336,7 +337,7 @@ public sealed partial class Memory : IDisposable
             .Where(addr => addr.FreezeTokenSrc is not null)
             .Select(addr => addr.FreezeTokenSrc))
         {
-            freezeTokenSrc?.Cancel();
+            freezeTokenSrc!.Cancel();
         }
     }
 
@@ -404,10 +405,24 @@ public sealed partial class Memory : IDisposable
     /// </summary>
     public void Dispose()
     {
-        foreach (var trainer in TrainerServices.GetAllImplementedTrainers().Values
-            .Where(x => x.DisableWhenDispose))
+        IDictionary<string, ITrainer>? implementedTrainer = null;
+
+        try
         {
-            trainer.Disable();
+            implementedTrainer = TrainerServices.GetAllImplementedTrainers();
+        }
+        catch
+        {
+            // Ex in logger.
+        }
+
+        if (implementedTrainer is not null)
+        {
+            foreach (var trainer in implementedTrainer.Values
+                .Where(x => x.DisableWhenDispose))
+            {
+                trainer.Disable();
+            }
         }
 
         CloseAllCodeCaves();

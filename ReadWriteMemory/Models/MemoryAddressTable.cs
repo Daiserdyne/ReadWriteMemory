@@ -14,4 +14,6 @@ internal sealed record MemoryAddressTable
     internal CodeCaveTable? CodeCaveTable { get; set; }
 
     internal CancellationTokenSource? FreezeTokenSrc { get; set; }
+
+    // Für callback methods eine liste mit canceltoken anlegen, damit man nicht mehrmals einen background task startet.
 }

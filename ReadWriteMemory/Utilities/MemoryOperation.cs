@@ -13,9 +13,11 @@ internal static class MemoryOperation
         {
             case byte[] buffer:
                 return WriteProcessMemory(processHandle, targetAddress, buffer);
+
             case string str:
                 var stringAsByteArray = Encoding.UTF8.GetBytes(str);
                 return WriteProcessMemory(processHandle, targetAddress, stringAsByteArray);
+
             default:
                 return WriteProcessMemory(processHandle, targetAddress, value);
         }

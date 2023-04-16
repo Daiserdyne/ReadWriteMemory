@@ -1,4 +1,5 @@
 ﻿using ReadWriteMemory.Models;
+using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 using System.Numerics;
 using System.Text;
@@ -7,6 +8,23 @@ namespace ReadWriteMemory;
 
 public sealed partial class Memory
 {
+    #region Delegates
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="wasSuccessfull"></param>
+    public delegate void ReadValueCallback(object? value, bool wasSuccessfull);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="coords"></param>
+    public delegate void CoordinatesCallback(Vector3 coords);
+
+    #endregion
+
     #region Enums
 
     /// <summary>
@@ -82,7 +100,25 @@ public sealed partial class Memory
         return false;
     }
 
-    private static void ConvertTargetValue(MemoryDataTypes type, byte[] buffer, ref object value) 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="type"></param>
+    /// <param name="callback"></param>
+    /// <param name="refreshTime"></param>
+    /// <param name="ct"></param>
+    /// <param name="readBufferSize"></param>
+    public void ReadProcessMemory(MemoryAddress memoryAddress, MemoryDataTypes type, ReadValueCallback callback, TimeSpan refreshTime, CancellationToken ct, int readBufferSize = 8)
+    {
+        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        {
+            var success = ReadProcessMemory(memoryAddress, type, out var value, readBufferSize);
+            callback(value, success);
+        }, refreshTime, ct);
+    }
+
+    private static void ConvertTargetValue(MemoryDataTypes type, byte[] buffer, ref object value)
     {
         value = type switch
         {
@@ -95,6 +131,41 @@ public sealed partial class Memory
             MemoryDataTypes.ByteArray => buffer,
             _ => throw new ArgumentException("Invalid type", nameof(type))
         };
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="xPosition"></param>
+    /// <param name="yPosition"></param>
+    /// <param name="zPosition"></param>
+    /// <param name="callback"></param>
+    /// <param name="refreshTime"></param>
+    /// <param name="ct"></param>
+    public void ReadFloatCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, CoordinatesCallback callback,
+        TimeSpan refreshTime, CancellationToken ct)
+    {
+        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        {
+            ReadFloatCoordinates(xPosition, yPosition, zPosition, out var coordinates);
+            callback(coordinates);
+        }, refreshTime, ct);
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="xPosition"></param>
+    /// <param name="callback"></param>
+    /// <param name="refreshTime"></param>
+    /// <param name="ct"></param>
+    public void ReadFloatCoordinates(MemoryAddress xPosition, CoordinatesCallback callback, TimeSpan refreshTime, CancellationToken ct)
+    {
+        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        {
+            ReadFloatCoordinates(xPosition, out var coordinates);
+            callback(coordinates);
+        }, refreshTime, ct);
     }
 
     /// <summary>

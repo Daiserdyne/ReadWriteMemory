@@ -22,6 +22,8 @@ internal sealed class DummyTrainer
 
         var stopwatch = new Stopwatch();
 
+        var test = new CancellationTokenSource();   
+
         while (true)
         {
             if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F1))
@@ -125,9 +127,27 @@ internal sealed class DummyTrainer
 
                 stopwatch.Reset();
             }
+            else if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F9))
+            {
+                stopwatch.Start();
+
+                memory.ReadProcessMemory(_hp, Memory.MemoryDataTypes.Float, ReadValue, TimeSpan.FromMilliseconds(100), test.Token);
+
+                stopwatch.Stop();
+
+                stopwatch.Reset();
+            }
 
 
             await Task.Delay(10);
+        }
+    }
+
+    public static void ReadValue(object? value, bool success)
+    {
+        if (success)
+        {
+            Console.WriteLine(value!.ToString());
         }
     }
 }
