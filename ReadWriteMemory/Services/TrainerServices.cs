@@ -9,14 +9,14 @@ namespace ReadWriteMemory.Services;
 public sealed class TrainerServices
 {
     private static object? _mem;
-    private static Mem? _memory;
+    private static Memory? _memory;
 
     /// <summary>
-    /// Gives you a thread-safe singleton instance of the <see cref="Mem"/> object.
+    /// Gives you a thread-safe singleton instance of the <see cref="Memory"/> object.
     /// </summary>
     /// <param name="processName"></param>
     /// <returns></returns>
-    public static Mem GetSingletonInstance(string processName)
+    public static Memory GetSingletonInstance(string processName)
     {
         _mem ??= new();
 

@@ -16,7 +16,7 @@ public interface ITrainer
     public string Description { get; }
 
     /// <summary>
-    /// If true, the <see cref="Disable(string[]?)"/> function will be called when the <see cref="Mem"/> object will be disposed.
+    /// If true, the <see cref="Disable(string[]?)"/> function will be called when the <see cref="Memory"/> object will be disposed.
     /// </summary>
     public bool DisableWhenDispose { get; }
 

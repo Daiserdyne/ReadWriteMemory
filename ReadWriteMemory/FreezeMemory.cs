@@ -1,9 +1,10 @@
 ﻿using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
+using ReadWriteMemory.Utilities;
 
 namespace ReadWriteMemory;
 
-public sealed partial class Mem
+public sealed partial class Memory
 {
     /// <summary>
     /// <para>Freezes the value from the given <paramref name="memoryAddress"/>.</para>
@@ -83,6 +84,32 @@ public sealed partial class Mem
         }
 
         MemoryOperation.WriteProcessMemoryEx(_targetProcess.Handle, targetAddress, freezeValue);
+
+        return FreezeValue(memoryAddress, refreshRateInMilliseconds);
+    }
+
+    /// <summary>
+    /// <para>Freezes the value from the given <paramref name="memoryAddress"/>.</para>
+    /// You optionally can set the <paramref name="refreshRateInMilliseconds"/>
+    /// to a specific value you want.
+    /// This version of ChangeAndFreezeValue will only accepts unmanaged data types.
+    /// Don't forget to specify the <paramref name="freezeValue"/> type. For example if you want to write a float, add the 'f' behind the number, for
+    /// double add a 'd' so that the memory knows what type you want to write.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="freezeValue"></param>
+    /// <param name="refreshRateInMilliseconds"></param>
+    /// <returns></returns>
+    public bool ChangeAndFreezeValue<T>(MemoryAddress memoryAddress, T freezeValue, uint refreshRateInMilliseconds = 100) where T : unmanaged
+    {
+        var targetAddress = CalculateTargetAddress(memoryAddress);
+
+        if (targetAddress == UIntPtr.Zero)
+        {
+            return false;
+        }
+
+        MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, freezeValue);
 
         return FreezeValue(memoryAddress, refreshRateInMilliseconds);
     }

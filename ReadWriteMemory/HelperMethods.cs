@@ -1,9 +1,10 @@
 ﻿using ReadWriteMemory.Models;
+using ReadWriteMemory.Utilities;
 using System.Numerics;
 
 namespace ReadWriteMemory;
 
-public sealed partial class Mem
+public sealed partial class Memory
 {
     private nuint GetTargetAddress(MemoryAddress memAddress)
     {

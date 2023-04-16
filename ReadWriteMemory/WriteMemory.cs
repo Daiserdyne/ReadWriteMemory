@@ -1,9 +1,10 @@
 ﻿using ReadWriteMemory.Models;
+using ReadWriteMemory.Utilities;
 using System.Numerics;
 
 namespace ReadWriteMemory;
 
-public sealed partial class Mem
+public sealed partial class Memory
 {
     /// <summary>
     /// This will write the given <paramref name="value"/> to the target <paramref name="memoryAddress"/>.
@@ -28,6 +29,32 @@ public sealed partial class Mem
         }
 
         return MemoryOperation.WriteProcessMemoryEx(_targetProcess.Handle, targetAddress, value);
+    }
+
+    /// <summary>
+    /// This will write the given <paramref name="value"/> to the target <paramref name="memoryAddress"/>.
+    /// This version of WriteProcessMemory will only accepts unmanaged data types.
+    /// Don't forget to specify the <paramref name="value"/> type. For example if you want to write a float, add the 'f' behind the number, for
+    /// double add a 'd' so that the memory knows what type you want to write.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public bool WriteProcessMemory<T>(MemoryAddress memoryAddress, T value) where T : unmanaged
+    {
+        if (!IsProcessAlive())
+        {
+            return false;
+        }
+
+        var targetAddress = CalculateTargetAddress(memoryAddress);
+
+        if (targetAddress == UIntPtr.Zero)
+        {
+            return false;
+        }
+
+        return MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, value);
     }
 
     /// <summary>

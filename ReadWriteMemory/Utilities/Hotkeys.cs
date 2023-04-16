@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ReadWriteMemory.Hotkeys;
+namespace ReadWriteMemory.Utilities;
 
 /// <summary>
 /// Allows you to create hotkeys to call your code.
@@ -132,7 +132,7 @@ public static class Hotkeys
     /// <param name="waitForKeyRelease"></param>
     public static async Task<bool> KeyPressedAsync(Key key, bool waitForKeyRelease = true)
     {
-        int targetKey = (int) key;
+        int targetKey = (int)key;
 
         if (GetAsyncKeyState(targetKey) < 0)
         {

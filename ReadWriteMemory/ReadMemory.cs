@@ -1,16 +1,16 @@
 ﻿using ReadWriteMemory.Models;
+using ReadWriteMemory.Utilities;
 using System.Numerics;
 using System.Text;
-//using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
-public sealed partial class Mem
+public sealed partial class Memory
 {
     #region Enums
 
     /// <summary>
-    /// A enum of all supported <see cref="Mem"/> data types.
+    /// A enum of all supported <see cref="Memory"/> data types.
     /// </summary>
     public enum MemoryDataTypes : short
     {

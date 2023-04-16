@@ -4,7 +4,7 @@ namespace ReadWriteMemory.Utilities;
 
 internal static class CodeCaveFactory
 {
-    internal static bool CreateCodeCaveInMemoryAndInjectCode(nuint targetAddress, nint targetProcessHandle, byte[] newCode, int replaceCount,
+    internal static bool CreateCodeCaveAndInjectCode(nuint targetAddress, nint targetProcessHandle, byte[] newCode, int replaceCount,
         out nuint caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 0x1000)
     {
         caveAddress = nuint.Zero;

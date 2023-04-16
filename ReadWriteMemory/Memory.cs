@@ -1,9 +1,7 @@
 ﻿using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
-using System;
 using System.Diagnostics;
-//using Win32 = ReadWriteMemory.NativeImports.Win32;
 
 namespace ReadWriteMemory;
 
@@ -11,7 +9,7 @@ namespace ReadWriteMemory;
 /// This is the main component of the <see cref="ReadWriteMemory"/> package. This class includes a lot of powerfull
 /// read and write operations to manipulate the memory of an process.
 /// </summary>
-public sealed partial class Mem : IDisposable
+public sealed partial class Memory : IDisposable
 {
     #region Fields
 
@@ -39,7 +37,7 @@ public sealed partial class Mem : IDisposable
     /// Creates a instance of the memory object.
     /// </summary>
     /// <param name="processName"></param>
-    public Mem(string processName)
+    public Memory(string processName)
     {
         _targetProcess = new()
         {
@@ -175,7 +173,7 @@ public sealed partial class Mem : IDisposable
 
         var targetAddress = GetTargetAddress(memAddress);
 
-        MemoryOperation.CreateCodeCaveInMemoryAndInjectCode(targetAddress, _targetProcess.Handle, newCode, replaceCount,
+        MemoryOperation.CreateCodeCaveAndInjectCode(targetAddress, _targetProcess.Handle, newCode, replaceCount,
             out var caveAddress, out var originalOpcodes, out var jmpBytes, size);
 
         var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
