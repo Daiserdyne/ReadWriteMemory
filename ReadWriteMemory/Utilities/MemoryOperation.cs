@@ -34,24 +34,24 @@ internal static class MemoryOperation
         return Win32.ReadProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero);
     }
 
-    //internal static unsafe bool ReadProcessMemory<T>(byte[] buffer, out T value) where T : unmanaged
-    //{
-    //    var size = sizeof(T);
+    internal static unsafe bool GetValueUnsafe<T>(byte[] buffer, out T value) where T : unmanaged
+    {
+        var size = sizeof(T);
 
-    //    if (size < buffer.Length)
-    //    {
-    //        value = default;
+        if (size != buffer.Length)
+        {
+            value = default;
 
-    //        return false;
-    //    }
+            return false;
+        }
 
-    //    fixed (byte* pByte = buffer)
-    //    {
-    //        value = *(T*)pByte;
-    //    }
+        fixed (byte* pByte = buffer)
+        {
+            value = *(T*)pByte;
+        }
 
-    //    return true;
-    //}
+        return true;
+    }
 
     internal static bool DeallocateMemory(nint processHandle, nuint address)
     {

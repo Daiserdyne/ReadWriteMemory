@@ -39,7 +39,7 @@ internal sealed class DummyTrainer
 
                 stopwatch.Reset();
             }
-            else if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F2))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F2))
             {
                 stopwatch.Start();
 
@@ -52,7 +52,7 @@ internal sealed class DummyTrainer
 
                 stopwatch.Reset();
             }
-            else if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F3))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F3))
             {
                 stopwatch.Start();
 
@@ -65,7 +65,7 @@ internal sealed class DummyTrainer
 
                 stopwatch.Reset();
             }
-            else if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F4))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F4))
             {
                 stopwatch.Start();
 
@@ -77,7 +77,7 @@ internal sealed class DummyTrainer
 
                 stopwatch.Reset();
             }
-            else if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F5))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F5))
             {
                 stopwatch.Start();
 
@@ -89,7 +89,7 @@ internal sealed class DummyTrainer
 
                 stopwatch.Reset();
             }
-            else if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F6))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F6))
             {
                 stopwatch.Start();
 
@@ -101,7 +101,7 @@ internal sealed class DummyTrainer
 
                 stopwatch.Reset();
             }
-            else if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F7))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F7))
             {
                 stopwatch.Start();
 
@@ -113,7 +113,7 @@ internal sealed class DummyTrainer
 
                 stopwatch.Reset();
             }
-            else if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F8))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F8))
             {
                 stopwatch.Start();
 
@@ -127,7 +127,7 @@ internal sealed class DummyTrainer
 
                 stopwatch.Reset();
             }
-            else if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F9))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F9))
             {
                 stopwatch.Start();
 
@@ -139,11 +139,11 @@ internal sealed class DummyTrainer
             }
 
 
-            await Task.Delay(10);
+            await Task.Delay(5);
         }
     }
 
-    public static void ReadValue(object? value, bool success)
+    public static void ReadValue(bool success, object? value)
     {
         if (success)
         {

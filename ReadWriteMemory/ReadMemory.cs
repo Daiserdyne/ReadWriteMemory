@@ -124,9 +124,11 @@ public sealed partial class Memory
     public void ReadFloatCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, ReadCoordinates callback,
         TimeSpan refreshTime, CancellationToken ct)
     {
+        bool success;
+
         _ = BackgroundService.ExecuteTaskInfinite(() =>
         {
-            var success = ReadFloatCoordinates(xPosition, yPosition, zPosition, out var coordinates);
+            success = ReadFloatCoordinates(xPosition, yPosition, zPosition, out var coordinates);
             callback(success, coordinates);
         }, refreshTime, ct);
     }
@@ -140,9 +142,11 @@ public sealed partial class Memory
     /// <param name="ct"></param>
     public void ReadFloatCoordinates(MemoryAddress xPosition, ReadCoordinates callback, TimeSpan refreshTime, CancellationToken ct)
     {
+        bool success;
+
         _ = BackgroundService.ExecuteTaskInfinite(() =>
         {
-            var success = ReadFloatCoordinates(xPosition, out var coordinates);
+            success = ReadFloatCoordinates(xPosition, out var coordinates);
             callback(success, coordinates);
         }, refreshTime, ct);
     }
@@ -183,17 +187,18 @@ public sealed partial class Memory
 
         var coordValues = new float[3];
 
-        int successCounter = 0;
+        short successCounter = 0;
+
+        var buffer = new byte[4];
 
         for (short i = 0; i < 3; i++)
         {
-            var buffer = new byte[4];
-
             if (MemoryOperation.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer))
             {
-                fixed (byte* pByte = buffer)
+                if (MemoryOperation.GetValueUnsafe<float>(buffer, out var value))
                 {
-                    coordValues[i] = *(float*)pByte;
+                    successCounter++;
+                    coordValues[i] = value;
                 }
 
                 successCounter++;
@@ -246,20 +251,19 @@ public sealed partial class Memory
 
         var coordValues = new float[3];
 
-        int successCounter = 0;
+        short successCounter = 0;
+
+        var buffer = new byte[4];
 
         for (short i = 0; i < 3; i++)
         {
-            var buffer = new byte[4];
-
             if (MemoryOperation.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer))
             {
-                fixed (byte* pByte = buffer)
+                if (MemoryOperation.GetValueUnsafe<float>(buffer, out var value))
                 {
-                    coordValues[i] = *(float*)pByte;
+                    successCounter++;
+                    coordValues[i] = value;
                 }
-
-                successCounter++;
             }
         }
 
