@@ -14,14 +14,15 @@ public sealed partial class Memory
     /// 
     /// </summary>
     /// <param name="value"></param>
-    /// <param name="wasSuccessfull"></param>
-    public delegate void ReadValueCallback(object? value, bool wasSuccessfull);
+    /// <param name="wasReadingSuccessfull"></param>
+    public delegate void ReadValueCallback(bool wasReadingSuccessfull, object? value);
 
     /// <summary>
     /// 
     /// </summary>
     /// <param name="coords"></param>
-    public delegate void CoordinatesCallback(Vector3 coords);
+    /// <param name="wasReadingSuccessfull"></param>
+    public delegate void ReadCoordinates(bool wasReadingSuccessfull, Vector3 coords);
 
     #endregion
 
@@ -76,21 +77,14 @@ public sealed partial class Memory
     {
         value = null!;
 
-        if (!IsProcessAlive())
-        {
-            return false;
-        }
-
-        var targetAddress = CalculateTargetAddress(memoryAddress);
-
-        if (targetAddress == UIntPtr.Zero)
+        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
 
         var buffer = new byte[readBufferSize];
 
-        if (MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer, (UIntPtr)buffer.Length))
+        if (MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
         {
             ConvertTargetValue(type, buffer, ref value);
 
@@ -114,7 +108,7 @@ public sealed partial class Memory
         _ = BackgroundService.ExecuteTaskInfinite(() =>
         {
             var success = ReadProcessMemory(memoryAddress, type, out var value, readBufferSize);
-            callback(value, success);
+            callback(success, value);
         }, refreshTime, ct);
     }
 
@@ -142,13 +136,13 @@ public sealed partial class Memory
     /// <param name="callback"></param>
     /// <param name="refreshTime"></param>
     /// <param name="ct"></param>
-    public void ReadFloatCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, CoordinatesCallback callback,
+    public void ReadFloatCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, ReadCoordinates callback,
         TimeSpan refreshTime, CancellationToken ct)
     {
         _ = BackgroundService.ExecuteTaskInfinite(() =>
         {
-            ReadFloatCoordinates(xPosition, yPosition, zPosition, out var coordinates);
-            callback(coordinates);
+            var success = ReadFloatCoordinates(xPosition, yPosition, zPosition, out var coordinates);
+            callback(success, coordinates);
         }, refreshTime, ct);
     }
 
@@ -159,12 +153,12 @@ public sealed partial class Memory
     /// <param name="callback"></param>
     /// <param name="refreshTime"></param>
     /// <param name="ct"></param>
-    public void ReadFloatCoordinates(MemoryAddress xPosition, CoordinatesCallback callback, TimeSpan refreshTime, CancellationToken ct)
+    public void ReadFloatCoordinates(MemoryAddress xPosition, ReadCoordinates callback, TimeSpan refreshTime, CancellationToken ct)
     {
         _ = BackgroundService.ExecuteTaskInfinite(() =>
         {
-            ReadFloatCoordinates(xPosition, out var coordinates);
-            callback(coordinates);
+            var success = ReadFloatCoordinates(xPosition, out var coordinates);
+            callback(success, coordinates);
         }, refreshTime, ct);
     }
 
@@ -177,9 +171,14 @@ public sealed partial class Memory
     /// <param name="coordinates"></param>
     /// <returns>A <see cref="Vector3"/> struct where the read coords are stored. If the function fails, 
     /// it returns an empty <see cref="Vector3"/>.</returns>
-    public bool ReadFloatCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, out Vector3 coordinates)
+    public unsafe bool ReadFloatCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, out Vector3 coordinates)
     {
         coordinates = Vector3.Zero;
+
+        if (!IsProcessAlive())
+        {
+            return false;
+        }
 
         var xAddress = CalculateTargetAddress(xPosition);
         var yAddress = CalculateTargetAddress(yPosition);
@@ -205,12 +204,15 @@ public sealed partial class Memory
         {
             var buffer = new byte[4];
 
-            if (MemoryOperation.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length))
+            if (MemoryOperation.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer))
             {
+                fixed (byte* pByte = buffer)
+                {
+                    coordValues[i] = *(float*)pByte;
+                }
+
                 successCounter++;
             }
-
-            coordValues[i] = BitConverter.ToSingle(buffer, 0);
         }
 
         if (successCounter != 3)
@@ -231,23 +233,21 @@ public sealed partial class Memory
     /// to get all three coordinates.
     /// <para><c>Behind the scenes:</c></para>
     /// <example>
-    /// <code>var xAddress = <paramref name="xCoordAddress"/></code>
-    /// <code>var yAddress = <paramref name="xCoordAddress"/> + 4;</code>
-    /// <code>var zAddress = <paramref name="xCoordAddress"/> + 8;</code>
+    /// <code>var xAddress = <paramref name="xCoordinateMemoryAddress"/></code>
+    /// <code>var yAddress = <paramref name="xCoordinateMemoryAddress"/> + 4;</code>
+    /// <code>var zAddress = <paramref name="xCoordinateMemoryAddress"/> + 8;</code>
     /// </example>
     /// <para><c>Note: </c>This only works if the coordinate addresses are of type <see cref="float"/> and next to each other in the memory.</para>
     /// </summary>
-    /// <param name="xCoordAddress"></param>
+    /// <param name="xCoordinateMemoryAddress"></param>
     /// <param name="coordinates"></param>
     /// <returns>A <see cref="Vector3"/> struct where the read coords are stored. If the function fails, 
     /// it returns an empty <see cref="Vector3"/>.</returns>
-    public bool ReadFloatCoordinates(MemoryAddress xCoordAddress, out Vector3 coordinates)
+    public unsafe bool ReadFloatCoordinates(MemoryAddress xCoordinateMemoryAddress, out Vector3 coordinates)
     {
         coordinates = Vector3.Zero;
 
-        var targetAddress = CalculateTargetAddress(xCoordAddress);
-
-        if (targetAddress == UIntPtr.Zero)
+        if (!CheckProcStateAndGetTargetAddress(xCoordinateMemoryAddress, out var targetAddress))
         {
             return false;
         }
@@ -267,12 +267,15 @@ public sealed partial class Memory
         {
             var buffer = new byte[4];
 
-            if (MemoryOperation.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer, (UIntPtr)buffer.Length))
+            if (MemoryOperation.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer))
             {
+                fixed (byte* pByte = buffer)
+                {
+                    coordValues[i] = *(float*)pByte;
+                }
+
                 successCounter++;
             }
-
-            coordValues[i] = BitConverter.ToSingle(buffer, 0);
         }
 
         if (successCounter != 3)

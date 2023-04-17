@@ -14,21 +14,32 @@ public sealed partial class Memory
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public bool WriteProcessMemory(MemoryAddress memoryAddress, object value)
+    public bool WriteProcessMemory(MemoryAddress memoryAddress, string value)
     {
-        if (!IsProcessAlive())
+        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
 
-        var targetAddress = CalculateTargetAddress(memoryAddress);
+        return MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, value);
+    }
 
-        if (targetAddress == UIntPtr.Zero)
+    /// <summary>
+    /// This will write the given <paramref name="value"/> to the target <paramref name="memoryAddress"/>.
+    /// Don't forget to specify the type. For example if you want to write a float, add the 'f' behind the number, for
+    /// double add a 'd' so that the memory knows what type you want to write.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public bool WriteProcessMemory(MemoryAddress memoryAddress, byte[] value)
+    {
+        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
 
-        return MemoryOperation.WriteProcessMemoryEx(_targetProcess.Handle, targetAddress, value);
+        return MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, value);
     }
 
     /// <summary>
@@ -42,14 +53,7 @@ public sealed partial class Memory
     /// <returns></returns>
     public bool WriteProcessMemory<T>(MemoryAddress memoryAddress, T value) where T : unmanaged
     {
-        if (!IsProcessAlive())
-        {
-            return false;
-        }
-
-        var targetAddress = CalculateTargetAddress(memoryAddress);
-
-        if (targetAddress == UIntPtr.Zero)
+        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
@@ -66,6 +70,11 @@ public sealed partial class Memory
     /// <param name="newCoords"></param>
     public bool WriteFloatCoordinates(MemoryAddress xAddress, MemoryAddress yAddress, MemoryAddress zAddress, Vector3 newCoords)
     {
+        if (!IsProcessAlive())
+        {
+            return false;
+        }
+
         var targetXAddress = CalculateTargetAddress(xAddress);
         var targetYAddress = CalculateTargetAddress(yAddress);
         var targetZAddress = CalculateTargetAddress(zAddress);
@@ -108,22 +117,25 @@ public sealed partial class Memory
     }
 
     /// <summary>
-    /// Writes The <c>X</c>, <c>Y</c> and <c>Z</c> coordinates with the given memory-<paramref name="xCoordAddress"/>.
+    /// Writes The <c>X</c>, <c>Y</c> and <c>Z</c> coordinates with the given memory-<paramref name="memoryAddress"/>.
     /// It will take your given <c>X</c> address and add 4 bytes for <c>Y</c> and 8 bytes for <c>Z</c>
     /// to get all three coordinates.
     /// <para><c>Behind the scenes:</c></para>
     /// <example>
-    /// <code>var xAddress = <paramref name="xCoordAddress"/></code>
-    /// <code>var yAddress = <paramref name="xCoordAddress"/> + 4;</code>
-    /// <code>var zAddress = <paramref name="xCoordAddress"/> + 8;</code>
+    /// <code>var xAddress = <paramref name="memoryAddress"/></code>
+    /// <code>var yAddress = <paramref name="memoryAddress"/> + 4;</code>
+    /// <code>var zAddress = <paramref name="memoryAddress"/> + 8;</code>
     /// </example>
     /// <para><c>Note: </c>This only works if the coordinate addresses are of type <see cref="float"/> and next to each other in the memory.</para>
     /// </summary>
-    /// <param name="xCoordAddress"></param>
+    /// <param name="memoryAddress"></param>
     /// <param name="coords"></param>
-    public bool WriteFloatCoordinates(MemoryAddress xCoordAddress, Vector3 coords)
+    public bool WriteFloatCoordinates(MemoryAddress memoryAddress, Vector3 coords)
     {
-        var targetAddress = CalculateTargetAddress(xCoordAddress);
+        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        {
+            return false;
+        }
 
         if (targetAddress == nuint.Zero)
         {

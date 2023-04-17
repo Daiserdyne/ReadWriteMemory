@@ -25,7 +25,7 @@ public sealed partial class Memory
         {
             var moduleAddress = IntPtr.Zero;
 
-            string moduleName = memAddress.ModuleName;
+            var moduleName = memAddress.ModuleName;
 
             if (moduleName != string.Empty)
             {
@@ -50,19 +50,19 @@ public sealed partial class Memory
 
         if (offsets is not null && offsets.Length != 0)
         {
-            MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, _buffer, (UIntPtr)_buffer.Length);
+            MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, _buffer);
 
-            targetAddress = (nuint)BitConverter.ToInt64(_buffer);
+            targetAddress = (nuint)BitConverter.ToUInt64(_buffer);
 
             for (int i = 0; i < offsets.Length; i++)
             {
                 if (i == offsets.Length - 1)
                 {
-                    targetAddress = (nuint)Convert.ToInt64((long)targetAddress + offsets[i]);
+                    targetAddress = (nuint)Convert.ToUInt64((long)targetAddress + offsets[i]);
                     break;
                 }
 
-                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, offsets[i]), _buffer, (nuint)_buffer.Length);
+                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, offsets[i]), _buffer);
 
                 targetAddress = (nuint)BitConverter.ToInt64(_buffer);
             }
@@ -76,6 +76,25 @@ public sealed partial class Memory
         });
 
         return targetAddress;
+    }
+
+    private bool CheckProcStateAndGetTargetAddress(MemoryAddress memoryAddress, out UIntPtr targetAddress)
+    {
+        targetAddress = UIntPtr.Zero;
+
+        if (!IsProcessAlive())
+        {
+            return false;
+        }
+
+        targetAddress = CalculateTargetAddress(memoryAddress);
+
+        if (targetAddress == UIntPtr.Zero)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>
