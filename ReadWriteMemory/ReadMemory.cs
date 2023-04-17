@@ -158,18 +158,15 @@ public sealed partial class Memory
 
         for (short i = 0; i < 3; i++)
         {
-            if (MemoryOperation.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer))
+            if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer))
             {
-                if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, coordsAddresses[i], buffer))
-                {
-                    break;
-                }
+                break;
+            }
 
-                if (MemoryOperation.ConvertBufferUnsafe<float>(buffer, out var value))
-                {
-                    successCounter++;
-                    coordValues[i] = value;
-                }
+            if (MemoryOperation.ConvertBufferUnsafe<float>(buffer, out var value))
+            {
+                successCounter++;
+                coordValues[i] = value;
             }
         }
 
