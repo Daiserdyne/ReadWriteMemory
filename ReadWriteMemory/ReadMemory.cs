@@ -10,17 +10,13 @@ public sealed partial class Memory
 {
     #region Delegates
 
-    public delegate void ReadValueCallback(bool wasReadingSuccessfull, object? value);
+    public delegate void ReadStringCallback(bool wasReadingSuccessfull, string value);
+
+    public delegate void ReadBytesCallback(bool wasReadingSuccessfull, byte[] value);
 
     public delegate void ReadValueCallback<T>(bool wasReadingSuccessfull, T value);
 
-    public delegate void ReadCoordinates(bool wasReadingSuccessfull, Vector3 coords);
-
-    #endregion
-
-    #region Fields
-
-    private byte[] _readBuffer;
+    public delegate void ReadCoordinatesCallback(bool wasReadingSuccessfull, Vector3 coords);
 
     #endregion
 
@@ -33,14 +29,14 @@ public sealed partial class Memory
             return false;
         }
 
-        _readBuffer = new byte[sizeof(T)];
+        var buffer = new byte[sizeof(T)];
 
-        if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, _readBuffer))
+        if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
         {
             return false;
         }
 
-        if (!MemoryOperation.ConvertBufferUnsafe(_readBuffer, out value))
+        if (!MemoryOperation.ConvertBufferUnsafe(buffer, out value))
         {
             return false;
         }
@@ -66,16 +62,16 @@ public sealed partial class Memory
             return false;
         }
 
-        _readBuffer = new byte[length];
+        var buffer = new byte[length];
 
-        if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, _readBuffer))
+        if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
         {
             return false;
         }
 
         try
         {
-            value = Encoding.UTF8.GetString(_readBuffer, 0, length);
+            value = Encoding.UTF8.GetString(buffer, 0, length);
         }
         catch
         {
@@ -85,7 +81,7 @@ public sealed partial class Memory
         return true;
     }
 
-    public void ReadString(MemoryAddress memoryAddress, int length, ReadValueCallback callback, TimeSpan refreshTime, CancellationToken ct)
+    public void ReadString(MemoryAddress memoryAddress, int length, ReadStringCallback callback, TimeSpan refreshTime, CancellationToken ct)
     {
         _ = BackgroundService.ExecuteTaskInfinite(() =>
         {
@@ -111,7 +107,7 @@ public sealed partial class Memory
         return true;
     }
 
-    public void ReadBytes(MemoryAddress memoryAddress, int length, ReadValueCallback callback, TimeSpan refreshTime, CancellationToken ct)
+    public void ReadBytes(MemoryAddress memoryAddress, int length, ReadBytesCallback callback, TimeSpan refreshTime, CancellationToken ct)
     {
         _ = BackgroundService.ExecuteTaskInfinite(() =>
         {
@@ -189,7 +185,7 @@ public sealed partial class Memory
         return true;
     }
 
-    public void ReadFloatCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, ReadCoordinates callback, 
+    public void ReadFloatCoordinates(MemoryAddress xPosition, MemoryAddress yPosition, MemoryAddress zPosition, ReadCoordinatesCallback callback, 
         TimeSpan refreshTime, CancellationToken ct)
     {
         bool success;
@@ -265,7 +261,7 @@ public sealed partial class Memory
         return true;
     }
 
-    public void ReadFloatCoordinates(MemoryAddress xCoordinateMemoryAddress, ReadCoordinates callback, TimeSpan refreshTime, CancellationToken ct)
+    public void ReadFloatCoordinates(MemoryAddress xCoordinateMemoryAddress, ReadCoordinatesCallback callback, TimeSpan refreshTime, CancellationToken ct)
     {
         bool success;
 

@@ -22,7 +22,7 @@ internal static class MemoryOperation
     {
         var length = sizeof(T);
 
-        var valueBuffer = length <= 512 ? stackalloc byte[length] : new byte[length];
+        Span<byte> valueBuffer = stackalloc byte[length];
 
         Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(valueBuffer), value);
 

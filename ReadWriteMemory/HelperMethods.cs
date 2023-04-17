@@ -7,7 +7,7 @@ namespace ReadWriteMemory;
 
 public sealed partial class Memory
 {
-    private nuint GetTargetAddress(MemoryAddress memAddress)
+    private unsafe nuint GetTargetAddress(MemoryAddress memAddress)
     {
         if (!IsProcessAlive())
         {
@@ -49,11 +49,13 @@ public sealed partial class Memory
 
         int[]? offsets = memAddress.Offsets;
 
+        var buffer = new byte[8];
+
         if (offsets is not null && offsets.Length != 0)
         {
-            MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, _buffer);
+            MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer);
 
-            targetAddress = (nuint)BitConverter.ToUInt64(_buffer);
+            targetAddress = (nuint)BitConverter.ToUInt64(buffer);
 
             for (int i = 0; i < offsets.Length; i++)
             {
@@ -63,9 +65,9 @@ public sealed partial class Memory
                     break;
                 }
 
-                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, offsets[i]), _buffer);
+                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, offsets[i]), buffer);
 
-                targetAddress = (nuint)BitConverter.ToInt64(_buffer);
+                targetAddress = (nuint)BitConverter.ToInt64(buffer);
             }
         }
 

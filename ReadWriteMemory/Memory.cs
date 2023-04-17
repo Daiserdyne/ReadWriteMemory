@@ -28,7 +28,6 @@ public sealed partial class Memory : IDisposable
     private ProcessInformation _targetProcess;
 
     private readonly List<MemoryAddressTable> _addressRegister = new();
-    private readonly byte[] _buffer = new byte[8];
 
     #endregion
 
