@@ -1,7 +1,6 @@
 ﻿using ReadWriteMemory.Models;
 using ReadWriteMemory.Utilities;
 using System.Diagnostics;
-using Windows.UI.Input;
 
 namespace ReadWriteMemory.DummyTrainer;
 
@@ -15,6 +14,8 @@ internal sealed class DummyTrainer
     private readonly static MemoryAddress _x = new(0x219FF58, "Outlast2.exe", 0x250, 0x88);
 
     private readonly static MemoryAddress _hp = new(0x219FF58, "Outlast2.exe", 0xC38, 0x7F58);
+
+    private readonly static MemoryAddress _STRING = new(0x2A731633A10);
 
     internal static async Task Main()
     {
@@ -101,18 +102,6 @@ internal sealed class DummyTrainer
 
                 stopwatch.Reset();
             }
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F7))
-            {
-                stopwatch.Start();
-
-                memory.ReadProcessMemory(_hp, Memory.MemoryDataTypes.Float, out var value);
-
-                await Console.Out.WriteLineAsync("ReadProcessMemory took " + value?.ToString());
-
-                stopwatch.Stop();
-
-                stopwatch.Reset();
-            }
             if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F8))
             {
                 stopwatch.Start();
@@ -131,23 +120,27 @@ internal sealed class DummyTrainer
             {
                 stopwatch.Start();
 
-                memory.ReadProcessMemory(_hp, Memory.MemoryDataTypes.Float, ReadValue, TimeSpan.FromMilliseconds(100), test.Token);
+                memory.ReadValue<float>(_hp, ReadValue, TimeSpan.FromSeconds(1), test.Token);
 
                 stopwatch.Stop();
 
                 stopwatch.Reset();
             }
-
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F10))
+            {
+                test.Cancel();
+                test = new();
+            }
 
             await Task.Delay(5);
         }
     }
 
-    public static void ReadValue(bool success, object? value)
+    public static void ReadValue<T>(bool success, T value)
     {
         if (success)
         {
-            Console.WriteLine(value!.ToString());
+            Console.WriteLine(value);
         }
     }
 }

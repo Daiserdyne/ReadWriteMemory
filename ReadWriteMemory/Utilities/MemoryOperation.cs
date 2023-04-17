@@ -34,7 +34,7 @@ internal static class MemoryOperation
         return Win32.ReadProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero);
     }
 
-    internal static unsafe bool GetValueUnsafe<T>(byte[] buffer, out T value) where T : unmanaged
+    internal static unsafe bool ConvertBufferUnsafe<T>(byte[] buffer, out T value) where T : unmanaged
     {
         var size = sizeof(T);
 

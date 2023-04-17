@@ -170,21 +170,6 @@ public sealed partial class Memory
         return -1;
     }
 
-    private static void ConvertTargetValue(MemoryDataTypes type, byte[] buffer, ref object value)
-    {
-        value = type switch
-        {
-            MemoryDataTypes.Int16 => BitConverter.ToInt16(buffer, 0),
-            MemoryDataTypes.Int32 => BitConverter.ToInt32(buffer, 0),
-            MemoryDataTypes.Int64 => BitConverter.ToInt64(buffer, 0),
-            MemoryDataTypes.Float => BitConverter.ToSingle(buffer, 0),
-            MemoryDataTypes.Double => BitConverter.ToDouble(buffer, 0),
-            MemoryDataTypes.String => Encoding.UTF8.GetString(buffer),
-            MemoryDataTypes.ByteArray => buffer,
-            _ => throw new ArgumentException("Invalid type", nameof(type))
-        };
-    }
-
     private nuint CalculateTargetAddress(MemoryAddress memoryAddress)
     {
         if (!IsProcessAlive())
