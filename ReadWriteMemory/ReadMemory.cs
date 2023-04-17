@@ -112,21 +112,6 @@ public sealed partial class Memory
         }, refreshTime, ct);
     }
 
-    private static void ConvertTargetValue(MemoryDataTypes type, byte[] buffer, ref object value)
-    {
-        value = type switch
-        {
-            MemoryDataTypes.Int16 => BitConverter.ToInt16(buffer, 0),
-            MemoryDataTypes.Int32 => BitConverter.ToInt32(buffer, 0),
-            MemoryDataTypes.Int64 => BitConverter.ToInt64(buffer, 0),
-            MemoryDataTypes.Float => BitConverter.ToSingle(buffer, 0),
-            MemoryDataTypes.Double => BitConverter.ToDouble(buffer, 0),
-            MemoryDataTypes.String => Encoding.UTF8.GetString(buffer),
-            MemoryDataTypes.ByteArray => buffer,
-            _ => throw new ArgumentException("Invalid type", nameof(type))
-        };
-    }
-
     /// <summary>
     /// 
     /// </summary>
@@ -200,7 +185,7 @@ public sealed partial class Memory
 
         int successCounter = 0;
 
-        for (int i = 0; i < 3; i++)
+        for (short i = 0; i < 3; i++)
         {
             var buffer = new byte[4];
 
@@ -263,7 +248,7 @@ public sealed partial class Memory
 
         int successCounter = 0;
 
-        for (int i = 0; i < 3; i++)
+        for (short i = 0; i < 3; i++)
         {
             var buffer = new byte[4];
 

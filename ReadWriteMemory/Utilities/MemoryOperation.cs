@@ -34,6 +34,25 @@ internal static class MemoryOperation
         return Win32.ReadProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero);
     }
 
+    //internal static unsafe bool ReadProcessMemory<T>(byte[] buffer, out T value) where T : unmanaged
+    //{
+    //    var size = sizeof(T);
+
+    //    if (size < buffer.Length)
+    //    {
+    //        value = default;
+
+    //        return false;
+    //    }
+
+    //    fixed (byte* pByte = buffer)
+    //    {
+    //        value = *(T*)pByte;
+    //    }
+
+    //    return true;
+    //}
+
     internal static bool DeallocateMemory(nint processHandle, nuint address)
     {
         return Win32.VirtualFreeEx(processHandle, address, 0, Win32.MEM_RELEASE);
