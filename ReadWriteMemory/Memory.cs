@@ -111,7 +111,7 @@ public sealed partial class Memory : IDisposable
     /// <summary>
     /// Closes the process when finished.
     /// </summary>
-    public void CloseProcess()
+    public void CloseHandle()
     {
         if (!IsProcessAlive() || _targetProcess.Handle == IntPtr.Zero)
         {
@@ -426,7 +426,7 @@ public sealed partial class Memory : IDisposable
 
         CloseAllCodeCaves();
         UnfreezeAllValues();
-        CloseProcess();
+        CloseHandle();
 
         _addressRegister.Clear();
         _targetProcess.ProcessState.ProcessStateTokenSrc.Cancel();

@@ -10,16 +10,43 @@ public sealed partial class Memory
 {
     #region Delegates
 
-    public delegate void ReadStringCallback(bool wasReadingSuccessfull, string value);
+    /// <summary>
+    /// A function pointer that will be called after reading the string value.
+    /// </summary>
+    /// <param name="wasReadingSuccessfull"></param>
+    /// <param name="stringValue"></param>
+    public delegate void ReadStringCallback(bool wasReadingSuccessfull, string stringValue);
 
-    public delegate void ReadBytesCallback(bool wasReadingSuccessfull, byte[] value);
+    /// <summary>
+    /// A function pointer that will be called after reading the byte array value.
+    /// </summary>
+    /// <param name="wasReadingSuccessfull"></param>
+    /// <param name="byteArrayValue"></param>
+    public delegate void ReadBytesCallback(bool wasReadingSuccessfull, byte[] byteArrayValue);
 
-    public delegate void ReadValueCallback<T>(bool wasReadingSuccessfull, T value);
+    /// <summary>
+    /// A function pointer that will be called after reading the unmanaged value.
+    /// </summary>
+    /// <param name="wasReadingSuccessfull"></param>
+    /// <param name="unmanagedValue"></param>
+    public delegate void ReadValueCallback<T>(bool wasReadingSuccessfull, T unmanagedValue) where T : unmanaged;
 
+    /// <summary>
+    /// A function pointer that will be called after reading the coordinates.
+    /// </summary>
+    /// <param name="wasReadingSuccessfull"></param>
+    /// <param name="coords"></param>
     public delegate void ReadCoordinatesCallback(bool wasReadingSuccessfull, Vector3 coords);
 
     #endregion
 
+    /// <summary>
+    /// This will read the <paramref name="value"/> out of the given <paramref name="memoryAddress"/>.
+    /// Don't forget to specify the <typeparamref name="T"/> type correctly to prevent errors or unintended outcomes.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="value"></param>
+    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
     public unsafe bool ReadValue<T>(MemoryAddress memoryAddress, out T value) where T : unmanaged
     {
         value = default;
@@ -44,6 +71,15 @@ public sealed partial class Memory
         return true;
     }
 
+    /// <summary>
+    /// This will read the <typeparamref name="T"/>-value and executes the <paramref name="callback"/>
+    /// function in a loop with the specified delay <paramref name="refreshTime"/>.
+    /// Don't forget to specify the <typeparamref name="T"/> type correctly to prevent errors or unintended outcomes.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="callback"></param>
+    /// <param name="refreshTime"></param>
+    /// <param name="ct"></param>
     public void ReadValue<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, TimeSpan refreshTime, CancellationToken ct) where T : unmanaged
     {
         _ = BackgroundService.ExecuteTaskInfinite(() =>
