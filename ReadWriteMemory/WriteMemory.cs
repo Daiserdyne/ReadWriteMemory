@@ -14,7 +14,7 @@ public sealed partial class Memory
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public bool WriteProcessMemory(MemoryAddress memoryAddress, string value)
+    public bool WriteString(MemoryAddress memoryAddress, string value)
     {
         if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
         {
@@ -32,7 +32,7 @@ public sealed partial class Memory
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public bool WriteProcessMemory(MemoryAddress memoryAddress, byte[] value)
+    public bool WriteBytes(MemoryAddress memoryAddress, byte[] value)
     {
         if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
         {
@@ -51,7 +51,7 @@ public sealed partial class Memory
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public bool WriteProcessMemory<T>(MemoryAddress memoryAddress, T value) where T : unmanaged
+    public bool WriteValue<T>(MemoryAddress memoryAddress, T value) where T : unmanaged
     {
         if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
         {

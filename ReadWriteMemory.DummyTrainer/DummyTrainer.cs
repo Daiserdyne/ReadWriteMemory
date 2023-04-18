@@ -94,7 +94,7 @@ internal sealed class DummyTrainer
             {
                 stopwatch.Start();
 
-                memory.WriteProcessMemory<float>(_hp, 5);
+                memory.WriteValue<float>(_hp, 5);
 
                 stopwatch.Stop();
 
