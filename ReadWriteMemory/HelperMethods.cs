@@ -8,11 +8,6 @@ public sealed partial class Memory
 {
     private unsafe nuint GetTargetAddress(MemoryAddress memAddress)
     {
-        if (!IsProcessAlive())
-        {
-            return nuint.Zero;
-        }
-
         nuint baseAddress;
 
         var savedBaseAddress = GetBaseAddressByMemoryAddress(memAddress);
@@ -27,7 +22,7 @@ public sealed partial class Memory
 
             var moduleName = memAddress.ModuleName;
 
-            if (moduleName != string.Empty)
+            if (!string.IsNullOrEmpty(moduleName))
             {
                 moduleAddress = GetModuleAddressByName(moduleName);
             }
@@ -50,23 +45,24 @@ public sealed partial class Memory
 
         var buffer = new byte[8];
 
-        if (offsets is not null && offsets.Length != 0)
+        if (offsets is not null && offsets.Any())
         {
             MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer);
 
-            targetAddress = (nuint)BitConverter.ToUInt64(buffer);
+            MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
 
-            for (int i = 0; i < offsets.Length; i++)
+            for (short i = 0; i < offsets.Length; i++)
             {
                 if (i == offsets.Length - 1)
                 {
                     targetAddress = (nuint)Convert.ToUInt64((long)targetAddress + offsets[i]);
+
                     break;
                 }
 
                 MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, offsets[i]), buffer);
 
-                targetAddress = (nuint)BitConverter.ToInt64(buffer);
+                MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
             }
         }
 
@@ -89,7 +85,7 @@ public sealed partial class Memory
             return false;
         }
 
-        targetAddress = CalculateTargetAddress(memoryAddress);
+        targetAddress = GetTargetAddress(memoryAddress);
 
         if (targetAddress == UIntPtr.Zero)
         {
@@ -169,23 +165,6 @@ public sealed partial class Memory
         }
 
         return -1;
-    }
-
-    private nuint CalculateTargetAddress(MemoryAddress memoryAddress)
-    {
-        if (!IsProcessAlive())
-        {
-            return nuint.Zero;
-        }
-
-        var targetAddress = GetTargetAddress(memoryAddress);
-
-        if (targetAddress == nuint.Zero)
-        {
-            return nuint.Zero;
-        }
-
-        return targetAddress;
     }
 
     private static Vector3 CalculateNewPosition(Quaternion rotation, Vector3 currentPosition, float distance)

@@ -18,4 +18,8 @@
 		<Description>A powerfull memory editing dll.</Description>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Folder Include="Templates\" />
+	</ItemGroup>
 </Project>

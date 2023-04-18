@@ -264,7 +264,7 @@ public sealed partial class Memory : IDisposable
             return false;
         }
 
-        return _targetProcess.ProcessState.CurrentProcessState;
+        return true;
     }
 
     private bool DeallocateMemory(nuint address)

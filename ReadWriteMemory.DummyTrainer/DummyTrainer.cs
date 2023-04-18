@@ -1,6 +1,7 @@
 ﻿using ReadWriteMemory.Models;
 using ReadWriteMemory.Utilities;
 using System.Diagnostics;
+using System.Numerics;
 
 namespace ReadWriteMemory.DummyTrainer;
 
@@ -24,6 +25,8 @@ internal sealed class DummyTrainer
         var stopwatch = new Stopwatch();
 
         var test = new CancellationTokenSource();   
+
+        bool enabled = false;
 
         while (true)
         {
@@ -102,32 +105,16 @@ internal sealed class DummyTrainer
 
                 stopwatch.Reset();
             }
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F8))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F7))
             {
-                stopwatch.Start();
+                enabled = enabled ? false : true;
 
-                memory.ReadFloatCoordinates(_x, out var coords);
+                if (enabled)
+                {
+                    memory.ReadValue<Coordinates>(_x, ReadValue, TimeSpan.FromMilliseconds(10), test.Token);
+                    continue;
+                }
 
-                await Console.Out.WriteLineAsync($"X: {coords.X}, Y: {coords.Y}, Z: {coords.Z}");
-
-                stopwatch.Stop();
-
-                await Console.Out.WriteLineAsync(stopwatch.ElapsedMilliseconds + "ms");
-
-                stopwatch.Reset();
-            }
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F9))
-            {
-                stopwatch.Start();
-
-                memory.ReadValue<float>(_hp, ReadValue, TimeSpan.FromSeconds(1), test.Token);
-
-                stopwatch.Stop();
-
-                stopwatch.Reset();
-            }
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F10))
-            {
                 test.Cancel();
                 test = new();
             }
@@ -140,7 +127,18 @@ internal sealed class DummyTrainer
     {
         if (success)
         {
+            Console.Clear();
             Console.WriteLine(value);
+        }
+    }
+
+    public struct Coordinates
+    {
+        public float X, Y, Z;
+
+        public override string ToString()
+        {
+            return $"X: {X}\nY: {Y}\nZ: {Z}\n";
         }
     }
 }
