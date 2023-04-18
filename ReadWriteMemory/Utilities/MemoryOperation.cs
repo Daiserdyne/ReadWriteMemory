@@ -24,6 +24,11 @@ internal static class MemoryOperation
         return Win32.WriteProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero);
     }
 
+    internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, Span<byte> buffer)
+    {
+        return Win32.WriteProcessMemory(processHandle, targetAddress, buffer, buffer.Length, IntPtr.Zero);
+    }
+
     internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer, int length)
     {
         return Win32.WriteProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)length, IntPtr.Zero);
@@ -33,11 +38,11 @@ internal static class MemoryOperation
     {
         var length = sizeof(T);
 
-        Span<byte> valueBuffer = stackalloc byte[length];
+        Span<byte> valueBuffer = length <= 128 ? stackalloc byte[length] : new byte[length];
 
         Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(valueBuffer), value);
 
-        return WriteProcessMemory(processHandle, targetAddress, valueBuffer.ToArray());
+        return WriteProcessMemory(processHandle, targetAddress, valueBuffer);
     }
 
     internal static bool ReadProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer)

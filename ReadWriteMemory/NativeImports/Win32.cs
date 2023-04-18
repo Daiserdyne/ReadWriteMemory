@@ -85,6 +85,15 @@ internal sealed class Win32
         uint flProtect
     );
 
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool WriteProcessMemory(
+    IntPtr hProcess,
+    UIntPtr lpBaseAddress,
+    Span<byte> lpBuffer,
+    int nSize,
+    IntPtr lpNumberOfBytesWritten
+);
+
     [DllImport("kernel32.dll")]
     internal static extern int CloseHandle(
     IntPtr hObject
