@@ -1,16 +1,16 @@
-﻿using ReadWriteMemory.Models;
+﻿using ReadWriteMemory.Interfaces;
+using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
-using ReadWriteMemory.Trainer.Interface;
 using ReadWriteMemory.Utilities;
 using System.Diagnostics;
 
-namespace ReadWriteMemory;
+namespace ReadWriteMemory.Main;
 
 /// <summary>
-/// This is the main component of the <see cref="ReadWriteMemory"/> package. This class includes a lot of powerfull
+/// This is the main component of the <see cref="ReadWriteMemory"/> library. This class includes a lot of powerfull
 /// read and write operations to manipulate the memory of an process.
 /// </summary>
-public sealed partial class Memory : IDisposable
+public sealed partial class RWMemory : IDisposable
 {
     #region Fields
 
@@ -34,10 +34,10 @@ public sealed partial class Memory : IDisposable
     #region C'tor
 
     /// <summary>
-    /// Creates a instance of the memory object.
+    /// This is the main component of the <see cref="ReadWriteMemory"/> library. This class includes a lot of powerfull
+    /// read and write operations to manipulate the memory of an process.
     /// </summary>
-    /// <param name="processName"></param>
-    public Memory(string processName)
+    public RWMemory(string processName)
     {
         _targetProcess = new()
         {
@@ -118,7 +118,7 @@ public sealed partial class Memory : IDisposable
             return;
         }
 
-        NativeImports.Win32.CloseHandle(_targetProcess.Handle);
+        NativeImports.Kernel32.CloseHandle(_targetProcess.Handle);
 
         _targetProcess = new()
         {
@@ -352,7 +352,7 @@ public sealed partial class Memory : IDisposable
         var pid = process.First().Id;
 
         _targetProcess.Process = Process.GetProcessById(pid);
-        _targetProcess.Handle = NativeImports.Win32.OpenProcess(true, pid);
+        _targetProcess.Handle = NativeImports.Kernel32.OpenProcess(true, pid);
 
         if (_targetProcess.Handle == IntPtr.Zero)
         {
@@ -367,7 +367,7 @@ public sealed partial class Memory : IDisposable
         }
 
         if (!(Environment.Is64BitOperatingSystem
-            && NativeImports.Win32.IsWow64Process(_targetProcess.Handle, out bool isWow64)
+            && NativeImports.Kernel32.IsWow64Process(_targetProcess.Handle, out bool isWow64)
             && isWow64 is false))
         {
             _targetProcess = new()

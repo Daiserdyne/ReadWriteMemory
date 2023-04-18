@@ -1,4 +1,4 @@
-﻿using static ReadWriteMemory.NativeImports.Win32;
+﻿using static ReadWriteMemory.NativeImports.Kernel32;
 
 namespace ReadWriteMemory.Utilities;
 

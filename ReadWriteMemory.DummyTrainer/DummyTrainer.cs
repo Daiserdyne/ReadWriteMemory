@@ -1,7 +1,7 @@
-﻿using ReadWriteMemory.Models;
+﻿using ReadWriteMemory.Main;
+using ReadWriteMemory.Models;
 using ReadWriteMemory.Utilities;
 using System.Diagnostics;
-using System.Numerics;
 
 namespace ReadWriteMemory.DummyTrainer;
 
@@ -20,7 +20,7 @@ internal sealed class DummyTrainer
 
     internal static async Task Main()
     {
-        var memory = new Memory("Outlast2");
+        using var memory = new RWMemory("Outlast2");
 
         var stopwatch = new Stopwatch();
 

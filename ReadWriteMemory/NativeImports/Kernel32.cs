@@ -2,7 +2,7 @@
 
 namespace ReadWriteMemory.NativeImports;
 
-internal sealed class Win32
+internal sealed class Kernel32
 {
     #region Constants
 

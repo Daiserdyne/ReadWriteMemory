@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Win32 = ReadWriteMemory.NativeImports.Win32;
+using Kernel32 = ReadWriteMemory.NativeImports.Kernel32;
 
 namespace ReadWriteMemory.Utilities;
 
@@ -21,12 +21,12 @@ internal static class MemoryOperation
 
     internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer)
     {
-        return Win32.WriteProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero);
+        return Kernel32.WriteProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero);
     }
 
     internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer, int length)
     {
-        return Win32.WriteProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)length, IntPtr.Zero);
+        return Kernel32.WriteProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)length, IntPtr.Zero);
     }
 
     internal static unsafe bool WriteProcessMemory<T>(nint processHandle, nuint targetAddress, T value) where T : unmanaged
@@ -42,7 +42,7 @@ internal static class MemoryOperation
 
     internal static bool ReadProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer)
     {
-        return Win32.ReadProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero);
+        return Kernel32.ReadProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero);
     }
 
     internal static unsafe bool ConvertBufferUnsafe<T>(byte[] buffer, out T value) where T : unmanaged
@@ -66,6 +66,6 @@ internal static class MemoryOperation
 
     internal static bool DeallocateMemory(nint processHandle, nuint address)
     {
-        return Win32.VirtualFreeEx(processHandle, address, 0, Win32.MEM_RELEASE);
+        return Kernel32.VirtualFreeEx(processHandle, address, 0, Kernel32.MEM_RELEASE);
     }
 }

@@ -1,12 +1,14 @@
-﻿namespace ReadWriteMemory.Trainer.Interface;
+﻿using ReadWriteMemory.Main;
+
+namespace ReadWriteMemory.Interfaces;
 
 /// <summary>
-/// Standard interface for trainer.
+/// Standard interface for a trainer.
 /// </summary>
 public interface ITrainer
 {
     /// <summary>
-    /// Shortname of the trainer.
+    /// Name of the trainer.
     /// </summary>
     public string TrainerName { get; }
 
@@ -16,19 +18,19 @@ public interface ITrainer
     public string Description { get; }
 
     /// <summary>
-    /// If true, the <see cref="Disable(string[]?)"/> function will be called when the <see cref="Memory"/> object will be disposed.
+    /// If true, the <see cref="Disable"/> function will be called when the <see cref="RWMemory"/> object will be disposed.
     /// </summary>
     public bool DisableWhenDispose { get; }
 
     /// <summary>
-    /// This will execute the trainer payload.
+    /// This function contains the trainer logic.
     /// </summary>
     /// <param name="args"></param>
     /// <returns></returns>
     public Task Enable(params string[]? args);
 
     /// <summary>
-    /// This will disable the trainer payload.
+    /// This function restores the official state of the program.
     /// </summary>
     /// <param name="args"></param>
     /// <returns></returns>

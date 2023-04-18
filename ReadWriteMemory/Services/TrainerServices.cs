@@ -1,4 +1,5 @@
-﻿using ReadWriteMemory.Trainer.Interface;
+﻿using ReadWriteMemory.Interfaces;
+using ReadWriteMemory.Main;
 using System.Reflection;
 
 namespace ReadWriteMemory.Services;
@@ -9,14 +10,14 @@ namespace ReadWriteMemory.Services;
 public sealed class TrainerServices
 {
     private static object? _mem;
-    private static Memory? _memory;
+    private static RWMemory? _memory;
 
     /// <summary>
-    /// Gives you a thread-safe singleton instance of the <see cref="Memory"/> object.
+    /// Gives you a thread-safe singleton instance of the <see cref="RWMemory"/> object.
     /// </summary>
     /// <param name="processName"></param>
     /// <returns></returns>
-    public static Memory GetSingletonInstance(string processName)
+    public static RWMemory GetSingletonInstance(string processName)
     {
         _mem ??= new();
 

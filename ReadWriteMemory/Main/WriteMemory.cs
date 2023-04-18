@@ -1,9 +1,9 @@
 ﻿using ReadWriteMemory.Models;
 using ReadWriteMemory.Utilities;
 
-namespace ReadWriteMemory;
+namespace ReadWriteMemory.Main;
 
-public sealed partial class Memory
+public sealed partial class RWMemory
 {
     /// <summary>
     /// This will write the given <seealso cref="string"/>-<paramref name="value"/> to the target <paramref name="memoryAddress"/>.

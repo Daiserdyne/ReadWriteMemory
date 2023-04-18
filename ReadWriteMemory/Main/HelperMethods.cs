@@ -2,9 +2,9 @@
 using ReadWriteMemory.Utilities;
 using System.Numerics;
 
-namespace ReadWriteMemory;
+namespace ReadWriteMemory.Main;
 
-public sealed partial class Memory
+public sealed partial class RWMemory
 {
     private unsafe nuint GetTargetAddress(MemoryAddress memAddress)
     {
@@ -76,9 +76,9 @@ public sealed partial class Memory
         return targetAddress;
     }
 
-    private bool CheckProcStateAndGetTargetAddress(MemoryAddress memoryAddress, out UIntPtr targetAddress)
+    private bool CheckProcStateAndGetTargetAddress(MemoryAddress memoryAddress, out nuint targetAddress)
     {
-        targetAddress = UIntPtr.Zero;
+        targetAddress = default;
 
         if (!IsProcessAlive())
         {
@@ -86,11 +86,6 @@ public sealed partial class Memory
         }
 
         targetAddress = GetTargetAddress(memoryAddress);
-
-        if (targetAddress == UIntPtr.Zero)
-        {
-            return false;
-        }
 
         return true;
     }

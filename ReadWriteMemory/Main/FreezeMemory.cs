@@ -2,9 +2,9 @@
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 
-namespace ReadWriteMemory;
+namespace ReadWriteMemory.Main;
 
-public sealed partial class Memory
+public sealed partial class RWMemory
 {
     /// <summary>
     /// <para>Freezes the value from the given <paramref name="memoryAddress"/>.</para>
