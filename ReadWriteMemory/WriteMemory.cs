@@ -7,13 +7,11 @@ namespace ReadWriteMemory;
 public sealed partial class Memory
 {
     /// <summary>
-    /// This will write the given <paramref name="value"/> to the target <paramref name="memoryAddress"/>.
-    /// Don't forget to specify the type. For example if you want to write a float, add the 'f' behind the number, for
-    /// double add a 'd' so that the memory knows what type you want to write.
+    /// This will write the given <seealso cref="string"/>-<paramref name="value"/> to the target <paramref name="memoryAddress"/>.
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
-    /// <returns></returns>
+    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
     public bool WriteString(MemoryAddress memoryAddress, string value)
     {
         if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
@@ -25,13 +23,29 @@ public sealed partial class Memory
     }
 
     /// <summary>
-    /// This will write the given <paramref name="value"/> to the target <paramref name="memoryAddress"/>.
-    /// Don't forget to specify the type. For example if you want to write a float, add the 'f' behind the number, for
-    /// double add a 'd' so that the memory knows what type you want to write.
+    /// This will write the given <seealso cref="string"/>-<paramref name="value"/> with the given <paramref name="length"/> 
+    /// to the target <paramref name="memoryAddress"/>.
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
-    /// <returns></returns>
+    /// <param name="length"></param>
+    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
+    public bool WriteString(MemoryAddress memoryAddress, string value, int length)
+    {
+        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        {
+            return false;
+        }
+
+        return MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, value, length);
+    }
+
+    /// <summary>
+    /// This will write the given <c>ByteArray</c>-<paramref name="value"/> to the target <paramref name="memoryAddress"/>.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="value"></param>
+    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
     public bool WriteBytes(MemoryAddress memoryAddress, byte[] value)
     {
         if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
@@ -44,13 +58,11 @@ public sealed partial class Memory
 
     /// <summary>
     /// This will write the given <paramref name="value"/> to the target <paramref name="memoryAddress"/>.
-    /// This version of WriteProcessMemory will only accepts unmanaged data types.
-    /// Don't forget to specify the <paramref name="value"/> type. For example if you want to write a float, add the 'f' behind the number, for
-    /// double add a 'd' so that the memory knows what type you want to write.
+    /// Don't forget to specify the <paramref name="value"/> type to prevent errors or unintended outcomes.
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
-    /// <returns></returns>
+    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
     public bool WriteValue<T>(MemoryAddress memoryAddress, T value) where T : unmanaged
     {
         if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
@@ -62,12 +74,13 @@ public sealed partial class Memory
     }
 
     /// <summary>
-    /// Writes <c>X</c>, <c>Y</c> and <c>Z</c> coordinates to the given memory addresses.
+    /// Writes the <c>X</c>, <c>Y</c> and <c>Z</c> coordinates by the given addresses.
     /// </summary>
     /// <param name="xAddress"></param>
     /// <param name="yAddress"></param>
     /// <param name="zAddress"></param>
     /// <param name="newCoords"></param>
+    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
     public bool WriteFloatCoordinates(MemoryAddress xAddress, MemoryAddress yAddress, MemoryAddress zAddress, Vector3 newCoords)
     {
         if (!IsProcessAlive())
@@ -102,10 +115,12 @@ public sealed partial class Memory
 
         for (short i = 0; i < 3; i++)
         {
-            if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, coordsAddresses[i], valuesToWrite[i]))
+            if (!MemoryOperation.WriteProcessMemory(_targetProcess.Handle, coordsAddresses[i], valuesToWrite[i]))
             {
-                successCounter++;
+                break;
             }
+
+            successCounter++;
         }
 
         if (successCounter == 3)
@@ -130,6 +145,7 @@ public sealed partial class Memory
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="coords"></param>
+    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
     public bool WriteFloatCoordinates(MemoryAddress memoryAddress, Vector3 coords)
     {
         if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
@@ -160,10 +176,12 @@ public sealed partial class Memory
 
         for (short i = 0; i < 3; i++)
         {
-            if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, coordsAddresses[i], valuesToWrite[i]))
+            if (!MemoryOperation.WriteProcessMemory(_targetProcess.Handle, coordsAddresses[i], valuesToWrite[i]))
             {
-                successCounter++;
+                break;
             }
+
+            successCounter++;
         }
 
         if (successCounter == 3)

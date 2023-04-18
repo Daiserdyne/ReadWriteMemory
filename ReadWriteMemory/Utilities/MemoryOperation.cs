@@ -13,9 +13,20 @@ internal static class MemoryOperation
         return WriteProcessMemory(processHandle, targetAddress, stringAsByteArray);
     }
 
+    internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, string value, int length)
+    {
+        var stringAsByteArray = Encoding.UTF8.GetBytes(value);
+        return WriteProcessMemory(processHandle, targetAddress, stringAsByteArray, length);
+    }
+
     internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer)
     {
         return Win32.WriteProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero);
+    }
+
+    internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer, int length)
+    {
+        return Win32.WriteProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)length, IntPtr.Zero);
     }
 
     internal static unsafe bool WriteProcessMemory<T>(nint processHandle, nuint targetAddress, T value) where T : unmanaged
