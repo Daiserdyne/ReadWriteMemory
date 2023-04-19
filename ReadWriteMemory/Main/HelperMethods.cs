@@ -76,12 +76,11 @@ public sealed partial class RWMemory
         return targetAddress;
     }
 
-    private bool CheckProcStateAndGetTargetAddress(MemoryAddress memoryAddress, out nuint targetAddress)
+    private bool GetTargetAddress(MemoryAddress memoryAddress, out nuint targetAddress)
     {
-        targetAddress = default;
-
         if (!IsProcessAlive())
         {
+            targetAddress = default;
             return false;
         }
 

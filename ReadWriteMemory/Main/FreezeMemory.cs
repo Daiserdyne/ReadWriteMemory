@@ -16,7 +16,7 @@ public sealed partial class RWMemory
     /// <returns></returns>
     public bool FreezeValue(MemoryAddress memoryAddress, uint refreshRateInMilliseconds = 100)
     {
-        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
@@ -74,7 +74,7 @@ public sealed partial class RWMemory
     /// <returns></returns>
     public bool ChangeAndFreezeValue(MemoryAddress memoryAddress, string freezeValue, uint refreshRateInMilliseconds = 100)
     {
-        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
@@ -97,7 +97,7 @@ public sealed partial class RWMemory
     /// <returns></returns>
     public bool ChangeAndFreezeValue(MemoryAddress memoryAddress, byte[] freezeValue, uint refreshRateInMilliseconds = 100)
     {
-        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
@@ -121,7 +121,7 @@ public sealed partial class RWMemory
     /// <returns></returns>
     public bool ChangeAndFreezeValue<T>(MemoryAddress memoryAddress, T freezeValue, uint refreshRateInMilliseconds = 100) where T : unmanaged
     {
-        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }

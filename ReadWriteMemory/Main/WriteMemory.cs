@@ -13,7 +13,7 @@ public sealed partial class RWMemory
     /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
     public bool WriteString(MemoryAddress memoryAddress, string value)
     {
-        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
@@ -31,7 +31,7 @@ public sealed partial class RWMemory
     /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
     public bool WriteString(MemoryAddress memoryAddress, string value, int length)
     {
-        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
@@ -47,7 +47,7 @@ public sealed partial class RWMemory
     /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
     public bool WriteBytes(MemoryAddress memoryAddress, byte[] value)
     {
-        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
@@ -64,7 +64,7 @@ public sealed partial class RWMemory
     /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
     public bool WriteValue<T>(MemoryAddress memoryAddress, T value) where T : unmanaged
     {
-        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }

@@ -51,7 +51,7 @@ public sealed partial class RWMemory
     {
         value = default;
 
-        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
@@ -100,7 +100,7 @@ public sealed partial class RWMemory
     {
         value = string.Empty;
 
-        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
@@ -154,7 +154,7 @@ public sealed partial class RWMemory
     {
         value = new byte[length];
 
-        if (!CheckProcStateAndGetTargetAddress(memoryAddress, out var targetAddress))
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
             return false;
         }
