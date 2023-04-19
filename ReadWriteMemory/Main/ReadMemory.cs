@@ -31,13 +31,6 @@ public sealed partial class RWMemory
     /// <param name="unmanagedValue"></param>
     public delegate void ReadValueCallback<T>(bool wasReadingSuccessfull, T unmanagedValue) where T : unmanaged;
 
-    /// <summary>
-    /// A function pointer that will be called after reading the coordinates.
-    /// </summary>
-    /// <param name="wasReadingSuccessfull"></param>
-    /// <param name="coords"></param>
-    public delegate void ReadCoordinatesCallback(bool wasReadingSuccessfull, Vector3 coords);
-
     #endregion
 
     /// <summary>
