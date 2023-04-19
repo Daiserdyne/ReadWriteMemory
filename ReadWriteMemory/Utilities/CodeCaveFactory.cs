@@ -33,7 +33,7 @@ internal static class CodeCaveFactory
 
         jmpBytes[0] = 0xE9;
 
-        Buffer.BlockCopy(BitConverter.GetBytes(offset), 0, jmpBytes, 1, sizeof(int));
+        Buffer.BlockCopy(MemoryOperation.ConvertToByteArrayUnsafe(offset), 0, jmpBytes, 1, sizeof(int));
 
         for (var i = 5; i < jmpBytes.Length; i++)
         {
@@ -48,14 +48,14 @@ internal static class CodeCaveFactory
 
         caveBytes[newCode.Length] = 0xE9;
 
-        Buffer.BlockCopy(BitConverter.GetBytes(offset), 0, caveBytes, newCode.Length + 1, sizeof(int));
+        Buffer.BlockCopy(MemoryOperation.ConvertToByteArrayUnsafe(offset), 0, caveBytes, newCode.Length + 1, sizeof(int));
 
         originalOpcodes = new byte[replaceCount];
 
-        ReadProcessMemory(targetProcessHandle, targetAddress, originalOpcodes, (nuint)replaceCount, IntPtr.Zero);
+        ReadProcessMemory(targetProcessHandle, targetAddress, originalOpcodes, replaceCount, IntPtr.Zero);
 
-        WriteProcessMemory(targetProcessHandle, caveAddress, caveBytes, caveBytes.Length, out _);
-        WriteProcessMemory(targetProcessHandle, targetAddress, jmpBytes, jmpBytes.Length, out _);
+        WriteProcessMemory(targetProcessHandle, caveAddress, caveBytes, caveBytes.Length, IntPtr.Zero);
+        WriteProcessMemory(targetProcessHandle, targetAddress, jmpBytes, jmpBytes.Length, IntPtr.Zero);
 
         return true;
     }

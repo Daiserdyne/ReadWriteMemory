@@ -42,14 +42,24 @@ internal static class MemoryOperation
 
     internal static bool ReadProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer)
     {
-        return Kernel32.ReadProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero);
+        return Kernel32.ReadProcessMemory(processHandle, targetAddress, buffer, buffer.Length, IntPtr.Zero);
+    }
+
+    internal static unsafe byte[] ConvertToByteArrayUnsafe<T>(T value) where T : unmanaged
+    {
+        var buffer = new byte[sizeof(T)];
+
+        fixed (byte* pByte = buffer)
+        {
+            *(T*)pByte = value;
+        }
+
+        return buffer;
     }
 
     internal static unsafe bool ConvertBufferUnsafe<T>(byte[] buffer, out T value) where T : unmanaged
     {
-        var size = sizeof(T);
-
-        if (size != buffer.Length)
+        if (sizeof(T) != buffer.Length)
         {
             value = default;
 

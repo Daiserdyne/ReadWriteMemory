@@ -74,7 +74,7 @@ internal sealed class Kernel32
         );
 
     [DllImport("kernel32.dll")]
-    internal static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] byte[] lpBuffer, UIntPtr nSize, IntPtr lpNumberOfBytesRead);
+    internal static extern bool ReadProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, [Out] byte[] lpBuffer, int nSize, IntPtr lpNumberOfBytesRead);
 
     [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
     internal static extern UIntPtr VirtualAllocEx(
