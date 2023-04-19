@@ -21,12 +21,12 @@ internal static class MemoryOperation
 
     internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer)
     {
-        return Kernel32.WriteProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)buffer.Length, IntPtr.Zero);
+        return Kernel32.WriteProcessMemory(processHandle, targetAddress, buffer, buffer.Length, IntPtr.Zero);
     }
 
     internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer, int length)
     {
-        return Kernel32.WriteProcessMemory(processHandle, targetAddress, buffer, (UIntPtr)length, IntPtr.Zero);
+        return Kernel32.WriteProcessMemory(processHandle, targetAddress, buffer, length, IntPtr.Zero);
     }
 
     internal static unsafe bool WriteProcessMemory<T>(nint processHandle, nuint targetAddress, T value) where T : unmanaged

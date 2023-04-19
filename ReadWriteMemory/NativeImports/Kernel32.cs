@@ -85,25 +85,16 @@ internal sealed class Kernel32
         uint flProtect
     );
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool WriteProcessMemory(
-    IntPtr hProcess,
-    UIntPtr lpBaseAddress,
-    Span<byte> lpBuffer,
-    int nSize,
-    IntPtr lpNumberOfBytesWritten
-);
-
     [DllImport("kernel32.dll")]
     internal static extern int CloseHandle(
     IntPtr hObject
     );
 
     [DllImport("kernel32.dll")]
-    internal static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, IntPtr lpNumberOfBytesWritten);
+    internal static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, int nSize, IntPtr lpNumberOfBytesWritten);
 
     [DllImport("kernel32.dll")]
-    internal static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, UIntPtr nSize, out IntPtr lpNumberOfBytesWritten);
+    internal static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, int nSize, out IntPtr lpNumberOfBytesWritten);
 
     [DllImport("kernel32")]
     internal static extern bool IsWow64Process(IntPtr hProcess, out bool lpSystemInfo);

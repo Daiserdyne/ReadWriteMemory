@@ -54,8 +54,8 @@ internal static class CodeCaveFactory
 
         ReadProcessMemory(targetProcessHandle, targetAddress, originalOpcodes, (nuint)replaceCount, IntPtr.Zero);
 
-        WriteProcessMemory(targetProcessHandle, caveAddress, caveBytes, (nuint)caveBytes.Length, out _);
-        WriteProcessMemory(targetProcessHandle, targetAddress, jmpBytes, (nuint)jmpBytes.Length, out _);
+        WriteProcessMemory(targetProcessHandle, caveAddress, caveBytes, caveBytes.Length, out _);
+        WriteProcessMemory(targetProcessHandle, targetAddress, jmpBytes, jmpBytes.Length, out _);
 
         return true;
     }
