@@ -3,6 +3,8 @@ using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 using System.Diagnostics;
+using System.Text;
+using PsApi = ReadWriteMemory.NativeImports.PsApi;
 
 namespace ReadWriteMemory.Main;
 
@@ -61,6 +63,28 @@ public sealed partial class RWMemory : IDisposable
         {
             _targetProcess.Modules.Add(module.ModuleName.ToLower(), module);
         }
+    }
+
+    private IDictionary<string, IntPtr> GetLoadedModules()
+    {
+        var modules = new Dictionary<string, IntPtr>();
+
+        var moduleHandles = new IntPtr[1024];
+        int sizeNeeded;
+
+        if (PsApi.EnumProcessModulesEx(_targetProcess.Handle, moduleHandles, moduleHandles.Length * IntPtr.Size, out sizeNeeded, PsApi.LIST_MODULES_ALL))
+        {
+            for (int i = 0; i < (sizeNeeded / IntPtr.Size); i++)
+            {
+                var moduleName = new StringBuilder(1024);
+                PsApi.GetModuleFileNameEx(_targetProcess.Handle, moduleHandles[i], moduleName, moduleName.Capacity);
+                modules.Add(moduleName.ToString(), moduleHandles[i]);
+            }
+
+            return modules;
+        }
+
+        return modules;
     }
 
     private void StartProcessStateMonitorService(ref bool oldProcessState)

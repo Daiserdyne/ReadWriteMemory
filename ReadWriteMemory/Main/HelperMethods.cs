@@ -102,7 +102,7 @@ public sealed partial class RWMemory
             return IntPtr.Zero;
         }
 
-        return _targetProcess.Modules?[moduleName.ToLower()].BaseAddress ?? IntPtr.Zero;
+        return _targetProcess.Modules?[moduleName].BaseAddress ?? IntPtr.Zero;
     }
 
     /// <summary>

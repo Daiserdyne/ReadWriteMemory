@@ -28,7 +28,7 @@ public sealed record MemoryAddress
     public MemoryAddress(long address, string moduleName = "", params int[]? offsets)
     {
         Address = address;
-        ModuleName = moduleName;
+        ModuleName = moduleName.ToLower();
         Offsets = offsets;
     }
 
