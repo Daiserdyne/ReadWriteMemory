@@ -67,21 +67,25 @@ public sealed partial class RWMemory : IDisposable
 
     private IDictionary<string, IntPtr> GetLoadedModules()
     {
-        var modules = new Dictionary<string, IntPtr>();
+        var modules = new Dictionary<string, nint>();
 
-        var moduleHandles = new IntPtr[1024];
-        int sizeNeeded;
+        var moduleHandles = new nint[128];
 
-        if (PsApi.EnumProcessModulesEx(_targetProcess.Handle, moduleHandles, moduleHandles.Length * IntPtr.Size, out sizeNeeded, PsApi.LIST_MODULES_ALL))
+        if (PsApi.EnumProcessModulesEx(_targetProcess.Handle, moduleHandles, moduleHandles.Length * nint.Size, out var sizeNeeded, PsApi.LIST_MODULES_ALL))
         {
-            for (int i = 0; i < (sizeNeeded / IntPtr.Size); i++)
+            for (ushort i = 0; i < (sizeNeeded / nint.Size); i++)
             {
-                var moduleName = new StringBuilder(1024);
+                var moduleName = new StringBuilder(128);
                 PsApi.GetModuleFileNameEx(_targetProcess.Handle, moduleHandles[i], moduleName, moduleName.Capacity);
-                modules.Add(moduleName.ToString(), moduleHandles[i]);
+                modules.Add(moduleName.ToString().ToLower(), moduleHandles[i]);
             }
 
             return modules;
+        }
+
+        foreach (var module in _targetProcess.Process.Modules.Cast<ProcessModule>())
+        {
+            modules.Add(module.ModuleName.ToLower(), module.BaseAddress);
         }
 
         return modules;
