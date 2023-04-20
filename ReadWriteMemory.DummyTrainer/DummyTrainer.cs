@@ -73,7 +73,7 @@ internal sealed class DummyTrainer
             {
                 stopwatch.Start();
 
-                memory.ChangeAndFreezeValue(_hp, 1f);
+                memory.ChangeAndFreezeValue(_hp, 5f, TimeSpan.FromSeconds(1));
 
                 stopwatch.Stop();
 
