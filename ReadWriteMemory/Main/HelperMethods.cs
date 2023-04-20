@@ -81,6 +81,7 @@ public sealed partial class RWMemory
         if (!IsProcessAlive())
         {
             targetAddress = default;
+
             return false;
         }
 
@@ -130,11 +131,11 @@ public sealed partial class RWMemory
     {
         var addressHash = CreateUniqueAddressHash(memAddress);
 
-        foreach (var addrTable in _addressRegister)
+        for (ushort i = 0; i < _addressRegister.Count; i++)
         {
-            if (addrTable.UniqueAddressHash == addressHash)
+            if (_addressRegister[i].UniqueAddressHash == addressHash)
             {
-                return addrTable.BaseAddress;
+                return _addressRegister[i].BaseAddress;
             }
         }
 
@@ -150,7 +151,7 @@ public sealed partial class RWMemory
     {
         var addressHash = CreateUniqueAddressHash(memAddress);
 
-        for (int i = 0; i < _addressRegister.Count; i++)
+        for (ushort i = 0; i < _addressRegister.Count; i++)
         {
             if (_addressRegister[i].UniqueAddressHash == addressHash)
             {
