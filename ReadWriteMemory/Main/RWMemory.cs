@@ -69,14 +69,18 @@ public sealed partial class RWMemory : IDisposable
     {
         var modules = new Dictionary<string, nint>();
 
-        var moduleHandles = new nint[128];
+        var moduleHandles = new nint[256];
 
         if (PsApi.EnumProcessModulesEx(_targetProcess.Handle, moduleHandles, moduleHandles.Length * nint.Size, out var sizeNeeded, PsApi.LIST_MODULES_ALL))
         {
+            StringBuilder moduleName;
+
             for (ushort i = 0; i < (sizeNeeded / nint.Size); i++)
             {
-                var moduleName = new StringBuilder(128);
+                moduleName = new StringBuilder(256);
+
                 PsApi.GetModuleFileNameEx(_targetProcess.Handle, moduleHandles[i], moduleName, moduleName.Capacity);
+
                 modules.Add(moduleName.ToString().ToLower(), moduleHandles[i]);
             }
 
