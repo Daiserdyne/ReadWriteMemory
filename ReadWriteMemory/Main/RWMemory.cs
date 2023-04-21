@@ -53,7 +53,7 @@ public sealed partial class RWMemory : IDisposable
         var oldProcessState = _targetProcess.ProcessState.IsProcessAlive;
 
         _ = BackgroundService.ExecuteTaskInfinite(() => StartProcessMonitoringService(ref oldProcessState),
-            TimeSpan.FromMilliseconds(250), _targetProcess.ProcessState.ProcessStateTokenSrc.Token);
+            TimeSpan.FromMilliseconds(150), _targetProcess.ProcessState.ProcessStateTokenSrc.Token);
     }
 
     #endregion

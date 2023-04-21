@@ -1,6 +1,5 @@
 ﻿using ReadWriteMemory.Models;
 using ReadWriteMemory.Utilities;
-using System.Numerics;
 
 namespace ReadWriteMemory.Main;
 
@@ -43,7 +42,7 @@ public sealed partial class RWMemory
 
         int[]? offsets = memAddress.Offsets;
 
-        var buffer = new byte[8];
+        var buffer = new byte[nint.Size];
 
         if (offsets is not null && offsets.Any())
         {
