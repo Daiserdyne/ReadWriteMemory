@@ -17,5 +17,5 @@ internal sealed record ProcessInformation
 
     internal ProcessModule? MainModule { get; set; }
 
-    internal IDictionary<string, ProcessModule>? Modules { get; set; }
+    internal IDictionary<string, IntPtr>? Modules { get; set; }
 }

@@ -1,0 +1,31 @@
+﻿using System.Numerics;
+
+namespace ReadWriteMemory.Templates;
+
+/// <summary>
+/// This contains some template functions for teleporting objects.
+/// </summary>
+public static class Teleportation
+{
+    /// <summary>
+    /// Gives you the new coordinates of a game object, based on wherever the camera of the object is looking at.
+    /// </summary>
+    /// <param name="currentPosition"></param>
+    /// <param name="yaw"></param>
+    /// <param name="pitch"></param>
+    /// <param name="distance"></param>
+    /// <returns></returns>
+    public static Vector3 TeleportPlayer(Vector3 currentPosition, float yaw, float pitch, float distance)
+    {
+        var forward = new Vector3(
+            (float)(-Math.Sin(yaw * Math.PI / 180f) * Math.Cos(pitch * Math.PI / 180f)),
+            (float)Math.Sin(pitch * Math.PI / 180f),
+            (float)(-Math.Cos(yaw * Math.PI / 180f) * Math.Cos(pitch * Math.PI / 180f))
+        );
+
+        var newPosition = currentPosition + forward * distance;
+        newPosition.Y = currentPosition.Y;
+
+        return newPosition;
+    }
+}

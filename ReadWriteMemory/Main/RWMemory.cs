@@ -33,6 +33,12 @@ public sealed partial class RWMemory : IDisposable
 
     #endregion
 
+    #region Properties
+
+    private bool IsProcessAlive => _targetProcess.ProcessState.IsProcessAlive;
+
+    #endregion
+
     #region C'tor
 
     /// <summary>
@@ -47,29 +53,19 @@ public sealed partial class RWMemory : IDisposable
         };
 
         // ProcessState in ProcessInformation einbauen.
-        var oldProcessState = _targetProcess.ProcessState.CurrentProcessState;
+        var oldProcessState = _targetProcess.ProcessState.IsProcessAlive;
 
-        _ = BackgroundService.ExecuteTaskInfinite(() => StartProcessStateMonitorService(ref oldProcessState),
+        _ = BackgroundService.ExecuteTaskInfinite(() => StartProcessMonitoringService(ref oldProcessState),
             TimeSpan.FromMilliseconds(250), _targetProcess.ProcessState.ProcessStateTokenSrc.Token);
     }
 
     #endregion
 
-    private void GetAllProcessModules()
-    {
-        _targetProcess.Modules = new Dictionary<string, ProcessModule>();
-
-        foreach (var module in _targetProcess.Process.Modules.Cast<ProcessModule>())
-        {
-            _targetProcess.Modules.Add(module.ModuleName.ToLower(), module);
-        }
-    }
-
-    private IDictionary<string, IntPtr> GetLoadedModules()
+    private IDictionary<string, IntPtr> GetAllLoadedProcessModules()
     {
         var modules = new Dictionary<string, nint>();
 
-        var moduleHandles = new nint[256];
+        var moduleHandles = new nint[1024];
 
         if (PsApi.EnumProcessModulesEx(_targetProcess.Handle, moduleHandles, moduleHandles.Length * nint.Size, out var sizeNeeded, PsApi.LIST_MODULES_ALL))
         {
@@ -77,7 +73,7 @@ public sealed partial class RWMemory : IDisposable
 
             for (ushort i = 0; i < (sizeNeeded / nint.Size); i++)
             {
-                moduleName = new StringBuilder(256);
+                moduleName = new StringBuilder(1024);
 
                 PsApi.GetModuleFileNameEx(_targetProcess.Handle, moduleHandles[i], moduleName, moduleName.Capacity);
 
@@ -95,17 +91,17 @@ public sealed partial class RWMemory : IDisposable
         return modules;
     }
 
-    private void StartProcessStateMonitorService(ref bool oldProcessState)
+    private void StartProcessMonitoringService(ref bool oldProcessState)
     {
         if (Process.GetProcessesByName(_targetProcess.ProcessName).Any())
         {
-            _targetProcess.ProcessState.CurrentProcessState = true;
+            _targetProcess.ProcessState.IsProcessAlive = true;
 
             if (_targetProcess.Handle == IntPtr.Zero)
             {
                 if (OpenProcess())
                 {
-                    GetAllProcessModules();
+                    GetAllLoadedProcessModules();
                 }
             }
 
@@ -114,7 +110,7 @@ public sealed partial class RWMemory : IDisposable
             return;
         }
 
-        _targetProcess.ProcessState.CurrentProcessState = false;
+        _targetProcess.ProcessState.IsProcessAlive = false;
 
         if (_targetProcess.Handle != IntPtr.Zero)
         {
@@ -122,8 +118,6 @@ public sealed partial class RWMemory : IDisposable
             {
                 ProcessName = _targetProcess.ProcessName
             };
-
-            _targetProcess.Modules = null;
 
             _addressRegister.Clear();
         }
@@ -133,10 +127,10 @@ public sealed partial class RWMemory : IDisposable
 
     private void TriggerStateChangedEvent(ref bool oldState)
     {
-        if (oldState != _targetProcess.ProcessState.CurrentProcessState)
+        if (oldState != _targetProcess.ProcessState.IsProcessAlive)
         {
-            Process_OnStateChanged?.Invoke(_targetProcess.ProcessState.CurrentProcessState);
-            oldState = _targetProcess.ProcessState.CurrentProcessState;
+            Process_OnStateChanged?.Invoke(_targetProcess.ProcessState.IsProcessAlive);
+            oldState = _targetProcess.ProcessState.IsProcessAlive;
         }
     }
 
@@ -145,7 +139,7 @@ public sealed partial class RWMemory : IDisposable
     /// </summary>
     public void CloseHandle()
     {
-        if (!IsProcessAlive() || _targetProcess.Handle == IntPtr.Zero)
+        if (!IsProcessAlive || _targetProcess.Handle == IntPtr.Zero)
         {
             return;
         }
@@ -156,8 +150,6 @@ public sealed partial class RWMemory : IDisposable
         {
             ProcessName = _targetProcess.ProcessName
         };
-
-        _targetProcess.Modules = null;
 
         _addressRegister.Clear();
     }
@@ -193,7 +185,7 @@ public sealed partial class RWMemory : IDisposable
     /// <returns>Cave address</returns>
     public nuint CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newCode, int replaceCount, uint size = 0x1000)
     {
-        if (replaceCount < 5 || !IsProcessAlive())
+        if (replaceCount < 5 || !IsProcessAlive)
         {
             return nuint.Zero;
         }
@@ -229,7 +221,7 @@ public sealed partial class RWMemory : IDisposable
     /// <returns></returns>
     public bool PauseOpenedCodeCave(MemoryAddress memAddress)
     {
-        if (!IsProcessAlive())
+        if (!IsProcessAlive)
         {
             return false;
         }
@@ -260,7 +252,7 @@ public sealed partial class RWMemory : IDisposable
     /// <returns></returns>
     public bool CloseCodeCave(MemoryAddress memAddress)
     {
-        if (!IsProcessAlive())
+        if (!IsProcessAlive)
         {
             return false;
         }
@@ -289,19 +281,9 @@ public sealed partial class RWMemory : IDisposable
         return deallocation;
     }
 
-    private bool IsProcessAlive()
-    {
-        if (_targetProcess.ProcessState.CurrentProcessState == false)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
     private bool DeallocateMemory(nuint address)
     {
-        if (!IsProcessAlive())
+        if (!IsProcessAlive)
         {
             return false;
         }
@@ -393,8 +375,6 @@ public sealed partial class RWMemory : IDisposable
                 ProcessName = _targetProcess.ProcessName
             };
 
-            _targetProcess.Modules = null;
-
             return false;
         }
 
@@ -407,8 +387,6 @@ public sealed partial class RWMemory : IDisposable
                 ProcessName = _targetProcess.ProcessName
             };
 
-            _targetProcess.Modules = null;
-
             return false;
         }
 
@@ -420,8 +398,6 @@ public sealed partial class RWMemory : IDisposable
             {
                 ProcessName = _targetProcess.ProcessName
             };
-
-            _targetProcess.Modules = null;
 
             return false;
         }

@@ -181,7 +181,7 @@ public sealed partial class RWMemory
     /// <returns></returns>
     public bool UnfreezeValue(MemoryAddress memoryAddress)
     {
-        if (!IsProcessAlive())
+        if (!IsProcessAlive)
         {
             return false;
         }

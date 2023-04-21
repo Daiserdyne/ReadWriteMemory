@@ -51,16 +51,16 @@ public sealed partial class RWMemory
 
             MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
 
-            for (short i = 0; i < offsets.Length; i++)
+            for (ushort index = 0; index < offsets.Length; index++)
             {
-                if (i == offsets.Length - 1)
+                if (index == offsets.Length - 1)
                 {
-                    targetAddress = (nuint)Convert.ToUInt64((long)targetAddress + offsets[i]);
+                    targetAddress = (nuint)Convert.ToUInt64((long)targetAddress + offsets[index]);
 
                     break;
                 }
 
-                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, offsets[i]), buffer);
+                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, offsets[index]), buffer);
 
                 MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
             }
@@ -78,7 +78,7 @@ public sealed partial class RWMemory
 
     private bool GetTargetAddress(MemoryAddress memoryAddress, out nuint targetAddress)
     {
-        if (!IsProcessAlive())
+        if (!IsProcessAlive)
         {
             targetAddress = default;
 
@@ -97,12 +97,12 @@ public sealed partial class RWMemory
     /// <returns></returns>
     private IntPtr GetModuleAddressByName(string moduleName)
     {
-        if (!IsProcessAlive())
+        if (!IsProcessAlive)
         {
             return IntPtr.Zero;
         }
 
-        return _targetProcess.Modules?[moduleName].BaseAddress ?? IntPtr.Zero;
+        return _targetProcess.Modules?[moduleName] ?? IntPtr.Zero;
     }
 
     /// <summary>
@@ -160,16 +160,5 @@ public sealed partial class RWMemory
         }
 
         return -1;
-    }
-
-    private static Vector3 CalculateNewPosition(Quaternion rotation, Vector3 currentPosition, float distance)
-    {
-        var forward = Vector3.UnitZ;
-
-        var direction = Vector3.Transform(forward, rotation);
-
-        var newPosition = currentPosition + (direction * distance);
-
-        return newPosition;
     }
 }
