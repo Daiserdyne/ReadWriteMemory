@@ -94,14 +94,14 @@ public sealed partial class RWMemory
     /// </summary>
     /// <param name="moduleName">name of module</param>
     /// <returns></returns>
-    private IntPtr GetModuleAddressByName(string moduleName)
+    private nint GetModuleAddressByName(string moduleName)
     {
         if (!IsProcessAlive)
         {
-            return IntPtr.Zero;
+            return nint.Zero;
         }
 
-        return _targetProcess.Modules?[moduleName] ?? IntPtr.Zero;
+        return _targetProcess.Modules[moduleName];
     }
 
     /// <summary>

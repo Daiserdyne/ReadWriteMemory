@@ -18,7 +18,6 @@ internal sealed class DummyTrainer
 
     private readonly static MemoryAddress _hp = new(0x219FF58, "Outlast2.exe", 0xC38, 0x7F58);
 
-    private readonly static MemoryAddress _STRING = new(0x2A731633A10);
 
     internal static async Task Main()
     {
@@ -109,7 +108,7 @@ internal sealed class DummyTrainer
             }
             if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F7))
             {
-                enabled = enabled ? false : true;
+                enabled = !enabled;
 
                 if (enabled)
                 {

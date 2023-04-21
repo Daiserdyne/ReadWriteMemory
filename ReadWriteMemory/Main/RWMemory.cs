@@ -58,14 +58,6 @@ public sealed partial class RWMemory : IDisposable
 
     #endregion
 
-    private void GetAllLoadedProcessModules()
-    {
-        foreach (var module in _targetProcess.Process.Modules.Cast<ProcessModule>())
-        {
-            _targetProcess.Modules.Add(module.ModuleName.ToLower(), module.BaseAddress);
-        }
-    }
-
     private void StartProcessMonitoringService(ref bool oldProcessState)
     {
         if (Process.GetProcessesByName(_targetProcess.ProcessName).Any())
@@ -98,6 +90,15 @@ public sealed partial class RWMemory : IDisposable
         }
 
         TriggerStateChangedEvent(ref oldProcessState);
+    }
+
+
+    private void GetAllLoadedProcessModules()
+    {
+        foreach (var module in _targetProcess.Process.Modules.Cast<ProcessModule>())
+        {
+            _targetProcess.Modules.Add(module.ModuleName.ToLower(), module.BaseAddress);
+        }
     }
 
     private void TriggerStateChangedEvent(ref bool oldState)

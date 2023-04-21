@@ -11,11 +11,11 @@ internal sealed record ProcessInformation
 
     internal Process Process { get; set; } = new();
 
-    internal IntPtr Handle { get; set; } = IntPtr.Zero;
+    internal nint Handle { get; set; } = nint.Zero;
 
-    internal ProcessState ProcessState { get; set; } = new();
+    internal ProcessState ProcessState { get; } = new();
 
     internal ProcessModule? MainModule { get; set; }
 
-    internal Dictionary<string, IntPtr> Modules { get; set; } = new();
+    internal Dictionary<string, nint> Modules { get; } = new();
 }
