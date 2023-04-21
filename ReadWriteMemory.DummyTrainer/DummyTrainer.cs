@@ -2,6 +2,8 @@
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Utilities;
 using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.Intrinsics;
 
 namespace ReadWriteMemory.DummyTrainer;
 
@@ -117,6 +119,17 @@ internal sealed class DummyTrainer
 
                 test.Cancel();
                 test = new();
+            }
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F8))
+            {
+                var coords = memory.ReadValue<Vector3>(_x, out var value);
+
+                memory.ReadValue<float>(new(0x1802D80CDFC), out var yaw);
+                memory.ReadValue<float>(new(0x1802D80CE18), out var pitch);
+
+                var newCoords = Templates.Teleportation.TeleportPlayer(value, yaw, pitch, 50f);
+
+                memory.WriteValue(_x, newCoords);
             }
 
             await Task.Delay(5);

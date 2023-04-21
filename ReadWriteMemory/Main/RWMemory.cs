@@ -3,8 +3,6 @@ using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 using System.Diagnostics;
-using System.Text;
-using PsApi = ReadWriteMemory.NativeImports.PsApi;
 
 namespace ReadWriteMemory.Main;
 
@@ -52,7 +50,6 @@ public sealed partial class RWMemory : IDisposable
             ProcessName = processName
         };
 
-        // ProcessState in ProcessInformation einbauen.
         var oldProcessState = _targetProcess.ProcessState.IsProcessAlive;
 
         _ = BackgroundService.ExecuteTaskInfinite(() => StartProcessMonitoringService(ref oldProcessState),
@@ -61,34 +58,12 @@ public sealed partial class RWMemory : IDisposable
 
     #endregion
 
-    private IDictionary<string, IntPtr> GetAllLoadedProcessModules()
+    private void GetAllLoadedProcessModules()
     {
-        var modules = new Dictionary<string, nint>();
-
-        var moduleHandles = new nint[1024];
-
-        if (PsApi.EnumProcessModulesEx(_targetProcess.Handle, moduleHandles, moduleHandles.Length * nint.Size, out var sizeNeeded, PsApi.LIST_MODULES_ALL))
-        {
-            StringBuilder moduleName;
-
-            for (ushort i = 0; i < (sizeNeeded / nint.Size); i++)
-            {
-                moduleName = new StringBuilder(1024);
-
-                PsApi.GetModuleFileNameEx(_targetProcess.Handle, moduleHandles[i], moduleName, moduleName.Capacity);
-
-                modules.Add(moduleName.ToString().ToLower(), moduleHandles[i]);
-            }
-
-            return modules;
-        }
-
         foreach (var module in _targetProcess.Process.Modules.Cast<ProcessModule>())
         {
-            modules.Add(module.ModuleName.ToLower(), module.BaseAddress);
+            _targetProcess.Modules.Add(module.ModuleName.ToLower(), module.BaseAddress);
         }
-
-        return modules;
     }
 
     private void StartProcessMonitoringService(ref bool oldProcessState)
