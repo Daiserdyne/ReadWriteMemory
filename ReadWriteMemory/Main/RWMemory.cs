@@ -62,8 +62,6 @@ public sealed partial class RWMemory : IDisposable
     {
         if (Process.GetProcessesByName(_targetProcess.ProcessName).Any())
         {
-            _targetProcess.ProcessState.IsProcessAlive = true;
-
             if (_targetProcess.Handle == IntPtr.Zero)
             {
                 if (OpenProcess())
@@ -71,6 +69,8 @@ public sealed partial class RWMemory : IDisposable
                     GetAllLoadedProcessModules();
                 }
             }
+
+            _targetProcess.ProcessState.IsProcessAlive = true;
 
             TriggerStateChangedEvent(ref oldProcessState);
 
@@ -120,7 +120,7 @@ public sealed partial class RWMemory : IDisposable
             return;
         }
 
-        NativeImports.Kernel32.CloseHandle(_targetProcess.Handle);
+        _ = NativeImports.Kernel32.CloseHandle(_targetProcess.Handle);
 
         _targetProcess = new()
         {
