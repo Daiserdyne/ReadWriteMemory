@@ -17,8 +17,6 @@ public static class Teleportation
     /// <returns></returns>
     public static Vector3 TeleportPlayer(Vector3 currentPosition, float yaw, float pitch, float distance)
     {
-        yaw -= 90;
-
         var forward = new Vector3(
             (float)(-Math.Sin(yaw * Math.PI / 180f) * Math.Cos(pitch * Math.PI / 180f)),
             (float)(Math.Cos(yaw * Math.PI / 180f) * Math.Cos(pitch * Math.PI / 180f)),

@@ -1,6 +1,8 @@
 ﻿using ReadWriteMemory.Main;
 using ReadWriteMemory.Models;
+using ReadWriteMemory.Templates;
 using ReadWriteMemory.Utilities;
+using System;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.Intrinsics;
@@ -14,6 +16,9 @@ internal sealed class DummyTrainer
     private readonly static byte[] _movementX = { 0x81, 0xBB, 0xE0, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x74, 0x17, 0x90, 0x90, 0x90, 0x90, 0xF3, 0x0F, 0x58, 0x7B, 0x04, 0xEB, 0x15, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0xF3, 0x0F, 0x11, 0x33, 0xF3, 0x0F, 0x58, 0x7B, 0x04 };
     private readonly static byte[] _movementY = { 0x81, 0xBB, 0xE0, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x74, 0x12, 0x90, 0x90, 0x90, 0x90, 0xEB, 0x11, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0xF3, 0x0F, 0x11, 0x7B, 0x04 };
 
+    private readonly static MemoryAddress _player_X_Position = new(0x6FAE5A0, "DeadIsland-Win64-Shipping.exe", 0x8, 0x2E0, 0x230, 0xF8, 0x240);
+    private readonly static MemoryAddress _camYaw = new(0x6FAE5A0, "DeadIsland-Win64-Shipping.exe", 0x8, 0x2E0, 0x230, 0xF8, 0x204);
+
     private readonly static MemoryAddress _x = new(0x219FF58, "Outlast2.exe", 0x250, 0x88);
 
     private readonly static MemoryAddress _hp = new(0x219FF58, "Outlast2.exe", 0xC38, 0x7F58);
@@ -21,7 +26,7 @@ internal sealed class DummyTrainer
 
     internal static async Task Main()
     {
-        using var memory = new RWMemory("Outlast2");
+        using var memory = new RWMemory("DeadIsland-Win64-Shipping");
 
         var stopwatch = new Stopwatch();
 
@@ -119,16 +124,14 @@ internal sealed class DummyTrainer
                 test.Cancel();
                 test = new();
             }
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F8))
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F8, false))
             {
-                var coords = memory.ReadValue<Vector3>(_x, out var value);
+                if (memory.ReadValue<Vector3>(_player_X_Position, out var value))
+                {
+                    memory.ReadValue<float>(_camYaw, out var camYaw);
 
-                memory.ReadValue<float>(new(0x1802D80CDFC), out var yaw);
-                memory.ReadValue<float>(new(0x1802D80CE18), out var pitch);
-
-                var newCoords = Templates.Teleportation.TeleportPlayer(value, yaw, pitch, 50f);
-
-                memory.WriteValue(_x, newCoords);
+                    memory.WriteValue(_player_X_Position, Teleportation.TeleportPlayer(value, camYaw - 90f, 45f, 50f));
+                }
             }
 
             await Task.Delay(5);

@@ -97,7 +97,10 @@ public sealed partial class RWMemory : IDisposable
     {
         foreach (var module in _targetProcess.Process.Modules.Cast<ProcessModule>())
         {
-            _targetProcess.Modules.Add(module.ModuleName.ToLower(), module.BaseAddress);
+            if (!_targetProcess.Modules.ContainsKey(module.ModuleName.ToLower()))
+            {
+                _targetProcess.Modules.Add(module.ModuleName.ToLower(), module.BaseAddress);
+            }
         }
     }
 
