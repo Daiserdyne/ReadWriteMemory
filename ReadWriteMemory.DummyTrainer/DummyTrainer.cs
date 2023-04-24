@@ -2,10 +2,8 @@
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Templates;
 using ReadWriteMemory.Utilities;
-using System;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.Intrinsics;
 
 namespace ReadWriteMemory.DummyTrainer;
 
