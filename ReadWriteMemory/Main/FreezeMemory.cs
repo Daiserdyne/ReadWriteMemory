@@ -45,12 +45,12 @@ public sealed partial class RWMemory
                 break;
         }
 
-        var value = MemoryOperation.ConvertToByteArrayUnsafe(valueToFreeze);
+        var freezeValue = MemoryOperation.ConvertToByteArrayUnsafe(valueToFreeze);
 
         _ = BackgroundService.ExecuteTaskInfinite(() =>
         {
             if (!GetTargetAddress(memoryAddress, out targetAddress)
-            || !MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, value))
+            || !MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, freezeValue))
             {
                 tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
                 _addressRegister[tableIndex].FreezeTokenSrc = null;
