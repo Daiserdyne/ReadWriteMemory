@@ -40,26 +40,24 @@ public sealed partial class RWMemory
 
         var targetAddress = baseAddress;
 
-        int[]? offsets = memAddress.Offsets;
-
-        var buffer = new byte[nint.Size];
-
-        if (offsets is not null && offsets.Any())
+        if (memAddress.Offsets is not null && memAddress.Offsets.Any())
         {
+            var buffer = new byte[nint.Size];
+
             MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer);
 
             MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
 
-            for (ushort index = 0; index < offsets.Length; index++)
+            for (ushort index = 0; index < memAddress.Offsets.Length; index++)
             {
-                if (index == offsets.Length - 1)
+                if (index == memAddress.Offsets.Length - 1)
                 {
-                    targetAddress = (nuint)Convert.ToUInt64((long)targetAddress + offsets[index]);
+                    targetAddress = (nuint)Convert.ToUInt64((long)targetAddress + memAddress.Offsets[index]);
 
                     break;
                 }
 
-                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, offsets[index]), buffer);
+                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, memAddress.Offsets[index]), buffer);
 
                 MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
             }
