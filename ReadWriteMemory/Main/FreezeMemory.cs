@@ -13,6 +13,63 @@ public sealed partial class RWMemory
     /// to a specific value you want.
     /// </summary>
     /// <param name="memoryAddress"></param>
+    /// <param name="valueToFreeze"></param>
+    /// <param name="refreshTime"></param>
+    /// <returns></returns>
+    public bool FreezeValue<T>(MemoryAddress memoryAddress, T valueToFreeze, TimeSpan refreshTime) where T : unmanaged
+    {
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
+        {
+            return false;
+        }
+
+        var tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
+
+        if (_addressRegister[tableIndex].FreezeTokenSrc is not null)
+        {
+            return false;
+        }
+
+        var freezeToken = new CancellationTokenSource();
+
+        _addressRegister[tableIndex].FreezeTokenSrc = freezeToken;
+
+        switch (Math.Round(refreshTime.TotalMilliseconds, 0))
+        {
+            case < 1:
+                refreshTime = TimeSpan.FromMilliseconds(1);
+                break;
+
+            case > double.MaxValue:
+                refreshTime = TimeSpan.FromMilliseconds(double.MaxValue);
+                break;
+        }
+
+        var value = MemoryOperation.ConvertToByteArrayUnsafe(valueToFreeze);
+
+        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        {
+            if (!GetTargetAddress(memoryAddress, out targetAddress)
+            || !MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, value))
+            {
+                tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
+                _addressRegister[tableIndex].FreezeTokenSrc = null;
+
+                freezeToken.Cancel();
+
+                return;
+            }
+        }, refreshTime, freezeToken.Token);
+
+        return true;
+    }
+
+    /// <summary>
+    /// <para>Freezes the value from the given <paramref name="memoryAddress"/>.</para>
+    /// You optionally can set a <paramref name="refreshTime"/>
+    /// to a specific value you want.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
     /// <param name="refreshTime"></param>
     /// <returns></returns>
     public bool FreezeValue(MemoryAddress memoryAddress, TimeSpan refreshTime)
