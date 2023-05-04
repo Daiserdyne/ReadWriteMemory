@@ -1,4 +1,5 @@
 ﻿using ReadWriteMemory.Models;
+using ReadWriteMemory.NativeImports;
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 
@@ -104,6 +105,43 @@ public sealed partial class RWMemory
         }
 
         var buffer = new byte[bufferSize];
+
+        if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
+        {
+            return false;
+        }
+
+        var freezeToken = new CancellationTokenSource();
+
+        var tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
+
+        _addressRegister[tableIndex].FreezeTokenSrc = freezeToken;
+
+        freezeRefreshRate = GetFreezeRefreshRate(freezeRefreshRate);
+
+        StartFreezingValue(memoryAddress, freezeRefreshRate, targetAddress, buffer, freezeToken, tableIndex);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Freezes the value by the given <paramref name="memoryAddress"/> with a
+    /// given <paramref name="freezeRefreshRate"></paramref>. The value will be read out once and then applied to to 
+    /// <paramref name="memoryAddress"/>. This overload uses the WinApi to get the size of the type.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="freezeRefreshRate"></param>
+    /// <returns></returns>
+    public bool FreezeValue(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate)
+    {
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
+        {
+            return false;
+        }
+
+        Kernel32.VirtualQueryEx(_targetProcess.Handle, targetAddress, out var memoryInformation);
+
+        var buffer = new byte[memoryInformation.RegionSize];
 
         if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
         {
