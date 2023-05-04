@@ -81,6 +81,9 @@ internal sealed class DummyTrainer
                 stopwatch.Start();
 
                 memory.FreezeValue(_hp, 5f, TimeSpan.FromSeconds(1));
+                memory.FreezeValue<float>(_hp, TimeSpan.FromSeconds(1));
+                memory.FreezeValue(_hp, TimeSpan.FromSeconds(1), 4);
+                memory.FreezeValue(_hp, TimeSpan.FromSeconds(1));
 
                 stopwatch.Stop();
 

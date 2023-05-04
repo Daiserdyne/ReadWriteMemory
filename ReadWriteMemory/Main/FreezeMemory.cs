@@ -97,7 +97,7 @@ public sealed partial class RWMemory
     /// <param name="bufferSize"></param>
     /// <param name="freezeRefreshRate"></param>
     /// <returns></returns>
-    public bool FreezeValue(MemoryAddress memoryAddress, uint bufferSize, TimeSpan freezeRefreshRate)
+    public bool FreezeValue(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate, uint bufferSize)
     {
         if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
