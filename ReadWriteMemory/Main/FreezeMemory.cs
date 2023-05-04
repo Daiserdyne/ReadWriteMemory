@@ -7,7 +7,7 @@ namespace ReadWriteMemory.Main;
 public sealed partial class RWMemory
 {
     private const double MaxFreezeRefreshRateInMilliseconds = double.MaxValue;
-    private const double MinFreezeRefreshRateInMilliseconds = 5;
+    private const short MinFreezeRefreshRateInMilliseconds = 5;
 
     /// <summary>
     /// <para>Freezes the <paramref name="value"/> of an unmanaged data type by the given <paramref name="memoryAddress"/> with a 
@@ -25,7 +25,7 @@ public sealed partial class RWMemory
         }
 
         var tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
-        
+
         if (_addressRegister[tableIndex].FreezeTokenSrc is not null)
         {
             return false;
@@ -33,33 +33,15 @@ public sealed partial class RWMemory
 
         var freezeToken = new CancellationTokenSource();
 
+        tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
+
         _addressRegister[tableIndex].FreezeTokenSrc = freezeToken;
 
-        switch (Math.Round(freezeRefreshRate.TotalMilliseconds, 0))
-        {
-            case < MinFreezeRefreshRateInMilliseconds:
-                freezeRefreshRate = TimeSpan.FromMilliseconds(MinFreezeRefreshRateInMilliseconds);
-                break;
-
-            case > double.MaxValue:
-                freezeRefreshRate = TimeSpan.FromMilliseconds(MaxFreezeRefreshRateInMilliseconds);
-                break;
-        }
+        freezeRefreshRate = GetFreezeRefreshRate(freezeRefreshRate);
 
         var freezeValue = MemoryOperation.ConvertToByteArrayUnsafe(value);
 
-        _ = BackgroundService.ExecuteTaskInfinite(() =>
-        {
-            if (!GetTargetAddress(memoryAddress, out targetAddress)
-            || !MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, freezeValue))
-            {
-                freezeToken.Cancel();
-
-                _addressRegister[tableIndex].FreezeTokenSrc = null;
-
-                return;
-            }
-        }, freezeRefreshRate, freezeToken.Token);
+        StartFreezingValue(memoryAddress, freezeRefreshRate, targetAddress, freezeValue, freezeToken, tableIndex);
 
         return true;
     }
@@ -67,7 +49,7 @@ public sealed partial class RWMemory
     /// <summary>
     /// Freezes the value of an unmanaged data type by the given <paramref name="memoryAddress"/> with a
     /// given <paramref name="freezeRefreshRate"></paramref>. The value will be read out once and then applied to to 
-    /// <paramref name="memoryAddress"/>. You have the specify the data type to get the size of the buffer.
+    /// <paramref name="memoryAddress"/>. You have the specify the data type <typeparamref name="T"/> to get the size of the buffer.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="memoryAddress"></param>
@@ -80,16 +62,98 @@ public sealed partial class RWMemory
             return false;
         }
 
-        var buffer = new byte[sizeof(T)];
+        var tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
+
+        if (_addressRegister[tableIndex].FreezeTokenSrc is not null)
+        {
+            return false;
+        }
+
+        var freezeToken = new CancellationTokenSource();
+
+        tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
+
+        _addressRegister[tableIndex].FreezeTokenSrc = freezeToken;
+
+        var freezeValue = new byte[sizeof(T)];
+
+        if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, freezeValue))
+        {
+            return false;
+        }
+
+        StartFreezingValue(memoryAddress, freezeRefreshRate, targetAddress, freezeValue, freezeToken, tableIndex);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Freezes the value by the given <paramref name="memoryAddress"/> with a
+    /// given <paramref name="freezeRefreshRate"></paramref>. The value will be read out once and then applied to to 
+    /// <paramref name="memoryAddress"/>. This overload allows you the set the <paramref name="bufferSize"/> by yourself.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="bufferSize"></param>
+    /// <param name="freezeRefreshRate"></param>
+    /// <returns></returns>
+    public bool FreezeValue(MemoryAddress memoryAddress, uint bufferSize, TimeSpan freezeRefreshRate)
+    {
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
+        {
+            return false;
+        }
+
+        var buffer = new byte[bufferSize];
 
         if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
         {
             return false;
         }
 
-        MemoryOperation.ConvertBufferUnsafe<T>(buffer, out var freezeValue);
+        var freezeToken = new CancellationTokenSource();
 
-        return FreezeValue(memoryAddress, freezeValue, freezeRefreshRate);
+        var tableIndex = GetAddressIndexByMemoryAddress(memoryAddress);
+
+        _addressRegister[tableIndex].FreezeTokenSrc = freezeToken;
+
+        freezeRefreshRate = GetFreezeRefreshRate(freezeRefreshRate);
+
+        StartFreezingValue(memoryAddress, freezeRefreshRate, targetAddress, buffer, freezeToken, tableIndex);
+
+        return true;
+    }
+
+    private void StartFreezingValue(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate, 
+        nuint targetAddress, byte[] buffer, CancellationTokenSource freezeToken, int tableIndex)
+    {
+        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        {
+            if (!GetTargetAddress(memoryAddress, out targetAddress)
+            || !MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer))
+            {
+                freezeToken.Cancel();
+
+                _addressRegister[tableIndex].FreezeTokenSrc = null;
+
+                return;
+            }
+        }, freezeRefreshRate, freezeToken.Token);
+    }
+
+    private static TimeSpan GetFreezeRefreshRate(TimeSpan freezeRefreshRate)
+    {
+        switch (Math.Round(freezeRefreshRate.TotalMilliseconds, 0))
+        {
+            case < MinFreezeRefreshRateInMilliseconds:
+                freezeRefreshRate = TimeSpan.FromMilliseconds(MinFreezeRefreshRateInMilliseconds);
+                break;
+
+            case > double.MaxValue:
+                freezeRefreshRate = TimeSpan.FromMilliseconds(MaxFreezeRefreshRateInMilliseconds);
+                break;
+        }
+
+        return freezeRefreshRate;
     }
 
     /// <summary>
