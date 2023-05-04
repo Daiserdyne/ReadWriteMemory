@@ -127,7 +127,7 @@ public sealed partial class RWMemory
     /// <summary>
     /// Freezes the value by the given <paramref name="memoryAddress"/> with a
     /// given <paramref name="freezeRefreshRate"></paramref>. The value will be read out once and then applied to to 
-    /// <paramref name="memoryAddress"/>. This overload uses the WinApi to get the size of the type.
+    /// <paramref name="memoryAddress"/>. This overload uses the WinApi to get the buffer size.
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="freezeRefreshRate"></param>
