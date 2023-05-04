@@ -5,8 +5,13 @@ namespace ReadWriteMemory.Interfaces;
 /// <summary>
 /// Standard interface for a trainer.
 /// </summary>
-public interface ITrainer
+public interface IMemoryTrainer
 {
+    /// <summary>
+    /// Specifies the trainer by an unique id. This is usefull when you want to order/sort a list of trainer.
+    /// </summary>
+    public ushort Id { get; }
+
     /// <summary>
     /// Name of the trainer.
     /// </summary>

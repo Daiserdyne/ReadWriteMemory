@@ -391,7 +391,7 @@ public sealed partial class RWMemory : IDisposable
     /// </summary>
     public void Dispose()
     {
-        IDictionary<string, ITrainer>? implementedTrainer = null;
+        IDictionary<string, IMemoryTrainer>? implementedTrainer = null;
 
         try
         {

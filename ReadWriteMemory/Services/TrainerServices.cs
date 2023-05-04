@@ -38,13 +38,13 @@ public sealed class TrainerServices
     }
 
     /// <summary>
-    /// <para>Returns a Dictionary of all classes which have implemented the <seealso cref="ITrainer"/> interface in your entry assembly.</para>
-    /// The key is the <see cref="ITrainer.TrainerName"/> and the value the instantiated Trainer.
+    /// <para>Returns a Dictionary of all classes which have implemented the <seealso cref="IMemoryTrainer"/> interface in your entry assembly.</para>
+    /// The key is the <see cref="IMemoryTrainer.TrainerName"/> and the value the instantiated Trainer.
     /// </summary>
     /// <returns>A dictionary of all implemented trainers. If no trainers are found, this will return a <c>empty</c> dictionary.</returns>
-    public static IDictionary<string, ITrainer> GetAllImplementedTrainers()
+    public static IDictionary<string, IMemoryTrainer> GetAllImplementedTrainers()
     {
-        var trainerRegister = new Dictionary<string, ITrainer>();
+        var trainerRegister = new Dictionary<string, IMemoryTrainer>();
 
         var entryAssembly = Assembly.GetEntryAssembly();
 
@@ -54,9 +54,9 @@ public sealed class TrainerServices
         }
 
         var implementedTrainers = (from type in entryAssembly.GetTypes()
-                                   where type.GetInterfaces().Contains(typeof(ITrainer))
+                                   where type.GetInterfaces().Contains(typeof(IMemoryTrainer))
                                          && type.GetConstructor(Type.EmptyTypes) != null
-                                   select Activator.CreateInstance(type) as ITrainer).ToList();
+                                   select Activator.CreateInstance(type) as IMemoryTrainer).ToList();
 
         if (!implementedTrainers.Any())
         {

@@ -1,4 +1,5 @@
-﻿using ReadWriteMemory.Main;
+﻿using ReadWriteMemory.Interfaces;
+using ReadWriteMemory.Main;
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Templates;
 using ReadWriteMemory.Utilities;
@@ -28,7 +29,9 @@ internal sealed class DummyTrainer
 
         var stopwatch = new Stopwatch();
 
-        var test = new CancellationTokenSource();   
+        var test = new CancellationTokenSource();
+
+        var trainers = new List<IMemoryTrainer>();
 
         bool enabled = false;
 
@@ -77,7 +80,7 @@ internal sealed class DummyTrainer
             {
                 stopwatch.Start();
 
-                memory.ChangeAndFreezeValue(_hp, 5f, TimeSpan.FromSeconds(1));
+                memory.FreezeValue(_hp, 5f, TimeSpan.FromSeconds(1));
 
                 stopwatch.Stop();
 
