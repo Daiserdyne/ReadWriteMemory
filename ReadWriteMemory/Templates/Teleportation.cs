@@ -15,7 +15,7 @@ public static class Teleportation
     /// <param name="pitch"></param>
     /// <param name="distance"></param>
     /// <returns></returns>
-    public static Vector3 TeleportPlayer(Vector3 currentPosition, float yaw, float pitch, float distance)
+    public static Vector3 CalculateNewPositionEx(Vector3 currentPosition, float yaw, float pitch, float distance)
     {
         var forward = new Vector3(
             (float)(-Math.Sin(yaw * Math.PI / 180f) * Math.Cos(pitch * Math.PI / 180f)),
@@ -35,10 +35,9 @@ public static class Teleportation
     /// </summary>
     /// <param name="currentPosition"></param>
     /// <param name="yaw"></param>
-    /// <param name="pitch"></param>
     /// <param name="distance"></param>
     /// <returns></returns>
-    public static Vector3 TeleportPlayer(Vector3 currentPosition, float yaw, float distance)
+    public static Vector3 CalculateNewPosition(Vector3 currentPosition, float yaw, float distance)
     {
         var forward = new Vector3(
             (float)(-Math.Sin(yaw * Math.PI / 180f) * Math.Cos(-45f * Math.PI / 180f)),

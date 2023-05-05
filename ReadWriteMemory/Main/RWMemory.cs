@@ -134,60 +134,6 @@ public sealed partial class RWMemory : IDisposable
     }
 
     /// <summary>
-    /// Creates a code cave to inject custom code in target process. 
-    /// If you created a code cave in the past with the same memory address, it will
-    /// jump back to your cave address.
-    /// </summary>
-    /// <param name="memAddress">Address, module name and offesets</param>
-    /// <param name="newBytes">The opcodes to write in the code cave</param>
-    /// <param name="replaceCount">The number of bytes being replaced</param>
-    /// <param name="size">size of the allocated region</param>
-    /// <remarks>Please ensure that you use the proper replaceCount
-    /// if you replace halfway in an instruction you may cause bad things</remarks>
-    /// <returns>Code cave address</returns>
-    public Task<nuint> CreateOrResumeCodeCaveAsync(MemoryAddress memAddress, byte[] newBytes, int replaceCount, uint size = 0x1000)
-    {
-        return Task.Run(() => CreateOrResumeCodeCave(memAddress, newBytes, replaceCount, size));
-    }
-
-    /// <summary>
-    /// Creates a code cave to apply custom code in target process. 
-    /// If you created a code cave in the past with the same memory address, it will
-    /// jump back to your cave address.
-    /// </summary>
-    /// <param name="memoryAddress">Address, module name and offesets</param>
-    /// <param name="newCode">The opcodes to write in the code cave</param>
-    /// <param name="replaceCount">The number of bytes being replaced</param>
-    /// <param name="size">size of the allocated region</param>
-    /// <remarks>Please ensure that you use the proper replaceCount
-    /// if you replace halfway in an instruction you may cause bad things</remarks>
-    /// <returns>Cave address</returns>
-    public nuint CreateOrResumeCodeCave(MemoryAddress memoryAddress, byte[] newCode, int replaceCount, uint size = 0x1000)
-    {
-        if (replaceCount < 5 || !IsProcessAlive)
-        {
-            return nuint.Zero;
-        }
-
-        if (IsCodeCaveAlreadyCreatedForAddress(memoryAddress, out var caveAddr))
-        {
-            return caveAddr;
-        }
-
-        var targetAddress = GetTargetAddress(memoryAddress);
-
-        CodeCaveFactory.CreateCodeCaveAndInjectCode(targetAddress, _targetProcess.Handle, newCode, replaceCount,
-            out var caveAddress, out var originalOpcodes, out var jmpBytes, size);
-
-        if (_memoryRegister.ContainsKey(memoryAddress))
-        {
-            _memoryRegister[memoryAddress].CodeCaveTable = new(originalOpcodes, caveAddress, jmpBytes);
-        }
-
-        return caveAddress;
-    }
-
-    /// <summary>
     /// Restores the original opcodes to the memory address without dealloacating the memory.
     /// So your code-bytes stay in the memory at the cave address. The advantage is that you
     /// don't have to create a new code cave which costs time. You can simply jump to the cave address
@@ -260,38 +206,6 @@ public sealed partial class RWMemory : IDisposable
         }
 
         return MemoryOperation.DeallocateMemory(_targetProcess.Handle, address);
-    }
-
-    /// <summary>
-    /// Checks if a code cave was created in the past with the given memory address.
-    /// </summary>
-    /// <param name="memoryAddress"></param>
-    /// <param name="caveAddress"></param>
-    /// <returns></returns>
-    private bool IsCodeCaveAlreadyCreatedForAddress(MemoryAddress memoryAddress, out nuint caveAddress)
-    {
-        caveAddress = nuint.Zero;
-
-        if (!_memoryRegister.ContainsKey(memoryAddress))
-        {
-            return false;
-        }
-
-        var caveTable = _memoryRegister[memoryAddress].CodeCaveTable;
-
-        if (caveTable is null)
-        {
-            return false;
-        }
-
-        if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, _memoryRegister[memoryAddress].BaseAddress, caveTable.JmpBytes))
-        {
-            return false;
-        }
-
-        caveAddress = caveTable.CaveAddress;
-
-        return true;
     }
 
     /// <summary>
@@ -375,6 +289,92 @@ public sealed partial class RWMemory : IDisposable
         }
 
         _targetProcess.MainModule = mainModule;
+
+        return true;
+    }
+
+    private unsafe nuint GetTargetAddress(MemoryAddress memoryAddress)
+    {
+        nuint baseAddress = default;
+
+        if (!_memoryRegister.ContainsKey(memoryAddress))
+        {
+            return baseAddress;
+        }
+
+        var savedBaseAddress = _memoryRegister[memoryAddress].BaseAddress;
+
+        if (savedBaseAddress != nuint.Zero)
+        {
+            baseAddress = savedBaseAddress;
+        }
+        else
+        {
+            var moduleAddress = IntPtr.Zero;
+
+            var moduleName = memoryAddress.ModuleName;
+
+            if (!string.IsNullOrEmpty(moduleName) && _targetProcess.Modules.ContainsKey(moduleName))
+            {
+                moduleAddress = _targetProcess.Modules[moduleName];
+            }
+
+            var address = memoryAddress.Address;
+
+            if (moduleAddress != IntPtr.Zero)
+            {
+                baseAddress = (nuint)(moduleAddress + address);
+            }
+            else
+            {
+                baseAddress = (nuint)memoryAddress.Address;
+            }
+        }
+
+        var targetAddress = baseAddress;
+
+        if (memoryAddress.Offsets is not null && memoryAddress.Offsets.Any())
+        {
+            var buffer = new byte[nint.Size];
+
+            MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer);
+
+            MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
+
+            for (ushort index = 0; index < memoryAddress.Offsets.Length; index++)
+            {
+                if (index == memoryAddress.Offsets.Length - 1)
+                {
+                    targetAddress = (nuint)Convert.ToUInt64((long)targetAddress + memoryAddress.Offsets[index]);
+
+                    break;
+                }
+
+                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, memoryAddress.Offsets[index]), buffer);
+
+                MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
+            }
+        }
+
+        _memoryRegister.Add(memoryAddress, new()
+        {
+            MemoryAddress = memoryAddress,
+            BaseAddress = baseAddress
+        });
+
+        return targetAddress;
+    }
+
+    private bool GetTargetAddress(MemoryAddress memoryAddress, out nuint targetAddress)
+    {
+        if (!IsProcessAlive)
+        {
+            targetAddress = default;
+
+            return false;
+        }
+
+        targetAddress = GetTargetAddress(memoryAddress);
 
         return true;
     }

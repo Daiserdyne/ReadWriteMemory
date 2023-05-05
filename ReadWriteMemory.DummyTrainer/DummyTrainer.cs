@@ -134,7 +134,7 @@ internal sealed class DummyTrainer
                 {
                     memory.ReadValue<float>(_camYaw, out var camYaw);
 
-                    memory.WriteValue(_player_X_Position, Teleportation.TeleportPlayer(value, camYaw - 90f, 45f, 50f));
+                    memory.WriteValue(_player_X_Position, Teleportation.CalculateNewPositionEx(value, camYaw - 90f, 45f, 50f));
                 }
             }
 
