@@ -27,7 +27,7 @@ public sealed partial class RWMemory : IDisposable
 
     private ProcessInformation _targetProcess;
 
-    private readonly List<MemoryAddressTable> _addressRegister = new();
+    private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = new();
 
     #endregion
 
@@ -86,7 +86,7 @@ public sealed partial class RWMemory : IDisposable
                 ProcessName = _targetProcess.ProcessName
             };
 
-            _addressRegister.Clear();
+            _memoryRegister.Clear();
         }
 
         TriggerStateChangedEvent(ref oldProcessState);
@@ -130,7 +130,7 @@ public sealed partial class RWMemory : IDisposable
             ProcessName = _targetProcess.ProcessName
         };
 
-        _addressRegister.Clear();
+        _memoryRegister.Clear();
     }
 
     /// <summary>
@@ -155,35 +155,33 @@ public sealed partial class RWMemory : IDisposable
     /// If you created a code cave in the past with the same memory address, it will
     /// jump back to your cave address.
     /// </summary>
-    /// <param name="memAddress">Address, module name and offesets</param>
+    /// <param name="memoryAddress">Address, module name and offesets</param>
     /// <param name="newCode">The opcodes to write in the code cave</param>
     /// <param name="replaceCount">The number of bytes being replaced</param>
     /// <param name="size">size of the allocated region</param>
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    public nuint CreateOrResumeCodeCave(MemoryAddress memAddress, byte[] newCode, int replaceCount, uint size = 0x1000)
+    public nuint CreateOrResumeCodeCave(MemoryAddress memoryAddress, byte[] newCode, int replaceCount, uint size = 0x1000)
     {
         if (replaceCount < 5 || !IsProcessAlive)
         {
             return nuint.Zero;
         }
 
-        if (IsCodeCaveAlreadyCreatedForAddress(memAddress, out var caveAddr))
+        if (IsCodeCaveAlreadyCreatedForAddress(memoryAddress, out var caveAddr))
         {
             return caveAddr;
         }
 
-        var targetAddress = GetTargetAddress(memAddress);
+        var targetAddress = GetTargetAddress(memoryAddress);
 
         CodeCaveFactory.CreateCodeCaveAndInjectCode(targetAddress, _targetProcess.Handle, newCode, replaceCount,
             out var caveAddress, out var originalOpcodes, out var jmpBytes, size);
 
-        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
-
-        if (tableIndex != -1)
+        if (_memoryRegister.ContainsKey(memoryAddress))
         {
-            _addressRegister[tableIndex].CodeCaveTable = new(originalOpcodes, caveAddress, jmpBytes);
+            _memoryRegister[memoryAddress].CodeCaveTable = new(originalOpcodes, caveAddress, jmpBytes);
         }
 
         return caveAddress;
@@ -196,24 +194,22 @@ public sealed partial class RWMemory : IDisposable
     /// or use the original code. Don't forget to dispose the memory object when you exit the application.
     /// Otherwise the codecaves continue to live forever.
     /// </summary>
-    /// <param name="memAddress"></param>
+    /// <param name="memoryAddress"></param>
     /// <returns></returns>
-    public bool PauseOpenedCodeCave(MemoryAddress memAddress)
+    public bool PauseOpenedCodeCave(MemoryAddress memoryAddress)
     {
         if (!IsProcessAlive)
         {
             return false;
         }
 
-        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
-
-        if (tableIndex == -1)
+        if (!_memoryRegister.ContainsKey(memoryAddress))
         {
             return false;
         }
 
-        var baseAddress = _addressRegister[tableIndex].BaseAddress;
-        var caveTable = _addressRegister[tableIndex].CodeCaveTable;
+        var baseAddress = _memoryRegister[memoryAddress].BaseAddress;
+        var caveTable = _memoryRegister[memoryAddress].CodeCaveTable;
 
         if (caveTable is null)
         {
@@ -229,22 +225,20 @@ public sealed partial class RWMemory : IDisposable
     /// Closes a created code cave. Just give this function the memory address where you create a code cave with.
     /// </summary>
     /// <returns></returns>
-    public bool CloseCodeCave(MemoryAddress memAddress)
+    public bool CloseCodeCave(MemoryAddress memoryAddress)
     {
         if (!IsProcessAlive)
         {
             return false;
         }
 
-        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
-
-        if (tableIndex == -1)
+        if (!_memoryRegister.ContainsKey(memoryAddress))
         {
             return false;
         }
 
-        var baseAddress = _addressRegister[tableIndex].BaseAddress;
-        var caveTable = _addressRegister[tableIndex].CodeCaveTable;
+        var baseAddress = _memoryRegister[memoryAddress].BaseAddress;
+        var caveTable = _memoryRegister[memoryAddress].CodeCaveTable;
 
         if (caveTable is null)
         {
@@ -253,11 +247,9 @@ public sealed partial class RWMemory : IDisposable
 
         MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.OriginalOpcodes);
 
-        _addressRegister[tableIndex].CodeCaveTable = null;
+        _memoryRegister[memoryAddress].CodeCaveTable = null;
 
-        var deallocation = DeallocateMemory(caveTable.CaveAddress);
-
-        return deallocation;
+        return DeallocateMemory(caveTable.CaveAddress);
     }
 
     private bool DeallocateMemory(nuint address)
@@ -273,28 +265,29 @@ public sealed partial class RWMemory : IDisposable
     /// <summary>
     /// Checks if a code cave was created in the past with the given memory address.
     /// </summary>
-    /// <param name="memAddress"></param>
+    /// <param name="memoryAddress"></param>
     /// <param name="caveAddress"></param>
     /// <returns></returns>
-    private bool IsCodeCaveAlreadyCreatedForAddress(MemoryAddress memAddress, out nuint caveAddress)
+    private bool IsCodeCaveAlreadyCreatedForAddress(MemoryAddress memoryAddress, out nuint caveAddress)
     {
         caveAddress = nuint.Zero;
 
-        var tableIndex = GetAddressIndexByMemoryAddress(memAddress);
-
-        if (tableIndex == -1)
+        if (!_memoryRegister.ContainsKey(memoryAddress))
         {
             return false;
         }
 
-        var caveTable = _addressRegister[tableIndex].CodeCaveTable;
+        var caveTable = _memoryRegister[memoryAddress].CodeCaveTable;
 
         if (caveTable is null)
         {
             return false;
         }
 
-        MemoryOperation.WriteProcessMemory(_targetProcess.Handle, _addressRegister[tableIndex].BaseAddress, caveTable.JmpBytes);
+        if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, _memoryRegister[memoryAddress].BaseAddress, caveTable.JmpBytes))
+        {
+            return false;
+        }
 
         caveAddress = caveTable.CaveAddress;
 
@@ -306,7 +299,7 @@ public sealed partial class RWMemory : IDisposable
     /// </summary>
     private void CloseAllCodeCaves()
     {
-        foreach (var memoryTable in _addressRegister
+        foreach (var memoryTable in _memoryRegister.Values
             .Where(addr => addr.CodeCaveTable is not null))
         {
             var baseAddress = memoryTable.BaseAddress;
@@ -325,7 +318,7 @@ public sealed partial class RWMemory : IDisposable
 
     private void UnfreezeAllValues()
     {
-        foreach (var freezeTokenSrc in _addressRegister
+        foreach (var freezeTokenSrc in _memoryRegister.Values
             .Where(addr => addr.FreezeTokenSrc is not null)
             .Select(addr => addr.FreezeTokenSrc))
         {
@@ -415,7 +408,7 @@ public sealed partial class RWMemory : IDisposable
         UnfreezeAllValues();
         CloseHandle();
 
-        _addressRegister.Clear();
+        _memoryRegister.Clear();
         _targetProcess.ProcessState.ProcessStateTokenSrc.Cancel();
         Process_OnStateChanged = null;
     }

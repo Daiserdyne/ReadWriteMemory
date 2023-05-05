@@ -5,11 +5,16 @@ namespace ReadWriteMemory.Main;
 
 public sealed partial class RWMemory
 {
-    private unsafe nuint GetTargetAddress(MemoryAddress memAddress)
+    private unsafe nuint GetTargetAddress(MemoryAddress memoryAddress)
     {
-        nuint baseAddress;
+        nuint baseAddress = default;
 
-        var savedBaseAddress = GetBaseAddressByMemoryAddress(memAddress);
+        if (!_memoryRegister.ContainsKey(memoryAddress))
+        {
+            return baseAddress;
+        }
+
+        var savedBaseAddress = _memoryRegister[memoryAddress].BaseAddress;
 
         if (savedBaseAddress != nuint.Zero)
         {
@@ -19,14 +24,14 @@ public sealed partial class RWMemory
         {
             var moduleAddress = IntPtr.Zero;
 
-            var moduleName = memAddress.ModuleName;
+            var moduleName = memoryAddress.ModuleName;
 
-            if (!string.IsNullOrEmpty(moduleName))
+            if (!string.IsNullOrEmpty(moduleName) && _targetProcess.Modules.ContainsKey(moduleName))
             {
-                moduleAddress = GetModuleAddressByName(moduleName);
+                moduleAddress = _targetProcess.Modules[moduleName];
             }
 
-            var address = memAddress.Address;
+            var address = memoryAddress.Address;
 
             if (moduleAddress != IntPtr.Zero)
             {
@@ -34,13 +39,13 @@ public sealed partial class RWMemory
             }
             else
             {
-                baseAddress = (nuint)memAddress.Address;
+                baseAddress = (nuint)memoryAddress.Address;
             }
         }
 
         var targetAddress = baseAddress;
 
-        if (memAddress.Offsets is not null && memAddress.Offsets.Any())
+        if (memoryAddress.Offsets is not null && memoryAddress.Offsets.Any())
         {
             var buffer = new byte[nint.Size];
 
@@ -48,26 +53,25 @@ public sealed partial class RWMemory
 
             MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
 
-            for (ushort index = 0; index < memAddress.Offsets.Length; index++)
+            for (ushort index = 0; index < memoryAddress.Offsets.Length; index++)
             {
-                if (index == memAddress.Offsets.Length - 1)
+                if (index == memoryAddress.Offsets.Length - 1)
                 {
-                    targetAddress = (nuint)Convert.ToUInt64((long)targetAddress + memAddress.Offsets[index]);
+                    targetAddress = (nuint)Convert.ToUInt64((long)targetAddress + memoryAddress.Offsets[index]);
 
                     break;
                 }
 
-                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, memAddress.Offsets[index]), buffer);
+                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, memoryAddress.Offsets[index]), buffer);
 
                 MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
             }
         }
 
-        _addressRegister.Add(new()
+        _memoryRegister.Add(memoryAddress, new()
         {
-            MemoryAddress = memAddress,
-            BaseAddress = baseAddress,
-            UniqueAddressHash = CreateUniqueAddressHash(memAddress)
+            MemoryAddress = memoryAddress,
+            BaseAddress = baseAddress
         });
 
         return targetAddress;
@@ -87,75 +91,13 @@ public sealed partial class RWMemory
         return true;
     }
 
-    /// <summary>
-    /// Gets the process module base address by name.
-    /// </summary>
-    /// <param name="moduleName">name of module</param>
-    /// <returns></returns>
-    private nint GetModuleAddressByName(string moduleName)
+    private MemoryAddressTable? GetMemoryTableByMemoryAddress(MemoryAddress memoryAddress)
     {
-        if (!IsProcessAlive)
+        if (_memoryRegister.TryGetValue(memoryAddress, out var memoryAddressTable))
         {
-            return nint.Zero;
+            return memoryAddressTable;
         }
 
-        return _targetProcess.Modules[moduleName];
-    }
-
-    /// <summary>
-    /// Creates an simple and unique address hash.
-    /// </summary>
-    /// <param name="memAddres"></param>
-    /// <returns></returns>
-    private static string CreateUniqueAddressHash(MemoryAddress memAddres)
-    {
-        var offsetSequence = string.Empty;
-
-        if (memAddres.Offsets is not null)
-        {
-            offsetSequence = string.Concat(memAddres.Offsets);
-        }
-
-        return memAddres.Address + memAddres.ModuleName + offsetSequence;
-    }
-
-    /// <summary>
-    /// Gets the base address from the given memory address object.
-    /// </summary>
-    /// <param name="memAddress"></param>
-    /// <returns>Base address of given memory address object.</returns>
-    private nuint GetBaseAddressByMemoryAddress(MemoryAddress memAddress)
-    {
-        var addressHash = CreateUniqueAddressHash(memAddress);
-
-        for (ushort i = 0; i < _addressRegister.Count; i++)
-        {
-            if (_addressRegister[i].UniqueAddressHash == addressHash)
-            {
-                return _addressRegister[i].BaseAddress;
-            }
-        }
-
-        return nuint.Zero;
-    }
-
-    /// <summary>
-    /// Searches the given memory address and returns the index in the address register. 
-    /// </summary>
-    /// <param name="memAddress"></param>
-    /// <returns>The index from the given memory address in the addressRegister.</returns>
-    private int GetAddressIndexByMemoryAddress(MemoryAddress memAddress)
-    {
-        var addressHash = CreateUniqueAddressHash(memAddress);
-
-        for (ushort i = 0; i < _addressRegister.Count; i++)
-        {
-            if (_addressRegister[i].UniqueAddressHash == addressHash)
-            {
-                return i;
-            }
-        }
-
-        return -1;
+        return null;
     }
 }
