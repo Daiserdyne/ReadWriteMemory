@@ -145,7 +145,7 @@ public sealed partial class RWMemory
         return true;
     }
 
-    private void StartFreezingValue(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate, 
+    private void StartFreezingValue(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate,
         nuint targetAddress, byte[] buffer, CancellationTokenSource freezeToken)
     {
         _ = BackgroundService.ExecuteTaskInfinite(() =>
@@ -164,12 +164,8 @@ public sealed partial class RWMemory
 
     private bool IsFreezingPossible(MemoryAddress memoryAddress, out nuint targetAddress)
     {
-        if (!GetTargetAddress(memoryAddress, out targetAddress))
-        {
-            return false;
-        }
-
-        if (!_memoryRegister.ContainsKey(memoryAddress) || _memoryRegister[memoryAddress].FreezeTokenSrc is not null)
+        if (!GetTargetAddress(memoryAddress, out targetAddress) &&
+            _memoryRegister[memoryAddress].FreezeTokenSrc is not null)
         {
             return false;
         }

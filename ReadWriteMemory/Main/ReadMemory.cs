@@ -159,7 +159,6 @@ public sealed partial class RWMemory
         return true;
     }
 
-
     /// <summary>
     /// This method will read the <c>bytes</c> from the specified <paramref name="memoryAddress"/> and execute the 
     /// <paramref name="callback"/> function repeatedly with a specified delay <paramref name="refreshTime"/>, using the given 

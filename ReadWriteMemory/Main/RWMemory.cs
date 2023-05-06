@@ -293,43 +293,9 @@ public sealed partial class RWMemory : IDisposable
         return true;
     }
 
-    private unsafe nuint GetTargetAddress(MemoryAddress memoryAddress)
+    private nuint GetTargetAddress(MemoryAddress memoryAddress)
     {
-        nuint baseAddress = default;
-
-        if (!_memoryRegister.ContainsKey(memoryAddress))
-        {
-            return baseAddress;
-        }
-
-        var savedBaseAddress = _memoryRegister[memoryAddress].BaseAddress;
-
-        if (savedBaseAddress != nuint.Zero)
-        {
-            baseAddress = savedBaseAddress;
-        }
-        else
-        {
-            var moduleAddress = IntPtr.Zero;
-
-            var moduleName = memoryAddress.ModuleName;
-
-            if (!string.IsNullOrEmpty(moduleName) && _targetProcess.Modules.ContainsKey(moduleName))
-            {
-                moduleAddress = _targetProcess.Modules[moduleName];
-            }
-
-            var address = memoryAddress.Address;
-
-            if (moduleAddress != IntPtr.Zero)
-            {
-                baseAddress = (nuint)(moduleAddress + address);
-            }
-            else
-            {
-                baseAddress = (nuint)memoryAddress.Address;
-            }
-        }
+        var baseAddress = GetBaseAddress(memoryAddress);
 
         var targetAddress = baseAddress;
 
@@ -345,7 +311,7 @@ public sealed partial class RWMemory : IDisposable
             {
                 if (index == memoryAddress.Offsets.Length - 1)
                 {
-                    targetAddress = (nuint)Convert.ToUInt64((long)targetAddress + memoryAddress.Offsets[index]);
+                    targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[index]);
 
                     break;
                 }
@@ -356,13 +322,42 @@ public sealed partial class RWMemory : IDisposable
             }
         }
 
-        _memoryRegister.Add(memoryAddress, new()
+        if (!_memoryRegister.ContainsKey(memoryAddress))
         {
-            MemoryAddress = memoryAddress,
-            BaseAddress = baseAddress
-        });
+            _memoryRegister.Add(memoryAddress, new()
+            {
+                MemoryAddress = memoryAddress,
+                BaseAddress = baseAddress
+            });
+        }
 
         return targetAddress;
+    }
+
+    private nuint GetBaseAddress(MemoryAddress memoryAddress)
+    {
+        if (_memoryRegister.ContainsKey(memoryAddress) && _memoryRegister[memoryAddress].BaseAddress != nuint.Zero)
+        {
+            return _memoryRegister[memoryAddress].BaseAddress;
+        }
+
+        var moduleAddress = IntPtr.Zero;
+
+        var moduleName = memoryAddress.ModuleName;
+
+        if (!string.IsNullOrEmpty(moduleName) && _targetProcess.Modules.ContainsKey(moduleName))
+        {
+            moduleAddress = _targetProcess.Modules[moduleName];
+        }
+
+        var address = memoryAddress.Address;
+
+        if (moduleAddress != IntPtr.Zero)
+        {
+            return (nuint)(moduleAddress + address);
+        }
+
+        return (nuint)memoryAddress.Address;
     }
 
     private bool GetTargetAddress(MemoryAddress memoryAddress, out nuint targetAddress)

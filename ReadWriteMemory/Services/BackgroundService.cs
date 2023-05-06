@@ -26,13 +26,13 @@ internal static class BackgroundService
 
     private static TimeSpan GetValidRefreshRate(TimeSpan freezeRefreshRate)
     {
-        switch (Math.Round(freezeRefreshRate.TotalMilliseconds, 0))
+        switch ((double)(long)freezeRefreshRate.TotalMilliseconds)
         {
             case < MinFreezeRefreshRateInMilliseconds:
                 freezeRefreshRate = TimeSpan.FromMilliseconds(MinFreezeRefreshRateInMilliseconds);
                 break;
 
-            case > double.MaxValue:
+            case > MaxFreezeRefreshRateInMilliseconds:
                 freezeRefreshRate = TimeSpan.FromMilliseconds(MaxFreezeRefreshRateInMilliseconds);
                 break;
         }
