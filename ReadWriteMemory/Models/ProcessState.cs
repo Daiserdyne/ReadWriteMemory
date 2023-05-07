@@ -4,5 +4,5 @@ internal sealed record ProcessState
 {
     internal bool IsProcessAlive { get; set; }
 
-    internal CancellationTokenSource ProcessStateTokenSrc => new();
+    internal CancellationTokenSource ProcessStateTokenSrc = new();
 }

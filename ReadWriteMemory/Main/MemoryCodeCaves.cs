@@ -73,9 +73,9 @@ public sealed partial class RWMemory
 
         var caveTable = _memoryRegister[memoryAddress].CodeCaveTable;
 
-        if (caveTable is null)
+        if (caveTable is not null)
         {
-            return false;
+            return true;
         }
 
         if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, _memoryRegister[memoryAddress].BaseAddress, caveTable.JmpBytes))

@@ -4,6 +4,8 @@ using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 using System.Diagnostics;
 
+using Kernel32 = ReadWriteMemory.NativeImports.Kernel32;
+
 namespace ReadWriteMemory.Main;
 
 /// <summary>
@@ -99,7 +101,7 @@ public sealed partial class RWMemory : IDisposable
         {
             if (!_targetProcess.Modules.ContainsKey(module.ModuleName.ToLower()))
             {
-                _targetProcess.Modules.Add(module.ModuleName.ToLower(), module.BaseAddress);
+                _targetProcess.Modules.Add(module.ModuleName.ToLower(), (nuint)module.BaseAddress);
             }
         }
     }
@@ -123,7 +125,7 @@ public sealed partial class RWMemory : IDisposable
             return;
         }
 
-        _ = NativeImports.Kernel32.CloseHandle(_targetProcess.Handle);
+        _ = Kernel32.CloseHandle(_targetProcess.Handle);
 
         _targetProcess = new()
         {
@@ -132,10 +134,6 @@ public sealed partial class RWMemory : IDisposable
 
         _memoryRegister.Clear();
     }
-
-   
-
-   
 
     private bool DeallocateMemory(nuint address)
     {
@@ -146,8 +144,6 @@ public sealed partial class RWMemory : IDisposable
 
         return MemoryOperation.DeallocateMemory(_targetProcess.Handle, address);
     }
-
-   
 
     private void UnfreezeAllValues()
     {
@@ -171,7 +167,7 @@ public sealed partial class RWMemory : IDisposable
         var pid = process.First().Id;
 
         _targetProcess.Process = Process.GetProcessById(pid);
-        _targetProcess.Handle = NativeImports.Kernel32.OpenProcess(true, pid);
+        _targetProcess.Handle = Kernel32.OpenProcess(true, pid);
 
         if (_targetProcess.Handle == IntPtr.Zero)
         {
@@ -184,7 +180,7 @@ public sealed partial class RWMemory : IDisposable
         }
 
         if (!(Environment.Is64BitOperatingSystem
-            && NativeImports.Kernel32.IsWow64Process(_targetProcess.Handle, out bool isWow64)
+            && Kernel32.IsWow64Process(_targetProcess.Handle, out bool isWow64)
             && isWow64 is false))
         {
             _targetProcess = new()
@@ -260,7 +256,7 @@ public sealed partial class RWMemory : IDisposable
             return _memoryRegister[memoryAddress].BaseAddress;
         }
 
-        var moduleAddress = IntPtr.Zero;
+        var moduleAddress = nuint.Zero;
 
         var moduleName = memoryAddress.ModuleName;
 
@@ -271,12 +267,12 @@ public sealed partial class RWMemory : IDisposable
 
         var address = memoryAddress.Address;
 
-        if (moduleAddress != IntPtr.Zero)
+        if (moduleAddress != nuint.Zero)
         {
-            return (nuint)(moduleAddress + address);
+            return moduleAddress + address;
         }
 
-        return (nuint)memoryAddress.Address;
+        return memoryAddress.Address;
     }
 
     private bool GetTargetAddress(MemoryAddress memoryAddress, out nuint targetAddress)
