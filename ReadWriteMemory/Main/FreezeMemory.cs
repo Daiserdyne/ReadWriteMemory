@@ -93,26 +93,26 @@ public sealed partial class RWMemory
     /// <param name="memoryAddress"></param>
     /// <param name="freezeRefreshRate"></param>
     /// <returns></returns>
-    public bool FreezeValue(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate)
-    {
-        if (!IsFreezingPossible(memoryAddress, out var targetAddress))
-        {
-            return false;
-        }
+    //public bool FreezeValue(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate)
+    //{
+    //    if (!IsFreezingPossible(memoryAddress, out var targetAddress))
+    //    {
+    //        return false;
+    //    }
 
-        Kernel32.VirtualQueryEx(_targetProcess.Handle, targetAddress, out var memoryInformation);
+    //    Kernel32.VirtualQueryEx(_targetProcess.Handle, targetAddress, out var memoryInformation);
 
-        var buffer = new byte[memoryInformation.RegionSize];
+    //    var buffer = new byte[memoryInformation.RegionSize];
 
-        if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
-        {
-            return false;
-        }
+    //    if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
+    //    {
+    //        return false;
+    //    }
 
-        InitAndStartFreezeProcedure(memoryAddress, freezeRefreshRate, targetAddress, buffer);
+    //    InitAndStartFreezeProcedure(memoryAddress, freezeRefreshRate, targetAddress, buffer);
 
-        return true;
-    }
+    //    return true;
+    //}
 
     /// <summary>
     /// Unfreezes a value from the given <paramref name="memoryAddress"/>.

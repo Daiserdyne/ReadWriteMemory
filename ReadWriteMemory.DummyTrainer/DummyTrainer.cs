@@ -27,6 +27,8 @@ internal sealed class DummyTrainer
     {
         using var memory = new RWMemory("Outlast2");
 
+        memory.Process_OnStateChanged += (o) => { Console.WriteLine(o ? "Process is running" : "Process is not running"); };
+
         var stopwatch = new Stopwatch();
 
         var test = new CancellationTokenSource();
