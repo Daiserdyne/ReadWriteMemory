@@ -44,7 +44,7 @@ internal sealed class DummyTrainer
                 stopwatch.Start();
 
                 _ = await memory.CreateOrResumeCodeCaveAsync(_movementXAddress, _movementX, 9);
-                _ = await memory.CreateOrResumeCodeCaveAsync(_movementYAddress, _movementY, 5);
+                //_ = await memory.CreateOrResumeCodeCaveAsync(_movementYAddress, _movementY, 5);
 
                 stopwatch.Stop();
 
@@ -57,7 +57,7 @@ internal sealed class DummyTrainer
                 stopwatch.Start();
 
                 memory.PauseOpenedCodeCave(_movementXAddress);
-                memory.PauseOpenedCodeCave(_movementYAddress);
+                //memory.PauseOpenedCodeCave(_movementYAddress);
 
                 stopwatch.Stop();
 

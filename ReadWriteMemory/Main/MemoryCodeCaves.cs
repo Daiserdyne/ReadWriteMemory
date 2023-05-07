@@ -66,26 +66,33 @@ public sealed partial class RWMemory
     {
         caveAddress = nuint.Zero;
 
-        if (!_memoryRegister.ContainsKey(memoryAddress))
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var memoryTable))
         {
             return false;
         }
 
-        var caveTable = _memoryRegister[memoryAddress].CodeCaveTable;
+        var caveTable = memoryTable.CodeCaveTable;
 
-        if (caveTable is not null)
+        if (caveTable is null)
         {
+            return false;
+        }
+
+        if (caveTable.CaveAddress != nuint.Zero)
+        {
+            caveAddress = caveTable.CaveAddress;
+
+            if (!MemoryOperation.WriteProcessMemory(_targetProcess.Handle, memoryTable.BaseAddress, caveTable.JmpBytes))
+            {
+                DeallocateMemory(caveTable.CaveAddress);
+
+                return false;
+            }
+
             return true;
         }
 
-        if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, _memoryRegister[memoryAddress].BaseAddress, caveTable.JmpBytes))
-        {
-            return false;
-        }
-
-        caveAddress = caveTable.CaveAddress;
-
-        return true;
+        return false;
     }
 
     /// <summary>
@@ -104,13 +111,13 @@ public sealed partial class RWMemory
             return false;
         }
 
-        if (!_memoryRegister.ContainsKey(memoryAddress))
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var memoryTable))
         {
             return false;
         }
 
-        var baseAddress = _memoryRegister[memoryAddress].BaseAddress;
-        var caveTable = _memoryRegister[memoryAddress].CodeCaveTable;
+        var baseAddress = memoryTable.BaseAddress;
+        var caveTable = memoryTable.CodeCaveTable;
 
         if (caveTable is null)
         {
@@ -133,13 +140,13 @@ public sealed partial class RWMemory
             return false;
         }
 
-        if (!_memoryRegister.ContainsKey(memoryAddress))
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var memoryTable))
         {
             return false;
         }
 
-        var baseAddress = _memoryRegister[memoryAddress].BaseAddress;
-        var caveTable = _memoryRegister[memoryAddress].CodeCaveTable;
+        var baseAddress = memoryTable.BaseAddress;
+        var caveTable = memoryTable.CodeCaveTable;
 
         if (caveTable is null)
         {
@@ -148,7 +155,7 @@ public sealed partial class RWMemory
 
         MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.OriginalOpcodes);
 
-        _memoryRegister[memoryAddress].CodeCaveTable = null;
+        memoryTable.CodeCaveTable = null;
 
         return DeallocateMemory(caveTable.CaveAddress);
     }
