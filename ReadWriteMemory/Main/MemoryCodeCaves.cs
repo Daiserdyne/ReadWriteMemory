@@ -84,6 +84,8 @@ public sealed partial class RWMemory
 
             if (!MemoryOperation.WriteProcessMemory(_targetProcess.Handle, memoryTable.BaseAddress, caveTable.JmpBytes))
             {
+                MemoryOperation.WriteProcessMemory(_targetProcess.Handle, memoryTable.BaseAddress, caveTable.OriginalOpcodes);
+
                 DeallocateMemory(caveTable.CaveAddress);
 
                 return false;
