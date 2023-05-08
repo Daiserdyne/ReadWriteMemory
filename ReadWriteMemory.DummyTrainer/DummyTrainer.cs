@@ -23,7 +23,7 @@ internal sealed class DummyTrainer
     private readonly static MemoryAddress _hp = new(0x219FF58, "Outlast2.exe", 0xC38, 0x7F58);
 
 
-    internal static async Task Main()
+    internal static async Task Main2()
     {
         using var memory = new RWMemory("Outlast2");
 
