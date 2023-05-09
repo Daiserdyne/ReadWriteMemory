@@ -1,5 +1,6 @@
 ﻿using ReadWriteMemory.DummyTrainer.Dl2Trainer;
 using ReadWriteMemory.Main;
+using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 
 namespace ReadWriteMemory.DummyTrainer;
@@ -8,7 +9,7 @@ internal sealed class DeadIslandTrainer
 {
     public static async Task Main()
     {
-        using var memory = new RWMemory("DeadIsland-Win64-Shipping.exe");
+        using var memory = TrainerServices.CreateAndSingletonInstance("DeadIsland-Win64-Shipping");
 
         memory.Process_OnStateChanged += (o) => { Console.WriteLine(o ? "Process is running" : "Process is not running"); };
 

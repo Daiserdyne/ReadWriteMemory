@@ -1,17 +1,38 @@
-﻿using static ReadWriteMemory.NativeImports.Kernel32;
+﻿using System.Runtime.InteropServices;
+using static ReadWriteMemory.NativeImports.Kernel32;
 
 namespace ReadWriteMemory.Utilities;
 
-internal static class CodeCaveFactory
+internal static class CodeCaveFactory3
 {
     internal static bool CreateCodeCaveAndInjectCode(nuint targetAddress, nint targetProcessHandle, byte[] newCode, int replaceCount,
         out nuint caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 0x1000)
     {
+        var freeRegion = targetAddress;
+
         caveAddress = nuint.Zero;
+
+        GetSystemInfo(out SYSTEM_INFO sysInfo);
+
+        MEMORY_BASIC_INFORMATION memInfo = new();
+
+
+        while (VirtualQueryEx(targetProcessHandle, sysInfo.minimumApplicationAddress, out memInfo, (uint)Marshal.SizeOf(memInfo)) != 0)
+        {
+            if (memInfo.State == MEM_FREE && memInfo.RegionSize >= size) // Replace with your desired memory block size
+            {
+                freeRegion = memInfo.BaseAddress;
+
+                break;
+            }
+
+            sysInfo.minimumApplicationAddress += new nuint(memInfo.BaseAddress + (ulong)memInfo.RegionSize);
+        }
+
 
         for (var i = 0; i < 10 && caveAddress == nuint.Zero; i++)
         {
-            caveAddress = VirtualAllocEx(targetProcessHandle, FindFreeMemoryBlock(targetAddress, size, targetProcessHandle), size,
+            caveAddress = VirtualAllocEx(targetProcessHandle, freeRegion, size,
                 MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
             if (caveAddress == nuint.Zero)
@@ -62,8 +83,8 @@ internal static class CodeCaveFactory
 
     private static nuint FindFreeMemoryBlock(nuint baseAddress, uint size, nint processHandle)
     {
-        var minAddress = nuint.Subtract(baseAddress, 0x1000000);
-        var maxAddress = nuint.Add(baseAddress, 0x1000000);
+        var minAddress = nuint.Subtract(baseAddress, 0x70000000);
+        var maxAddress = nuint.Add(baseAddress, 0x70000000);
 
         GetSystemInfo(out SYSTEM_INFO sysInfo);
 
