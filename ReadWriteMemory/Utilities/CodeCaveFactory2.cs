@@ -1,63 +1,59 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Runtime.CompilerServices;
 using static ReadWriteMemory.NativeImports.Kernel32;
 
 namespace ReadWriteMemory.Utilities;
 
 internal static class CodeCaveFactory2
 {
+    // 
     internal static bool CreateCodeCaveAndInjectCode(nuint targetAddress, nint targetProcessHandle, byte[] newCode, int replaceCount,
         out nuint caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 0x1000)
     {
-        caveAddress = nuint.Zero;
+        caveAddress = VirtualAllocEx(targetProcessHandle, UIntPtr.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
-        var memInfo = new MEMORY_BASIC_INFORMATION64();
+        var buffer = new byte[replaceCount];
 
-        var freeRegion = targetAddress;
+        ReadProcessMemory(targetProcessHandle, targetAddress, buffer, replaceCount, IntPtr.Zero);
 
-        while (VirtualQueryEx(targetProcessHandle, freeRegion, out memInfo, (uint)Marshal.SizeOf(memInfo)) != 0)
-        {
-            if (memInfo.State == MEM_FREE && memInfo.RegionSize >= size) // Replace with your desired memory block size
-            {
-                break;
-            }
+        Array.Copy(buffer, newCode, 0);
 
-            freeRegion = memInfo.BaseAddress - (nuint)memInfo.RegionSize;
-        }
+        WriteProcessMemory(targetProcessHandle, caveAddress, newCode, (nuint)newCode.Length, out _);
 
-        caveAddress = VirtualAllocEx(targetProcessHandle, memInfo.BaseAddress, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-
-        var nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;
-
-        var offset = (int)((long)caveAddress - (long)targetAddress - 5);
-
-        jmpBytes = new byte[5 + nopsNeeded];
-
-        jmpBytes[0] = 0xE9;
-
-        Buffer.BlockCopy(MemoryOperation.ConvertToByteArrayUnsafe(offset), 0, jmpBytes, 1, sizeof(int));
-
-        for (var i = 5; i < jmpBytes.Length; i++)
-        {
-            jmpBytes[i] = 0x90;
-        }
-
-        var caveBytes = new byte[5 + newCode.Length];
-
-        offset = (int)((long)caveAddress + jmpBytes.Length - ((long)caveAddress + newCode.Length) - 5);
-
-        Buffer.BlockCopy(newCode, 0, caveBytes, 0, newCode.Length);
-
-        caveBytes[newCode.Length] = 0xE9;
-
-        Buffer.BlockCopy(MemoryOperation.ConvertToByteArrayUnsafe(offset), 0, caveBytes, newCode.Length + 1, sizeof(int));
-
-        originalOpcodes = new byte[replaceCount];
-
-        ReadProcessMemory(targetProcessHandle, targetAddress, originalOpcodes, replaceCount, IntPtr.Zero);
-
-        WriteProcessMemory(targetProcessHandle, caveAddress, caveBytes, caveBytes.Length, IntPtr.Zero);
-        WriteProcessMemory(targetProcessHandle, targetAddress, jmpBytes, jmpBytes.Length, IntPtr.Zero);
+        MakeJmp64(targetProcessHandle, targetAddress, caveAddress, out jmpBytes, out originalOpcodes, (nuint)replaceCount);
 
         return true;
+    }
+
+    private static ReadOnlySpan<byte> JumpAsm => new byte[]
+    {
+        0xFF, 0x25, 0x00, 0x00, 0x00, 0x00,                // jmp qword ptr [$+6]
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00     // ptr
+    };
+
+    private static void MakeJmp64(IntPtr targetProcessHandle, UIntPtr targetAddress, UIntPtr caveAddress, out byte[] write, out byte[] originalOpcodes, UIntPtr dwLen = 14)
+    {
+        originalOpcodes = new byte[dwLen];
+        write = new byte[0];
+
+        if (dwLen < 14)
+        {
+            return;
+        }
+
+        write = new byte[dwLen];
+
+        JumpAsm.CopyTo(write);
+
+        Unsafe.WriteUnaligned(ref write[6], caveAddress);
+
+        write.AsSpan((int)dwLen).Fill(0x90);
+
+        ReadProcessMemory(targetProcessHandle, targetAddress, originalOpcodes, (int)dwLen, IntPtr.Zero);
+
+        VirtualProtectEx(targetProcessHandle, targetAddress, dwLen, MemoryProtection.ExecuteReadWrite, out _);
+
+        WriteProcessMemory(targetProcessHandle, targetAddress, write, dwLen, out _);
+
+        VirtualProtectEx(targetProcessHandle, targetAddress, dwLen, 0x0, out _);
     }
 }
