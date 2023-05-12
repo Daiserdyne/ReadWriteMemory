@@ -5,16 +5,24 @@ namespace ReadWriteMemory.Utilities;
 
 internal static class CodeCaveFactory2
 { 
-    internal static bool CreateCodeCaveAndInjectCode(nuint targetAddress, nint targetProcessHandle, byte[] newCode, int targetAddressOpcodeLength, int opcodesToReplace,
+    internal static bool CreateCodeCaveAndInjectCode(nuint targetAddress, nint targetProcessHandle, byte[] newCode, int InstructionOpcodes, int totalAmountOfOpcodes,
         out nuint caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 0x1000)
     {
-        caveAddress = VirtualAllocEx(targetProcessHandle, UIntPtr.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+        jmpBytes = new byte[0];
+        originalOpcodes = new byte[0];
 
-        var startAddress = nuint.Add(targetAddress, targetAddressOpcodeLength);
+        caveAddress = VirtualAllocEx(targetProcessHandle, nuint.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
-        var buffer = new byte[opcodesToReplace - targetAddressOpcodeLength];
+        if (caveAddress == nuint.Zero)
+        {
+            return false;
+        }
 
-        ReadProcessMemory(targetProcessHandle, startAddress, buffer, targetAddressOpcodeLength, IntPtr.Zero);
+        var startAddress = nuint.Add(targetAddress, InstructionOpcodes);
+
+        var buffer = new byte[totalAmountOfOpcodes - InstructionOpcodes];
+
+        ReadProcessMemory(targetProcessHandle, startAddress, buffer, InstructionOpcodes, IntPtr.Zero);
 
         var tempNewCode = new byte[newCode.Length + buffer.Length];
         Buffer.BlockCopy(newCode, 0, tempNewCode, 0, newCode.Length);
@@ -26,12 +34,10 @@ internal static class CodeCaveFactory2
             newCode[newCode.Length - 1 - i] = buffer[buffer.Length - 1 - i];
         }
 
-        var jumpBytes = GetJmp64Bytes(targetProcessHandle, targetAddress, caveAddress);
+        var jumpBytes = GetJmp64Bytes(caveAddress);
         jmpBytes = jumpBytes;
 
-        var tempCave = nuint.Add(caveAddress, newCode.Length);
-
-        var jumpBack = GetJmp64Bytes(targetProcessHandle, tempCave, nuint.Add(targetAddress, opcodesToReplace));
+        var jumpBack = GetJmp64Bytes(nuint.Add(targetAddress, totalAmountOfOpcodes));
 
         tempNewCode = new byte[newCode.Length + jumpBack.Length];
         Buffer.BlockCopy(newCode, 0, tempNewCode, 0, newCode.Length);
@@ -45,7 +51,7 @@ internal static class CodeCaveFactory2
 
         WriteProcessMemory(targetProcessHandle, caveAddress, newCode, (nuint)newCode.Length, out _);
 
-        WriteJumpToAddress(targetProcessHandle, targetAddress, caveAddress, (nuint)opcodesToReplace, jumpBytes, out originalOpcodes);
+        WriteJumpToAddress(targetProcessHandle, targetAddress, (nuint)totalAmountOfOpcodes, jumpBytes, out originalOpcodes);
 
         return true;
     }
@@ -56,7 +62,7 @@ internal static class CodeCaveFactory2
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00     // ptr
     };
 
-    private static byte[] GetJmp64Bytes(IntPtr targetProcessHandle, UIntPtr targetAddress, UIntPtr caveAddress)
+    private static byte[] GetJmp64Bytes(nuint caveAddress)
     {
         var jumpBytes = new byte[14];
 
@@ -69,16 +75,12 @@ internal static class CodeCaveFactory2
         return jumpBytes;
     }
 
-    private static void WriteJumpToAddress(IntPtr targetProcessHandle, UIntPtr targetAddress, UIntPtr caveAddress, nuint replaceCount, byte[] jumpBytes, out byte[] originalOpcodes)
+    private static void WriteJumpToAddress(IntPtr targetProcessHandle, UIntPtr targetAddress, nuint replaceCount, byte[] jumpBytes, out byte[] originalOpcodes)
     {
         originalOpcodes = new byte[replaceCount];
 
         ReadProcessMemory(targetProcessHandle, targetAddress, originalOpcodes, (int)replaceCount, IntPtr.Zero);
 
-        VirtualProtectEx(targetProcessHandle, targetAddress, replaceCount, MemoryProtection.ExecuteReadWrite, out _);
-
         WriteProcessMemory(targetProcessHandle, targetAddress, jumpBytes, replaceCount, out _);
-
-        VirtualProtectEx(targetProcessHandle, targetAddress, replaceCount, 0x0, out _);
     }
 }
