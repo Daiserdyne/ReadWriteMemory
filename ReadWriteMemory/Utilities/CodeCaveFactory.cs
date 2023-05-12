@@ -1,178 +1,86 @@
-﻿using static ReadWriteMemory.NativeImports.Kernel32;
+﻿using System.Runtime.CompilerServices;
+using static ReadWriteMemory.NativeImports.Kernel32;
 
 namespace ReadWriteMemory.Utilities;
 
 internal static class CodeCaveFactory
-{
-    internal static bool CreateCodeCaveAndInjectCode(nuint targetAddress, nint targetProcessHandle, byte[] newCode, int replaceCount,
+{ 
+    internal static bool CreateCodeCaveAndInjectCode(nuint targetAddress, nint targetProcessHandle, byte[] newCode, int instructionOpcodes, int totalAmountOfOpcodes,
         out nuint caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 0x1000)
     {
-        caveAddress = nuint.Zero;
+        jmpBytes = new byte[0];
+        originalOpcodes = new byte[0];
 
-        for (var i = 0; i < 10 && caveAddress == nuint.Zero; i++)
-        {
-            caveAddress = VirtualAllocEx(targetProcessHandle, FindFreeMemoryBlock(targetAddress, size, targetProcessHandle), size,
-                MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-
-            if (caveAddress == nuint.Zero)
-            {
-                targetAddress = nuint.Add(targetAddress, 0x10000);
-            }
-        }
+        caveAddress = VirtualAllocEx(targetProcessHandle, nuint.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
         if (caveAddress == nuint.Zero)
         {
-            caveAddress = VirtualAllocEx(targetProcessHandle, nuint.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+            return false;
         }
 
-        var nopsNeeded = replaceCount > 5 ? replaceCount - 5 : 0;
+        var startAddress = nuint.Add(targetAddress, instructionOpcodes);
 
-        var offset = (int)((long)caveAddress - (long)targetAddress - 5);
+        var buffer = new byte[totalAmountOfOpcodes - instructionOpcodes];
 
-        jmpBytes = new byte[5 + nopsNeeded];
+        ReadProcessMemory(targetProcessHandle, startAddress, buffer, instructionOpcodes, IntPtr.Zero);
 
-        jmpBytes[0] = 0xE9;
+        var tempNewCode = new byte[newCode.Length + buffer.Length];
+        Buffer.BlockCopy(newCode, 0, tempNewCode, 0, newCode.Length);
 
-        Buffer.BlockCopy(MemoryOperation.ConvertToByteArrayUnsafe(offset), 0, jmpBytes, 1, sizeof(int));
+        newCode = tempNewCode;
 
-        for (var i = 5; i < jmpBytes.Length; i++)
+        for (int i = 0; i < buffer.Length; i++)
         {
-            jmpBytes[i] = 0x90;
+            newCode[newCode.Length - 1 - i] = buffer[buffer.Length - 1 - i];
         }
 
-        var caveBytes = new byte[5 + newCode.Length];
+        var jumpBytes = GetJmp64Bytes(caveAddress);
+        jmpBytes = jumpBytes;
 
-        offset = (int)((long)targetAddress + jmpBytes.Length - ((long)caveAddress + newCode.Length) - 5);
+        var jumpBack = GetJmp64Bytes(nuint.Add(targetAddress, totalAmountOfOpcodes));
 
-        Buffer.BlockCopy(newCode, 0, caveBytes, 0, newCode.Length);
+        tempNewCode = new byte[newCode.Length + jumpBack.Length];
+        Buffer.BlockCopy(newCode, 0, tempNewCode, 0, newCode.Length);
 
-        caveBytes[newCode.Length] = 0xE9;
+        newCode = tempNewCode;
 
-        Buffer.BlockCopy(MemoryOperation.ConvertToByteArrayUnsafe(offset), 0, caveBytes, newCode.Length + 1, sizeof(int));
+        for (int i = 0; i < jumpBack.Length; i++)
+        {
+            newCode[newCode.Length - 1 - i] = jumpBack[jumpBack.Length - 1 - i];
+        }
 
-        originalOpcodes = new byte[replaceCount];
+        WriteProcessMemory(targetProcessHandle, caveAddress, newCode, (nuint)newCode.Length, out _);
 
-        ReadProcessMemory(targetProcessHandle, targetAddress, originalOpcodes, replaceCount, IntPtr.Zero);
-
-        WriteProcessMemory(targetProcessHandle, caveAddress, caveBytes, (nuint)caveBytes.Length, out _);
-        WriteProcessMemory(targetProcessHandle, targetAddress, jmpBytes, (nuint)jmpBytes.Length, out _); 
+        WriteJumpToAddress(targetProcessHandle, targetAddress, (nuint)totalAmountOfOpcodes, jumpBytes, out originalOpcodes);
 
         return true;
     }
 
-    private static nuint FindFreeMemoryBlock(nuint baseAddress, uint size, nint processHandle)
+    private static ReadOnlySpan<byte> JumpAsm => new byte[]
     {
-        var minAddress = nuint.Subtract(baseAddress, 0x1000000);
-        var maxAddress = nuint.Add(baseAddress, 0x1000000);
+        0xFF, 0x25, 0x00, 0x00, 0x00, 0x00,                // jmp qword ptr [$+6]
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00     // ptr
+    };
 
-        GetSystemInfo(out SYSTEM_INFO sysInfo);
+    private static byte[] GetJmp64Bytes(nuint caveAddress)
+    {
+        var jumpBytes = new byte[14];
 
-        if ((long)minAddress > (long)sysInfo.maximumApplicationAddress ||
-            (long)minAddress < (long)sysInfo.minimumApplicationAddress)
-        {
-            minAddress = sysInfo.minimumApplicationAddress;
-        }
+        JumpAsm.CopyTo(jumpBytes);
 
-        if ((long)maxAddress < (long)sysInfo.minimumApplicationAddress ||
-            (long)maxAddress > (long)sysInfo.maximumApplicationAddress)
-        {
-            maxAddress = sysInfo.maximumApplicationAddress;
-        }
+        Unsafe.WriteUnaligned(ref jumpBytes[6], caveAddress);
 
-        var current = minAddress;
-        var caveAddress = nuint.Zero;
+        jumpBytes.AsSpan(14).Fill(0x90);
 
-        while (VirtualQueryEx(processHandle, current, out MEMORY_BASIC_INFORMATION memoryInfos).ToUInt64() != 0)
-        {
-            if ((long)memoryInfos.BaseAddress > (long)maxAddress)
-            {
-                return nuint.Zero;
-            }
-
-            if (memoryInfos.State == MEM_FREE && memoryInfos.RegionSize > size)
-            {
-                CalculateCaveAddress(baseAddress, size, sysInfo, ref caveAddress, memoryInfos);
-
-                return caveAddress;
-            }
-
-            if (memoryInfos.RegionSize % sysInfo.allocationGranularity > 0)
-            {
-                memoryInfos.RegionSize += sysInfo.allocationGranularity - memoryInfos.RegionSize % sysInfo.allocationGranularity;
-            }
-
-            var previous = current;
-
-            current = new nuint(memoryInfos.BaseAddress + (ulong)memoryInfos.RegionSize);
-
-            if ((long)current >= (long)maxAddress)
-            {
-                return caveAddress;
-            }
-
-            if ((long)previous >= (long)current)
-            {
-                return caveAddress;
-            }
-        }
-
-        return caveAddress;
+        return jumpBytes;
     }
 
-    private static nuint CalculateCaveAddress(nuint baseAddress, uint size, SYSTEM_INFO sysInfo, ref nuint caveAddress, MEMORY_BASIC_INFORMATION memoryInfos)
+    private static void WriteJumpToAddress(nint targetProcessHandle, nuint targetAddress, nuint replaceCount, byte[] jumpBytes, out byte[] originalOpcodes)
     {
-        nuint tmpAddress;
+        originalOpcodes = new byte[replaceCount];
 
-        if ((long)memoryInfos.BaseAddress % sysInfo.allocationGranularity > 0)
-        {
-            tmpAddress = memoryInfos.BaseAddress;
+        ReadProcessMemory(targetProcessHandle, targetAddress, originalOpcodes, (int)replaceCount, IntPtr.Zero);
 
-            int offset = (int)(sysInfo.allocationGranularity - (long)tmpAddress % sysInfo.allocationGranularity);
-
-            if (memoryInfos.RegionSize - offset >= size)
-            {
-                tmpAddress = nuint.Add(tmpAddress, offset);
-
-                if ((long)tmpAddress < (long)baseAddress)
-                {
-                    tmpAddress = nuint.Add(tmpAddress, (int)(memoryInfos.RegionSize - offset - size));
-
-                    if ((long)tmpAddress > (long)baseAddress)
-                    {
-                        tmpAddress = baseAddress;
-                    }
-
-                    tmpAddress = nuint.Subtract(tmpAddress, (int)((long)tmpAddress % sysInfo.allocationGranularity));
-                }
-
-                if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
-                {
-                    caveAddress = tmpAddress;
-                }
-            }
-        }
-        else
-        {
-            tmpAddress = memoryInfos.BaseAddress;
-
-            if ((long)tmpAddress < (long)baseAddress)
-            {
-                tmpAddress = nuint.Add(tmpAddress, (int)(memoryInfos.RegionSize - size));
-
-                if ((long)tmpAddress > (long)baseAddress)
-                {
-                    tmpAddress = baseAddress;
-                }
-
-                tmpAddress = nuint.Subtract(tmpAddress, (int)(tmpAddress % sysInfo.allocationGranularity));
-            }
-
-            if (Math.Abs((long)tmpAddress - (long)baseAddress) < Math.Abs((long)caveAddress - (long)baseAddress))
-            {
-                caveAddress = tmpAddress;
-            }
-        }
-
-        return tmpAddress;
+        WriteProcessMemory(targetProcessHandle, targetAddress, jumpBytes, replaceCount, out _);
     }
 }

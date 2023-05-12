@@ -28,7 +28,7 @@ internal sealed class FreezeEnemies : IMemoryTrainer
 
     public async Task Enable(params string[]? args)
     {
-        await _memory.CreateOrResumeCodeCaveAsync(_walkFunction, freezebytesX, 9);
+        await _memory.CreateOrResumeCodeCaveAsync(_walkFunction, freezebytesX, 9, 14);
     }
 
     public Task Disable(params string[]? args)
