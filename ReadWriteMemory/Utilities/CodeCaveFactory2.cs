@@ -75,7 +75,7 @@ internal static class CodeCaveFactory2
         return jumpBytes;
     }
 
-    private static void WriteJumpToAddress(IntPtr targetProcessHandle, UIntPtr targetAddress, nuint replaceCount, byte[] jumpBytes, out byte[] originalOpcodes)
+    private static void WriteJumpToAddress(nint targetProcessHandle, nuint targetAddress, nuint replaceCount, byte[] jumpBytes, out byte[] originalOpcodes)
     {
         originalOpcodes = new byte[replaceCount];
 
