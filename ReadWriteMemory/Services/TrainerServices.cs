@@ -13,18 +13,18 @@ public static class TrainerServices
     private static RWMemory? _memory;
 
     /// <summary>
-    /// Gives you a <see cref="RWMemory"/> instance which you have created before with the <see cref="CreateAndSingletonInstance(string)"/> function.
+    /// Gives you a <see cref="RWMemory"/> instance which you have created before with the <see cref="CreateAndGetSingletonInstance(string)"/> function.
     /// </summary>
     public static RWMemory GetCreatedSingletonInstance =>
         _memory is not null ? _memory : throw new NullReferenceException("A RWMemory instance has to be created before you can get it. " +
-            $"Use the {nameof(CreateAndSingletonInstance)} method to creat a instance, then you can use this property.");
+            $"Use the {nameof(CreateAndGetSingletonInstance)} method to creat a instance, then you can use this property.");
 
     /// <summary>
     /// Gives you a thread-safe singleton instance of the <see cref="RWMemory"/> object.
     /// </summary>
     /// <param name="processName"></param>
     /// <returns></returns>
-    public static RWMemory CreateAndSingletonInstance(string processName)
+    public static RWMemory CreateAndGetSingletonInstance(string processName)
     {
         _threadObject ??= new();
 

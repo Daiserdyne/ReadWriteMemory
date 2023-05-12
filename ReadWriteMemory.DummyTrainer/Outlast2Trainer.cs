@@ -1,21 +1,20 @@
-﻿using ReadWriteMemory.DummyTrainer.Dl2Trainer;
-using ReadWriteMemory.Main;
+﻿using ReadWriteMemory.DummyTrainer.Outlast2;
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 
 namespace ReadWriteMemory.DummyTrainer;
 
-internal sealed class DeadIslandTrainer
+internal sealed class Outlast2Trainer
 {
-    public static async Task Main3()
+    public static async Task Main()
     {
-        using var memory = TrainerServices.CreateAndGetSingletonInstance("DeadIsland-Win64-Shipping");
+        using var memory = TrainerServices.CreateAndGetSingletonInstance("Outlast2");
 
         memory.Process_OnStateChanged += (o) => { Console.WriteLine(o ? "Process is running" : "Process is not running"); };
 
         var enabled = false;
 
-        var godmode = new Godmode();
+        var freezeEnemies = new FreezeEnemies();
 
         while (true)
         {
@@ -25,12 +24,11 @@ internal sealed class DeadIslandTrainer
 
                 if (enabled)
                 {
-                    await godmode.Enable();
+                    await freezeEnemies.Enable();
+                    continue;
                 }
-                else
-                {
-                    await godmode.Disable();
-                }
+
+                await freezeEnemies.Disable();
             }
         }
     }

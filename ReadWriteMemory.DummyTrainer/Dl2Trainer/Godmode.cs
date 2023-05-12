@@ -28,7 +28,7 @@ internal sealed class Godmode : IMemoryTrainer
 
     public async Task Enable(params string[]? args)
     {
-        await _memory.CreateOrResumeCodeCaveAsync(_healthFunctionAddress, _godModeBytes, 33);
+        await _memory.CreateOrResumeCodeCaveAsync(_healthFunctionAddress, _godModeBytes, 15);
     }
 
     public Task Disable(params string[]? args)
