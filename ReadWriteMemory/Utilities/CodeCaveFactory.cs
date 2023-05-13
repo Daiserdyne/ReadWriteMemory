@@ -37,7 +37,7 @@ internal static class CodeCaveFactory
             newCode[newCode.Length - 1 - i] = buffer[buffer.Length - 1 - i];
         }
 
-        var call = ParseNewCodeBytes(newCode, targetAddress);
+        newCode = ParseNewCodeBytes(newCode, targetAddress);
 
         var jumpBytes = GetJmp64Bytes(caveAddress, totalAmountOfOpcodes);
         jmpBytes = jumpBytes;
