@@ -1,10 +1,13 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Runtime.CompilerServices;
 using static ReadWriteMemory.NativeImports.Kernel32;
 
 namespace ReadWriteMemory.Utilities;
 
 internal static class CodeCaveFactory
-{ 
+{
+    private const byte CallInstruction = 0xE8;
+
     internal static bool CreateCodeCaveAndInjectCode(nuint targetAddress, nint targetProcessHandle, byte[] newCode, int instructionOpcodes, int totalAmountOfOpcodes,
         out nuint caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 0x1000)
     {
@@ -34,10 +37,12 @@ internal static class CodeCaveFactory
             newCode[newCode.Length - 1 - i] = buffer[buffer.Length - 1 - i];
         }
 
-        var jumpBytes = GetJmp64Bytes(caveAddress);
+        var call = ParseNewCodeBytes(newCode, targetAddress);
+
+        var jumpBytes = GetJmp64Bytes(caveAddress, totalAmountOfOpcodes);
         jmpBytes = jumpBytes;
 
-        var jumpBack = GetJmp64Bytes(nuint.Add(targetAddress, totalAmountOfOpcodes));
+        var jumpBack = GetJmp64Bytes(nuint.Add(targetAddress, totalAmountOfOpcodes), totalAmountOfOpcodes);
 
         tempNewCode = new byte[newCode.Length + jumpBack.Length];
         Buffer.BlockCopy(newCode, 0, tempNewCode, 0, newCode.Length);
@@ -56,17 +61,72 @@ internal static class CodeCaveFactory
         return true;
     }
 
-    private static ReadOnlySpan<byte> JumpAsm => new byte[]
+    private static ReadOnlySpan<byte> _jumpAsmTemplate => new byte[]
     {
         0xFF, 0x25, 0x00, 0x00, 0x00, 0x00,                // jmp qword ptr [$+6]
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00     // ptr
     };
 
-    private static byte[] GetJmp64Bytes(nuint caveAddress)
+    private static ReadOnlySpan<byte> _callAsmTemplate => new byte[]
     {
-        var jumpBytes = new byte[14];
+        0xFF, 0x15,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
 
-        JumpAsm.CopyTo(jumpBytes);
+    private static byte[] ParseNewCodeBytes(byte[] newCode, nuint targetAddress)
+    {
+        var parsedCode = new List<byte>(newCode);
+
+        for (int i = 0; i < newCode.Length; i++)
+        {
+            if (newCode[i] == CallInstruction)
+            {
+                var x86Call = new byte[5];
+
+                var counter = i;
+
+                for (ushort j = 0; j < 5; j++)
+                {
+                    x86Call[j] = newCode[counter++];
+                }
+
+                parsedCode.RemoveRange(i, 5);
+                parsedCode.InsertRange(i, ConvertX86ToX64Call(x86Call, 8, targetAddress));
+            }
+        }
+
+        return parsedCode.ToArray();
+    }
+
+    private static byte[] ConvertX86ToX64Call(byte[] x86Call, int index, nuint targetAddress)
+    {
+        Array.Reverse(x86Call);
+
+        x86Call = new byte[] { x86Call[3], x86Call[2], x86Call[1], x86Call[0] };
+
+        var relativeAddress = BitConverter.ToInt32(x86Call) + 5;
+
+        var callAddress = nuint.Add(targetAddress, index);
+        var finalAddress = nuint.Add(callAddress, relativeAddress);
+
+        var x64Call = new byte[10];
+        _callAsmTemplate.CopyTo(x64Call);
+
+        Unsafe.WriteUnaligned(ref x64Call[3], callAddress);
+
+        return x64Call;
+    }
+
+    private static byte[] GetJmp64Bytes(nuint caveAddress, int replaceCount)
+    {
+        if (replaceCount < 14)
+        {
+            throw new Exception("Replace count is to small, must be 14 bytes min.");
+        }
+
+        var jumpBytes = new byte[replaceCount];
+
+        _jumpAsmTemplate.CopyTo(jumpBytes);
 
         Unsafe.WriteUnaligned(ref jumpBytes[6], caveAddress);
 
