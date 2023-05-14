@@ -36,7 +36,7 @@ internal static class CodeCaveFactory
             newCode[newCode.Length - 1 - i] = buffer[buffer.Length - 1 - i];
         }
 
-        newCode = ParseNewCodeBytes(newCode, targetAddress);
+        newCode = ParseNewCodeBytes(newCode, buffer, instructionOpcodes, targetAddress);
 
         var jumpBytes = GetJmp64Bytes(caveAddress, totalAmountOfOpcodes);
         jmpBytes = jumpBytes;
@@ -72,25 +72,45 @@ internal static class CodeCaveFactory
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
 
-    private static byte[] ParseNewCodeBytes(byte[] newCode, nuint targetAddress)
+    private static byte[] ParseNewCodeBytes(byte[] newCode, byte[] buffer, int instructionOpcodesLength, nuint targetAddress)
     {
         var parsedCode = new List<byte>(newCode);
 
+        ushort callIndex = 0;
+
+        var calls = new List<int>();
+
+        for (int i = 0; i < buffer.Length; i++)
+        {
+            if (buffer[i] == CallInstruction)
+            {
+                calls.Add(i + instructionOpcodesLength);
+            }
+        }
+
         for (int i = 0; i < newCode.Length; i++)
         {
-            if (newCode[i] == CallInstruction)
+            switch (newCode[i])
             {
-                var x86Call = new byte[5];
+                case CallInstruction:
+                    {
+                        var x86Call = new byte[5];
 
-                var counter = i;
+                        var counter = i;
 
-                for (ushort j = 0; j < 5; j++)
-                {
-                    x86Call[j] = newCode[counter++];
-                }
+                        for (ushort j = 0; j < 5; j++)
+                        {
+                            x86Call[j] = newCode[counter++];
+                        }
 
-                parsedCode.RemoveRange(i, 5);
-                parsedCode.InsertRange(i, ConvertX86ToX64Call(x86Call, 8, targetAddress));
+                        parsedCode.RemoveRange(i, 5);
+                        parsedCode.InsertRange(i, ConvertX86ToX64Call(x86Call, calls[callIndex++], targetAddress));
+
+                        break;
+                    }
+
+                default:
+                    break;
             }
         }
 
