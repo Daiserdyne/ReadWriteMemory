@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using static ReadWriteMemory.NativeImports.Kernel32;
 
-namespace ReadWriteMemory.Utilities;
+namespace ReadWriteMemory.Utilities.CodeCave;
 
 internal static class CodeCaveFactory
 {
