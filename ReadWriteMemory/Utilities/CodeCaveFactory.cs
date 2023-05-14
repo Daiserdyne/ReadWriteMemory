@@ -7,6 +7,18 @@ internal static class CodeCaveFactory
 {
     private const byte CallInstruction = 0xE8;
 
+    private static ReadOnlySpan<byte> _jumpAsmTemplate => new byte[]
+    {
+        0xFF, 0x25, 0x00, 0x00, 0x00, 0x00,                // jmp qword ptr [$+6]
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00     // ptr
+    };
+
+    private static ReadOnlySpan<byte> _callAsmTemplate => new byte[]
+    {
+        0xFF, 0x15, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x08,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+
     internal static bool CreateCodeCaveAndInjectCode(nuint targetAddress, nint targetProcessHandle, byte[] newCode, int instructionOpcodes, int totalAmountOfOpcodes,
         out nuint caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 0x1000)
     {
@@ -59,18 +71,6 @@ internal static class CodeCaveFactory
 
         return true;
     }
-
-    private static ReadOnlySpan<byte> _jumpAsmTemplate => new byte[]
-    {
-        0xFF, 0x25, 0x00, 0x00, 0x00, 0x00,                // jmp qword ptr [$+6]
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00     // ptr
-    };
-
-    private static ReadOnlySpan<byte> _callAsmTemplate => new byte[]
-    {
-        0xFF, 0x15, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x08,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    };
 
     private static byte[] ParseNewCodeBytes(byte[] newCode, byte[] buffer, int instructionOpcodesLength, nuint targetAddress)
     {
