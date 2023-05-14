@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using static ReadWriteMemory.NativeImports.Kernel32;
 
 namespace ReadWriteMemory.Utilities;
@@ -69,7 +68,7 @@ internal static class CodeCaveFactory
 
     private static ReadOnlySpan<byte> _callAsmTemplate => new byte[]
     {
-        0xFF, 0x15,
+        0xFF, 0x15, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x08,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
 
@@ -109,10 +108,11 @@ internal static class CodeCaveFactory
         var callAddress = nuint.Add(targetAddress, index);
         var finalAddress = nuint.Add(callAddress, relativeAddress);
 
-        var x64Call = new byte[10];
+        var x64Call = new byte[16];
+
         _callAsmTemplate.CopyTo(x64Call);
 
-        Unsafe.WriteUnaligned(ref x64Call[3], callAddress);
+        Unsafe.WriteUnaligned(ref x64Call[8], finalAddress);
 
         return x64Call;
     }
