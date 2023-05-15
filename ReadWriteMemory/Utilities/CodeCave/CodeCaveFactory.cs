@@ -19,21 +19,21 @@ internal static class CodeCaveFactory
 
         var startAddress = nuint.Add(targetAddress, instructionOpcodesLength);
 
-        var instructionOpcodes = new byte[totalAmountOfOpcodes - instructionOpcodesLength];
+        var remainingOpcodes = new byte[totalAmountOfOpcodes - instructionOpcodesLength];
 
-        ReadProcessMemory(targetProcessHandle, startAddress, instructionOpcodes, instructionOpcodesLength, nint.Zero);
+        ReadProcessMemory(targetProcessHandle, startAddress, remainingOpcodes, instructionOpcodesLength, nint.Zero);
 
-        var tempNewCode = new byte[newCode.Length + instructionOpcodes.Length];
+        var tempNewCode = new byte[newCode.Length + remainingOpcodes.Length];
         Buffer.BlockCopy(newCode, 0, tempNewCode, 0, newCode.Length);
 
         newCode = tempNewCode;
 
-        for (int i = 0; i < instructionOpcodes.Length; i++)
+        for (int i = 0; i < remainingOpcodes.Length; i++)
         {
-            newCode[newCode.Length - 1 - i] = instructionOpcodes[instructionOpcodes.Length - 1 - i];
+            newCode[newCode.Length - 1 - i] = remainingOpcodes[remainingOpcodes.Length - 1 - i];
         }
 
-        newCode = CaveHelper.ConvertAllX86ToX64Calls(newCode, instructionOpcodes, instructionOpcodesLength, targetAddress);
+        newCode = CaveHelper.ConvertAllX86ToX64Calls(newCode, remainingOpcodes, instructionOpcodesLength, targetAddress);
 
         jmpBytes = CaveHelper.GetX64JumpBytes(caveAddress, totalAmountOfOpcodes);
 
