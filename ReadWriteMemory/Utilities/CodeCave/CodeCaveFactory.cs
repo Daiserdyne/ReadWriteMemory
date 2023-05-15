@@ -20,7 +20,39 @@ internal static class CodeCaveFactory
         var startAddress = nuint.Add(targetAddress, instructionOpcodesLength);
 
         var remainingOpcodes = new byte[totalAmountOfOpcodes - instructionOpcodesLength];
+        AppendRemainingOpcodes(targetProcessHandle, ref newCode, instructionOpcodesLength, startAddress, remainingOpcodes);
 
+        newCode = CaveHelper.ConvertAllX86ToX64Calls(newCode, remainingOpcodes, instructionOpcodesLength, targetAddress);
+
+        jmpBytes = CaveHelper.GetX64JumpBytes(caveAddress, totalAmountOfOpcodes);
+
+        var jumpBack = CaveHelper.GetX64JumpBytes(nuint.Add(targetAddress, totalAmountOfOpcodes), totalAmountOfOpcodes, isJumpBack: true);
+        AppendX64JumpBack(ref newCode, jumpBack);
+
+        WriteProcessMemory(targetProcessHandle, caveAddress, newCode, (nuint)newCode.Length, out _);
+
+        WriteJumpToAddress(targetProcessHandle, targetAddress, (nuint)totalAmountOfOpcodes, jmpBytes, out originalOpcodes);
+
+        return true;
+    }
+
+    private static void AppendX64JumpBack(ref byte[] newCode, byte[] jumpBack)
+    {
+        var tempNewCode = new byte[newCode.Length + jumpBack.Length];
+        Buffer.BlockCopy(newCode, 0, tempNewCode, 0, newCode.Length);
+
+        newCode = tempNewCode;
+
+        for (int i = 0; i < jumpBack.Length; i++)
+        {
+            newCode[newCode.Length - 1 - i] = jumpBack[jumpBack.Length - 1 - i];
+        }
+
+        return;
+    }
+
+    private static byte[] AppendRemainingOpcodes(nint targetProcessHandle, ref byte[] newCode, int instructionOpcodesLength, nuint startAddress, byte[] remainingOpcodes)
+    {
         ReadProcessMemory(targetProcessHandle, startAddress, remainingOpcodes, instructionOpcodesLength, nint.Zero);
 
         var tempNewCode = new byte[newCode.Length + remainingOpcodes.Length];
@@ -33,27 +65,7 @@ internal static class CodeCaveFactory
             newCode[newCode.Length - 1 - i] = remainingOpcodes[remainingOpcodes.Length - 1 - i];
         }
 
-        newCode = CaveHelper.ConvertAllX86ToX64Calls(newCode, remainingOpcodes, instructionOpcodesLength, targetAddress);
-
-        jmpBytes = CaveHelper.GetX64JumpBytes(caveAddress, totalAmountOfOpcodes);
-
-        var jumpBack = CaveHelper.GetX64JumpBytes(nuint.Add(targetAddress, totalAmountOfOpcodes), totalAmountOfOpcodes, isJumpBack: true);
-
-        tempNewCode = new byte[newCode.Length + jumpBack.Length];
-        Buffer.BlockCopy(newCode, 0, tempNewCode, 0, newCode.Length);
-
-        newCode = tempNewCode;
-
-        for (int i = 0; i < jumpBack.Length; i++)
-        {
-            newCode[newCode.Length - 1 - i] = jumpBack[jumpBack.Length - 1 - i];
-        }
-
-        WriteProcessMemory(targetProcessHandle, caveAddress, newCode, (nuint)newCode.Length, out _);
-
-        WriteJumpToAddress(targetProcessHandle, targetAddress, (nuint)totalAmountOfOpcodes, jmpBytes, out originalOpcodes);
-
-        return true;
+        return tempNewCode;
     }
 
     private static void WriteJumpToAddress(nint targetProcessHandle, nuint targetAddress, nuint replaceCount, byte[] jumpBytes, out byte[] originalOpcodes)

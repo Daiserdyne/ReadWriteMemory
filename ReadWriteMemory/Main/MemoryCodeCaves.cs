@@ -13,15 +13,15 @@ public sealed partial class RWMemory
     /// </summary>
     /// <param name="memoryAddress">Address, module name and offesets</param>
     /// <param name="newCode">The opcodes to write in the code cave</param>
-    /// <param name="instructionOpcodes">The number of bytes of the instruction</param>
+    /// <param name="instructionOpcodesLength">The number of bytes of the instruction</param>
     /// <param name="totalAmountOfOpcodes">Because the a x64 jump is 14 bytes large, it will override other instructions, so you have to give this function more to do so.</param>
     /// <param name="size">size of the allocated region</param>
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    public Task<nuint> CreateOrResumeCodeCaveAsync(MemoryAddress memoryAddress, byte[] newCode, int instructionOpcodes, int totalAmountOfOpcodes, uint size = 0x1000)
+    public Task<nuint> CreateOrResumeCodeCaveAsync(MemoryAddress memoryAddress, byte[] newCode, int instructionOpcodesLength, int totalAmountOfOpcodes, uint size = 0x1000)
     {
-        return Task.Run(() => CreateOrResumeCodeCave(memoryAddress, newCode, instructionOpcodes, totalAmountOfOpcodes, size));
+        return Task.Run(() => CreateOrResumeCodeCave(memoryAddress, newCode, instructionOpcodesLength, totalAmountOfOpcodes, size));
     }
 
     /// <summary>
@@ -31,15 +31,15 @@ public sealed partial class RWMemory
     /// </summary>
     /// <param name="memoryAddress">Address, module name and offesets</param>
     /// <param name="newCode">The opcodes to write in the code cave</param>
-    /// <param name="instructionOpcodes">The number of bytes of the instruction</param>
+    /// <param name="instructionOpcodesLength">The number of bytes of the instruction</param>
     /// <param name="totalAmountOfOpcodes">Because the a x64 jump is 14 bytes large, it will override other instructions, so you have to give this function more to do so.</param>
     /// <param name="size">size of the allocated region</param>
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    public nuint CreateOrResumeCodeCave(MemoryAddress memoryAddress, byte[] newCode, int instructionOpcodes, int totalAmountOfOpcodes, uint size = 0x1000)
+    public nuint CreateOrResumeCodeCave(MemoryAddress memoryAddress, byte[] newCode, int instructionOpcodesLength, int totalAmountOfOpcodes, uint size = 0x1000)
     {
-        if (instructionOpcodes < 5 || !IsProcessAlive)
+        if (!IsProcessAlive)
         {
             return nuint.Zero;
         }
@@ -51,7 +51,7 @@ public sealed partial class RWMemory
 
         var targetAddress = GetTargetAddress(memoryAddress);
 
-        CodeCaveFactory.CreateCodeCaveAndInjectCode(targetAddress, _targetProcess.Handle, newCode, instructionOpcodes, totalAmountOfOpcodes,
+        CodeCaveFactory.CreateCodeCaveAndInjectCode(targetAddress, _targetProcess.Handle, newCode, instructionOpcodesLength, totalAmountOfOpcodes,
             out var caveAddress, out var originalOpcodes, out var jmpBytes, size);
 
         _memoryRegister[memoryAddress].CodeCaveTable = new(originalOpcodes, caveAddress, jmpBytes);
