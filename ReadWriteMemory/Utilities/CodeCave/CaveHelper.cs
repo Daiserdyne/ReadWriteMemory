@@ -1,11 +1,12 @@
 ﻿using System.Runtime.CompilerServices;
+using WinRT;
 
 namespace ReadWriteMemory.Utilities.CodeCave;
 
-internal static class DynamicInstructionParser
+internal static class CaveHelper
 {
     private const byte X86CallInstruction = 0xE8;
-    private const byte X86JumpInstruction = 0xE9;
+    //private const byte X86JumpInstruction = 0xE9;
 
     private static ReadOnlySpan<byte> _jumpAsmTemplate => new byte[]
     {
@@ -19,15 +20,18 @@ internal static class DynamicInstructionParser
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
 
-    internal static byte[] GetConvertedInstructions(byte[] newCode, byte[] totalOpcodes, int instructionOpcodesLength, nuint targetAddress)
+    internal static byte[] ConvertAllX86ToX64Calls(byte[] newCode, byte[] totalOpcodes, int instructionOpcodesLength, nuint targetAddress)
     {
+        var calls = GetAllx86CallIndices(totalOpcodes, instructionOpcodesLength);
+
+        if (!calls.Any())
+        {
+            return newCode;
+        }
+
         var convertedCode = new List<byte>(newCode);
 
         var callIndex = 0;
-        var calls = GetAllx86CallIndices(totalOpcodes, instructionOpcodesLength);
-
-        var jumpIndex = 0;
-        var jumps = GetAllx86JumpIndices(totalOpcodes, instructionOpcodesLength);
 
         for (int index = 0; index < newCode.Length; index++)
         {
@@ -36,12 +40,6 @@ internal static class DynamicInstructionParser
                 case X86CallInstruction:
                     {
                         ConvertX86ToX64Call(ref convertedCode, index, calls, callIndex, targetAddress);
-
-                        break;
-                    }
-
-                case X86JumpInstruction:
-                    {
 
                         break;
                     }
@@ -74,54 +72,45 @@ internal static class DynamicInstructionParser
         return GetIndicesOfInstruction(totalOpcodes, instructionOpcodesLength, X86CallInstruction);
     }
 
-    private static List<int> GetAllx86JumpIndices(byte[] totalOpcodes, int instructionOpcodesLength)
-    {
-        return GetIndicesOfInstruction(totalOpcodes, instructionOpcodesLength, X86JumpInstruction);
-    }
-
-    private static List<int> GetIndicesOfInstruction(byte[] totalOpcodes, int instructionOpcodesLength, int instruction)
+    private static List<int> GetIndicesOfInstruction(byte[] totalOpcodes, int instructionOpcodeLength, byte searchedInstruction)
     {
         var instructionIndices = new List<int>();
 
         for (int i = 0; i < totalOpcodes.Length; i++)
         {
-            if (totalOpcodes[i] == instruction)
+            if (totalOpcodes[i] == searchedInstruction)
             {
-                instructionIndices.Add(i + instructionOpcodesLength);
+                instructionIndices.Add(i + instructionOpcodeLength);
             }
         }
 
         return instructionIndices;
     }
 
-    private static byte[] ConvertX86ToX64Call(byte[] x86Call, int index, nuint targetAddress)
+    private static byte[] ConvertX86ToX64Call(byte[] x86Call, int offset, nuint targetAddress)
     {
         Array.Reverse(x86Call);
 
         x86Call = new byte[] { x86Call[3], x86Call[2], x86Call[1], x86Call[0] };
 
-        var relativeAddress = BitConverter.ToInt32(x86Call) + 5;
+        MemoryOperation.ConvertBufferUnsafe<int>(x86Call, out var value);
 
-        var callAddress = nuint.Add(targetAddress, index);
-        var finalAddress = nuint.Add(callAddress, relativeAddress);
+        var callerAddress = nuint.Add(targetAddress, offset);
+        var relativeAddress = value + 5;
+        var funcAddress = nuint.Add(callerAddress, relativeAddress);
 
-        var x64Call = new byte[16];
+        var x64Call = new byte[_callAsmTemplate.Length];
 
         _callAsmTemplate.CopyTo(x64Call);
 
-        Unsafe.WriteUnaligned(ref x64Call[8], finalAddress);
+        Unsafe.WriteUnaligned(ref x64Call[8], funcAddress);
 
         return x64Call;
     }
 
-    private static byte[] GetJmp64Bytes(nuint caveAddress, int replaceCount)
+    internal static byte[] GetX64JumpBytes(nuint caveAddress, int replaceCount, bool isJumpBack = false)
     {
-        if (replaceCount < 14)
-        {
-            throw new Exception("Replace count is to small, must be 14 bytes min.");
-        }
-
-        var jumpBytes = new byte[replaceCount];
+        var jumpBytes = new byte[isJumpBack ? _jumpAsmTemplate.Length : replaceCount];
 
         _jumpAsmTemplate.CopyTo(jumpBytes);
 
