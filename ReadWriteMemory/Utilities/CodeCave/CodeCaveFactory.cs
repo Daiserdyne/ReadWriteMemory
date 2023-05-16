@@ -4,7 +4,7 @@ namespace ReadWriteMemory.Utilities.CodeCave;
 
 internal static class CodeCaveFactory
 {
-    internal static bool CreateCodeCaveAndInjectCode(nuint targetAddress, nint targetProcessHandle, byte[] newCode, int instructionOpcodesLength, int totalAmountOfOpcodes,
+    internal static bool CreateCodeCaveAndInjectCode(nuint targetAddress, nint targetProcessHandle, List<byte> newCode, int instructionOpcodesLength, int totalAmountOfOpcodes,
         out nuint caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 0x1000)
     {
         jmpBytes = new byte[0];
@@ -26,46 +26,50 @@ internal static class CodeCaveFactory
 
         jmpBytes = CaveHelper.GetX64JumpBytes(caveAddress, totalAmountOfOpcodes);
 
-        var jumpBack = CaveHelper.GetX64JumpBytes(nuint.Add(targetAddress, totalAmountOfOpcodes), totalAmountOfOpcodes, isJumpBack: true);
-        AppendX64JumpBack(ref newCode, jumpBack);
+        CaveHelper.ConvertX86ToX64JumpBack(ref newCode, targetAddress, instructionOpcodesLength);
 
-        WriteProcessMemory(targetProcessHandle, caveAddress, newCode, (nuint)newCode.Length, out _);
+        //var jumpBack = CaveHelper.GetX64JumpBytes(nuint.Add(targetAddress, totalAmountOfOpcodes), totalAmountOfOpcodes, isJumpBack: true);
+        //AppendX64JumpBack(ref newCode, jumpBack);
+
+        WriteProcessMemory(targetProcessHandle, caveAddress, newCode.ToArray(), (nuint)newCode.Count, out _);
 
         WriteJumpToAddress(targetProcessHandle, targetAddress, (nuint)totalAmountOfOpcodes, jmpBytes, out originalOpcodes);
 
         return true;
     }
 
-    private static void AppendX64JumpBack(ref byte[] newCode, byte[] jumpBack)
+    private static void AppendX64JumpBack(ref List<byte> newCode, byte[] jumpBack)
     {
-        var tempNewCode = new byte[newCode.Length + jumpBack.Length];
-        Buffer.BlockCopy(newCode, 0, tempNewCode, 0, newCode.Length);
+        newCode.AddRange(jumpBack);
 
-        newCode = tempNewCode;
+        //var tempNewCode = new byte[newCode.Length + jumpBack.Length];
+        //Buffer.BlockCopy(newCode, 0, tempNewCode, 0, newCode.Length);
 
-        for (int i = 0; i < jumpBack.Length; i++)
-        {
-            newCode[newCode.Length - 1 - i] = jumpBack[jumpBack.Length - 1 - i];
-        }
+        //newCode = tempNewCode;
 
-        return;
+        //for (int i = 0; i < jumpBack.Length; i++)
+        //{
+        //    newCode[newCode.Length - 1 - i] = jumpBack[jumpBack.Length - 1 - i];
+        //}
     }
 
-    private static byte[] AppendRemainingOpcodes(nint targetProcessHandle, ref byte[] newCode, int instructionOpcodesLength, nuint startAddress, byte[] remainingOpcodes)
+    private static void AppendRemainingOpcodes(nint targetProcessHandle, ref List<byte> newCode, int instructionOpcodesLength, nuint startAddress, byte[] remainingOpcodes)
     {
         ReadProcessMemory(targetProcessHandle, startAddress, remainingOpcodes, instructionOpcodesLength, nint.Zero);
 
-        var tempNewCode = new byte[newCode.Length + remainingOpcodes.Length];
-        Buffer.BlockCopy(newCode, 0, tempNewCode, 0, newCode.Length);
+        newCode.AddRange(remainingOpcodes);
 
-        newCode = tempNewCode;
+        //var tempNewCode = new byte[newCode.Length + remainingOpcodes.Length];
+        //Buffer.BlockCopy(newCode, 0, tempNewCode, 0, newCode.Length);
 
-        for (int i = 0; i < remainingOpcodes.Length; i++)
-        {
-            newCode[newCode.Length - 1 - i] = remainingOpcodes[remainingOpcodes.Length - 1 - i];
-        }
+        //newCode = tempNewCode;
 
-        return tempNewCode;
+        //for (int i = 0; i < remainingOpcodes.Length; i++)
+        //{
+        //    newCode[newCode.Length - 1 - i] = remainingOpcodes[remainingOpcodes.Length - 1 - i];
+        //}
+
+        return;
     }
 
     private static void WriteJumpToAddress(nint targetProcessHandle, nuint targetAddress, nuint replaceCount, byte[] jumpBytes, out byte[] originalOpcodes)
