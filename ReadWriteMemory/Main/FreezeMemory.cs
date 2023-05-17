@@ -1,5 +1,4 @@
 ﻿using ReadWriteMemory.Models;
-using ReadWriteMemory.NativeImports;
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 
@@ -84,35 +83,6 @@ public sealed partial class RWMemory
 
         return true;
     }
-
-    /// <summary>
-    /// Freezes the value by the given <paramref name="memoryAddress"/> with a
-    /// given <paramref name="freezeRefreshRate"></paramref>. The value will be read out once and then applied to to 
-    /// <paramref name="memoryAddress"/>. This overload uses the WinApi to get the buffer size.
-    /// </summary>
-    /// <param name="memoryAddress"></param>
-    /// <param name="freezeRefreshRate"></param>
-    /// <returns></returns>
-    //public bool FreezeValue(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate)
-    //{
-    //    if (!IsFreezingPossible(memoryAddress, out var targetAddress))
-    //    {
-    //        return false;
-    //    }
-
-    //    Kernel32.VirtualQueryEx(_targetProcess.Handle, targetAddress, out var memoryInformation);
-
-    //    var buffer = new byte[memoryInformation.RegionSize];
-
-    //    if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
-    //    {
-    //        return false;
-    //    }
-
-    //    InitAndStartFreezeProcedure(memoryAddress, freezeRefreshRate, targetAddress, buffer);
-
-    //    return true;
-    //}
 
     /// <summary>
     /// Unfreezes a value from the given <paramref name="memoryAddress"/>.

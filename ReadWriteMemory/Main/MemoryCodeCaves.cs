@@ -51,7 +51,7 @@ public sealed partial class RWMemory
 
         var targetAddress = GetTargetAddress(memoryAddress);
 
-        CodeCaveFactory.CreateCodeCaveAndInjectCode(targetAddress, _targetProcess.Handle, newCode, instructionOpcodesLength, totalAmountOfOpcodes,
+        CodeCaveFactory.CreateCaveAndHookFunction(targetAddress, _targetProcess.Handle, newCode, instructionOpcodesLength, totalAmountOfOpcodes,
             out var caveAddress, out var originalOpcodes, out var jmpBytes, size);
 
         _memoryRegister[memoryAddress].CodeCaveTable = new(originalOpcodes, caveAddress, jmpBytes);

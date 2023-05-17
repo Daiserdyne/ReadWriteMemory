@@ -137,6 +137,9 @@ uint dwLength
     [DllImport("kernel32.dll")]
     internal static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, nuint nSize, out IntPtr lpNumberOfBytesWritten);
 
+    [DllImport("kernel32.dll")]
+    internal static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, int nSize, out IntPtr lpNumberOfBytesWritten);
+
     [DllImport("kernel32")]
     internal static extern bool IsWow64Process(IntPtr hProcess, out bool lpSystemInfo);
 

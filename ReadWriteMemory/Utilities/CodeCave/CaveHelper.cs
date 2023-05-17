@@ -19,7 +19,7 @@ internal static class CaveHelper
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
 
-    internal static List<byte> ConvertAllX86ToX64Calls(List<byte> newCode, byte[] totalOpcodes, int instructionOpcodesLength, nuint targetAddress)
+    internal static List<byte> ConvertAllX86ToX64Calls(List<byte> newCode, List<byte> totalOpcodes, int instructionOpcodesLength, nuint targetAddress)
     {
         var calls = GetAllx86CallIndices(totalOpcodes, instructionOpcodesLength);    
 
@@ -53,15 +53,15 @@ internal static class CaveHelper
 
     internal static void ConvertX86ToX64JumpBack(ref List<byte> code, nuint targetAddress, int instructionOpcodesLength)
     {
-        var jump = GetAllX86JumpIndices(code, instructionOpcodesLength).LastOrDefault();
+        var jumpIndex = GetAllX86JumpIndices(code, instructionOpcodesLength).LastOrDefault();
 
-        if (jump == 0)
+        if (jumpIndex == 0 || code[jumpIndex + 5] != 0x00)
         {
-            return;
+            return; 
         }
 
-        code.RemoveRange(jump, 5);
-        code.InsertRange(jump, GetX64JumpBytes(targetAddress, _jumpAsmTemplate.Length, true));
+        code.RemoveRange(jumpIndex, 5);
+        code.InsertRange(jumpIndex, GetX64JumpBytes(targetAddress, _jumpAsmTemplate.Length, true));
     }
 
     private static void ConvertX86ToX64Call(ref List<byte> newCode, int index, List<int> calls, int callIndex, nuint targetAddress)
@@ -79,21 +79,21 @@ internal static class CaveHelper
         newCode.InsertRange(index, ConvertX86ToX64Call(x86Call, calls[callIndex++], targetAddress));
     }
 
-    private static List<int> GetAllx86CallIndices(byte[] totalOpcodes, int instructionOpcodesLength)
+    private static List<int> GetAllx86CallIndices(List<byte> totalOpcodes, int instructionOpcodesLength)
     {
         return GetIndicesOfInstruction(totalOpcodes, instructionOpcodesLength, X86CallInstruction);
     }
 
-    private static List<int> GetAllX86JumpIndices(IList<byte> totalOpcodes, int instructionOpcodesLength)
+    private static List<int> GetAllX86JumpIndices(List<byte> totalOpcodes, int instructionOpcodesLength)
     {
-        return GetIndicesOfInstruction(totalOpcodes.ToArray(), instructionOpcodesLength, X86JumpInstruction);
+        return GetIndicesOfInstruction(totalOpcodes, instructionOpcodesLength, X86JumpInstruction);
     }
 
-    private static List<int> GetIndicesOfInstruction(byte[] totalOpcodes, int instructionOpcodeLength, byte searchedInstruction)
+    private static List<int> GetIndicesOfInstruction(List<byte> totalOpcodes, int instructionOpcodeLength, byte searchedInstruction)
     {
         var instructionIndices = new List<int>();
 
-        for (int i = 0; i < totalOpcodes.Length; i++)
+        for (int i = 0; i < totalOpcodes.Count; i++)
         {
             if (totalOpcodes[i] == searchedInstruction)
             {
@@ -125,9 +125,9 @@ internal static class CaveHelper
         return x64Call;
     }
 
-    internal static byte[] GetX64JumpBytes(nuint jumpToAddress, int replaceCount, bool isJumpBack = false)
+    internal static byte[] GetX64JumpBytes(nuint jumpToAddress, int opcodesToReplace, bool isJumpBack = false)
     {
-        var jumpBytes = new byte[isJumpBack ? _jumpAsmTemplate.Length : replaceCount];
+        var jumpBytes = new byte[isJumpBack ? _jumpAsmTemplate.Length : opcodesToReplace];
 
         _jumpAsmTemplate.CopyTo(jumpBytes);
 
