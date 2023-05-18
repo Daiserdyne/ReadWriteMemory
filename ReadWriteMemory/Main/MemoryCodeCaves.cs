@@ -19,7 +19,7 @@ public sealed partial class RWMemory
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    public Task<nuint> CreateOrResumeCodeCaveAsync(MemoryAddress memoryAddress, List<byte> newCode, int instructionOpcodesLength, int totalAmountOfOpcodes, uint size = 0x1000)
+    public Task<nuint> CreateOrResumeCodeCaveAsync(MemoryAddress memoryAddress, IReadOnlyList<byte> newCode, int instructionOpcodesLength, int totalAmountOfOpcodes, uint size = 4096)
     {
         return Task.Run(() => CreateOrResumeCodeCave(memoryAddress, newCode, instructionOpcodesLength, totalAmountOfOpcodes, size));
     }
@@ -37,7 +37,7 @@ public sealed partial class RWMemory
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    public nuint CreateOrResumeCodeCave(MemoryAddress memoryAddress, List<byte> newCode, int instructionOpcodesLength, int totalAmountOfOpcodes, uint size = 0x1000)
+    public nuint CreateOrResumeCodeCave(MemoryAddress memoryAddress, IReadOnlyList<byte> newCode, int instructionOpcodesLength, int totalAmountOfOpcodes, uint size = 4096)
     {
         if (!IsProcessAlive)
         {

@@ -4,9 +4,11 @@ namespace ReadWriteMemory.Utilities.CodeCave;
 
 internal static class CodeCaveFactory
 {
-    internal static bool CreateCaveAndHookFunction(nuint targetAddress, nint targetProcessHandle, List<byte> newCode, int instructionOpcodesLength, 
+    internal static bool CreateCaveAndHookFunction(nuint targetAddress, nint targetProcessHandle, IReadOnlyList<byte> caveCode, int instructionOpcodesLength, 
         int totalAmountOfOpcodes, out nuint caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes, uint size = 4096)
     {
+        var finalCaveCode = new List<byte>(caveCode);
+
         caveAddress = VirtualAllocEx(targetProcessHandle, nuint.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
         if (caveAddress == nuint.Zero)
@@ -19,31 +21,33 @@ internal static class CodeCaveFactory
 
         var startAddress = nuint.Add(targetAddress, instructionOpcodesLength);
 
-        AppendRemainingOpcodes(targetProcessHandle, ref newCode, instructionOpcodesLength, startAddress, out var remainingOpcodes);
+        var remainingOpcodesLength = totalAmountOfOpcodes - instructionOpcodesLength;
 
-        newCode = CaveHelper.ConvertAllX86ToX64Calls(newCode, remainingOpcodes, instructionOpcodesLength, targetAddress);
+        ConvertAndAppendRemainingOpcodes(targetProcessHandle, ref finalCaveCode, remainingOpcodesLength, startAddress, out var convertedRemainingOpcodes);
 
-        jmpBytes = CaveHelper.GetX64JumpBytes(caveAddress, totalAmountOfOpcodes);
+        jmpBytes = CaveHelper.GetX64JumpBytes(caveAddress, totalAmountOfOpcodes, true);
 
-        CaveHelper.ConvertX86ToX64JumpBack(ref newCode, targetAddress, instructionOpcodesLength);
+        var jumpBack = CaveHelper.GetX64JumpBytes(nuint.Add(targetAddress, totalAmountOfOpcodes), totalAmountOfOpcodes);
 
-        WriteProcessMemory(targetProcessHandle, caveAddress, newCode.ToArray(), newCode.Count, out _);
+        finalCaveCode.AddRange(jumpBack);
+
+        WriteProcessMemory(targetProcessHandle, caveAddress, finalCaveCode.ToArray(), finalCaveCode.Count, out _);
 
         WriteJumpToTargetAddress(targetProcessHandle, targetAddress, totalAmountOfOpcodes, jmpBytes, out originalOpcodes);
 
         return true;
     }
 
-    private static void AppendRemainingOpcodes(nint targetProcessHandle, ref List<byte> newCode, int instructionOpcodesLength, 
-        nuint startAddress, out List<byte> remainingOpcodes)
+    private static void ConvertAndAppendRemainingOpcodes(nint targetProcessHandle, ref List<byte> caveCode, int remainingOpcodesLength, 
+        nuint startAddress, out List<byte> convertedRemainingOpcodes)
     {
-        var temp = new byte[instructionOpcodesLength];
+        var remainingOpcodes = new byte[remainingOpcodesLength];
 
-        ReadProcessMemory(targetProcessHandle, startAddress, temp, temp.Length, nint.Zero);
+        ReadProcessMemory(targetProcessHandle, startAddress, remainingOpcodes, remainingOpcodes.Length, nint.Zero);
 
-        newCode.AddRange(temp);
+        convertedRemainingOpcodes = CaveHelper.ConvertRemainingInstructions(remainingOpcodes, startAddress);
 
-        remainingOpcodes = new List<byte>(temp);
+        caveCode.AddRange(convertedRemainingOpcodes);
     }
 
     private static void WriteJumpToTargetAddress(nint targetProcessHandle, nuint targetAddress, int opcodesToReplace, byte[] jumpBytes, 
