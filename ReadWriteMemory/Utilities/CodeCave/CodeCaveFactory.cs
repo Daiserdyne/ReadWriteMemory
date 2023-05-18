@@ -27,11 +27,7 @@ internal static class CodeCaveFactory
 
         jmpBytes = CaveHelper.GetAbsoluteJumpBytes(caveAddress, totalAmountOfOpcodes, true);
 
-        //var jumpBack = CaveHelper.GetAbsoluteJumpBytes(nuint.Add(targetAddress, totalAmountOfOpcodes), totalAmountOfOpcodes);
-
         CaveHelper.AppendJumpBack(ref finalCaveCode, nuint.Add(targetAddress, totalAmountOfOpcodes));
-
-        //finalCaveCode.AddRange(jumpBack);
 
         WriteProcessMemory(targetProcessHandle, caveAddress, finalCaveCode.ToArray(), finalCaveCode.Count, out _);
 
