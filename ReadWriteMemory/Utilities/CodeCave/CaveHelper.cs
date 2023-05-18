@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using WinRT;
 
 namespace ReadWriteMemory.Utilities.CodeCave;
 
@@ -114,120 +115,39 @@ internal static class CaveHelper
         return convertedInstructions;
     }
 
-    //internal static List<byte> ConvertAllX86ToX64Calls(List<byte> newCode, List<byte> totalOpcodes, int instructionOpcodesLength, nuint targetAddress)
-    //{
-    //    var calls = GetAllx86CallIndices(totalOpcodes, instructionOpcodesLength);
+    internal static void AppendJumpBack(ref List<byte> caveCode, nuint jumpBackAddress)
+    {
+        var jumpIndices = new List<int>();
 
-    //    if (!calls.Any())
-    //    {
-    //        return newCode;
-    //    }
+        for (var index = 0; index < caveCode.Count; index++)
+        {
+            if (caveCode[index] == RelativeJumpInstruction)
+            {
+                jumpIndices.Add(index);
+            }
+        }
 
-    //    var convertedCode = new List<byte>(newCode);
+        var absoulteJump = GetAbsoluteJumpBytes(jumpBackAddress, _jumpAsmTemplate.Length);
 
-    //    var callIndex = 0;
+        if (!jumpIndices.Any())
+        {
+            caveCode.AddRange(absoulteJump);
 
-    //    for (int index = 0; index < newCode.Count; index++)
-    //    {
-    //        switch (newCode[index])
-    //        {
-    //            case RelativeCallInstruction:
-    //                {
-    //                    ConvertX86ToX64Call(ref convertedCode, index, calls, callIndex, targetAddress);
+            return;
+        }
 
-    //                    break;
-    //                }
+        var targetJump = jumpIndices.LastOrDefault();
 
-    //            case RelativeJumpInstruction:
-    //                {
+        if (targetJump == default || targetJump + 5 > caveCode.Count)
+        {
+            return;
+        }
 
-    //                    break;
-    //                }
+        caveCode.RemoveRange(targetJump, RelativeJumpInstructionLength);
+        caveCode.InsertRange(targetJump, absoulteJump);
+    }
 
-    //            default:
-    //                break;
-    //        }
-    //    }
-
-    //    return convertedCode;
-    //}
-
-    //internal static void ConvertRelativeToAbsoluteJumpBack(ref List<byte> code, nuint targetAddress, int instructionOpcodesLength, int totalAmountOfOpcodes)
-    //{
-    //    var jumpIndex = GetAllX86JumpIndices(code, instructionOpcodesLength).LastOrDefault();
-
-    //    if (jumpIndex == 0 || code.Count - 6 != jumpIndex)
-    //    {
-    //        code.InsertRange(code.Count, GetX64JumpBytes(nuint.Add(targetAddress, totalAmountOfOpcodes), _jumpAsmTemplate.Length, true));
-    //        return;
-    //    }
-
-    //    code.RemoveRange(jumpIndex, 5);
-    //    code.InsertRange(jumpIndex, GetX64JumpBytes(targetAddress, _jumpAsmTemplate.Length, true));
-    //}
-
-    //private static void ConvertX86ToX64Call(ref List<byte> newCode, int index, List<int> calls, int callIndex, nuint targetAddress)
-    //{
-    //    var x86Call = new byte[5];
-
-    //    var counter = index;
-
-    //    for (ushort j = 0; j < 5; j++)
-    //    {
-    //        x86Call[j] = newCode[counter++];
-    //    }
-
-    //    newCode.RemoveRange(index, 5);
-    //    newCode.InsertRange(index, ConvertX86ToX64Call(x86Call, calls[callIndex++], targetAddress));
-    //}
-
-    //private static List<int> GetAllx86CallIndices(List<byte> totalOpcodes, int instructionOpcodesLength)
-    //{
-    //    return GetIndicesOfInstruction(totalOpcodes, instructionOpcodesLength, RelativeCallInstruction);
-    //}
-
-    //private static List<int> GetAllX86JumpIndices(List<byte> totalOpcodes, int instructionOpcodesLength)
-    //{
-    //    return GetIndicesOfInstruction(totalOpcodes, instructionOpcodesLength, RelativeJumpInstruction);
-    //}
-
-    //private static List<int> GetIndicesOfInstruction(List<byte> totalOpcodes, int instructionOpcodeLength, byte searchedInstruction)
-    //{
-    //    var instructionIndices = new List<int>();
-
-    //    for (int i = 0; i < totalOpcodes.Count; i++)
-    //    {
-    //        if (totalOpcodes[i] == searchedInstruction)
-    //        {
-    //            instructionIndices.Add(i + instructionOpcodeLength);
-    //        }
-    //    }
-
-    //    return instructionIndices;
-    //}
-
-    //private static byte[] ConvertX86ToX64Call(byte[] x86Call, int offset, nuint targetAddress)
-    //{
-    //    Array.Reverse(x86Call);
-
-    //    x86Call = new byte[] { x86Call[3], x86Call[2], x86Call[1], x86Call[0] };
-
-    //    MemoryOperation.ConvertBufferUnsafe<int>(x86Call, out var value);
-
-    //    var callerAddress = nuint.Add(targetAddress, offset);
-    //    var relativeAddress = value + 5;
-    //    var funcAddress = nuint.Add(callerAddress, relativeAddress);
-
-    //    var x64Call = new byte[_callAsmTemplate.Length];
-
-    //    _callAsmTemplate.CopyTo(x64Call);
-
-    //    Unsafe.WriteUnaligned(ref x64Call[8], funcAddress);
-
-    //    return x64Call;
-    //}
-
-    internal static byte[] GetX64JumpBytes(nuint jumpToAddress, int opcodesToReplace, bool nopRestOpcodes = false)
+    internal static byte[] GetAbsoluteJumpBytes(nuint jumpToAddress, int opcodesToReplace, bool nopRestOpcodes = false)
     {
         var jumpBytes = new byte[nopRestOpcodes ? opcodesToReplace : _jumpAsmTemplate.Length];
 

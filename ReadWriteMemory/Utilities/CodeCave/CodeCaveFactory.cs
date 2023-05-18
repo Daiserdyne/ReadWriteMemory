@@ -25,11 +25,13 @@ internal static class CodeCaveFactory
 
         ConvertAndAppendRemainingOpcodes(targetProcessHandle, ref finalCaveCode, remainingOpcodesLength, startAddress, out var convertedRemainingOpcodes);
 
-        jmpBytes = CaveHelper.GetX64JumpBytes(caveAddress, totalAmountOfOpcodes, true);
+        jmpBytes = CaveHelper.GetAbsoluteJumpBytes(caveAddress, totalAmountOfOpcodes, true);
 
-        var jumpBack = CaveHelper.GetX64JumpBytes(nuint.Add(targetAddress, totalAmountOfOpcodes), totalAmountOfOpcodes);
+        //var jumpBack = CaveHelper.GetAbsoluteJumpBytes(nuint.Add(targetAddress, totalAmountOfOpcodes), totalAmountOfOpcodes);
 
-        finalCaveCode.AddRange(jumpBack);
+        CaveHelper.AppendJumpBack(ref finalCaveCode, nuint.Add(targetAddress, totalAmountOfOpcodes));
+
+        //finalCaveCode.AddRange(jumpBack);
 
         WriteProcessMemory(targetProcessHandle, caveAddress, finalCaveCode.ToArray(), finalCaveCode.Count, out _);
 
