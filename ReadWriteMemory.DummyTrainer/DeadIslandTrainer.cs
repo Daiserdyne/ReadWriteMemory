@@ -7,7 +7,7 @@ namespace ReadWriteMemory.DummyTrainer;
 
 internal sealed class DeadIslandTrainer
 {
-    public static async Task Main()
+    public static async Task Main2()
     {
         using var memory = TrainerServices.CreateAndGetSingletonInstance("DeadIsland-Win64-Shipping");
 

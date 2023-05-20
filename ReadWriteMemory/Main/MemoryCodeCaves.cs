@@ -13,16 +13,18 @@ public sealed partial class RWMemory
     /// jump back to your cave address.
     /// </summary>
     /// <param name="memoryAddress">Address, module name and offesets</param>
-    /// <param name="newCode">The opcodes to write in the code cave</param>
+    /// <param name="caveCode">The opcodes to write in the code cave</param>
     /// <param name="instructionOpcodesLength">The number of bytes of the instruction</param>
-    /// <param name="totalAmountOfOpcodes">Because the a x64 jump is 14 bytes large, it will override other instructions, so you have to give this function more to do so.</param>
+    /// <param name="totalAmountOfOpcodes">Because the a x64 jump is 14 bytes large, it will override other instructions, 
+    /// so you have to give this function more to do so.</param>
     /// <param name="size">size of the allocated region</param>
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    public Task<nuint> CreateOrResumeCodeCaveAsync(MemoryAddress memoryAddress, IReadOnlyList<byte> newCode, int instructionOpcodesLength, int totalAmountOfOpcodes, uint size = 4096)
+    public Task<nuint> CreateOrResumeDetourAsync(MemoryAddress memoryAddress, IReadOnlyList<byte> caveCode, int instructionOpcodesLength, 
+        int totalAmountOfOpcodes, uint size = 4096)
     {
-        return Task.Run(() => CreateOrResumeCodeCave(memoryAddress, newCode, instructionOpcodesLength, totalAmountOfOpcodes, size));
+        return Task.Run(() => CreateOrResumeDetour(memoryAddress, caveCode, instructionOpcodesLength, totalAmountOfOpcodes, size));
     }
 
     /// <summary>
@@ -31,14 +33,17 @@ public sealed partial class RWMemory
     /// jump back to your cave address.
     /// </summary>
     /// <param name="memoryAddress">Address, module name and offesets</param>
-    /// <param name="newCode">The opcodes to write in the code cave</param>
+    /// <param name="caveCode">The opcodes to write in the code cave</param>
     /// <param name="instructionOpcodesLength">The number of bytes of the instruction</param>
-    /// <param name="totalAmountOfOpcodes">Because the a x64 jump is 14 bytes large, it will override other instructions, so you have to give this function more to do so.</param>
+    /// <param name="totalAmountOfOpcodes">The jump to the cave needs 14 bytes. This will override other instructions too. To prevent that,
+    /// the other instructions will be put in the code cave as well to prevent errors/crashes. So choose a length that is at least 14 bytes 
+    /// long and doesn't interrupt other instructions. Note: Take always all opcodes from an instruction.</param>
     /// <param name="size">size of the allocated region</param>
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    public nuint CreateOrResumeCodeCave(MemoryAddress memoryAddress, IReadOnlyList<byte> newCode, int instructionOpcodesLength, int totalAmountOfOpcodes, uint size = 4096)
+    public nuint CreateOrResumeDetour(MemoryAddress memoryAddress, IReadOnlyList<byte> caveCode, int instructionOpcodesLength, 
+        int totalAmountOfOpcodes, uint size = 4096)
     {
         if (!IsProcessAlive)
         {
@@ -52,7 +57,7 @@ public sealed partial class RWMemory
 
         var targetAddress = GetTargetAddress(memoryAddress);
 
-        CodeCaveFactory.CreateCaveAndHookFunction(targetAddress, _targetProcess.Handle, newCode, instructionOpcodesLength, totalAmountOfOpcodes,
+        CodeCaveFactory.CreateCaveAndHookFunction(targetAddress, _targetProcess.Handle, caveCode, instructionOpcodesLength, totalAmountOfOpcodes,
             out var caveAddress, out var originalOpcodes, out var jmpBytes, size);
 
         _memoryRegister[memoryAddress].CodeCaveTable = new(originalOpcodes, caveAddress, jmpBytes);

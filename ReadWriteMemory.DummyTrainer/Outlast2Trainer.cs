@@ -6,7 +6,7 @@ namespace ReadWriteMemory.DummyTrainer;
 
 internal sealed class Outlast2Trainer
 {
-    public static async Task Main3()
+    public static async Task Main()
     {
         using var memory = TrainerServices.CreateAndGetSingletonInstance("Outlast2");
 
