@@ -9,7 +9,7 @@ internal static class CodeCaveFactory
     {
         var finalCaveCode = new List<byte>(caveCode);
 
-        caveAddress = VirtualAllocEx(targetProcessHandle, nuint.Zero, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+        caveAddress = VirtualAllocEx(targetProcessHandle, nuint.Zero, size, MEM_COMMIT | MEM_RESERVE | 0x00100000, PAGE_EXECUTE_READWRITE);
 
         if (caveAddress == nuint.Zero)
         {
@@ -23,11 +23,20 @@ internal static class CodeCaveFactory
 
         var remainingOpcodesLength = totalAmountOfOpcodes - instructionOpcodesLength;
 
-        ConvertAndAppendRemainingOpcodes(targetProcessHandle, ref finalCaveCode, remainingOpcodesLength, startAddress, out var convertedRemainingOpcodes);
+        var insertIndex = CaveHelper.AppendJumpBack(ref finalCaveCode, nuint.Add(targetAddress, totalAmountOfOpcodes));
+
+        if (insertIndex == default)
+        {
+            jmpBytes = new byte[0];
+            originalOpcodes = new byte[0];
+            caveAddress = default;
+
+            return false;
+        }
+
+        ConvertAndAppendRemainingOpcodes(targetProcessHandle, ref finalCaveCode, remainingOpcodesLength, startAddress, insertIndex, out _);
 
         jmpBytes = CaveHelper.GetAbsoluteJumpBytes(caveAddress, totalAmountOfOpcodes, true);
-
-        CaveHelper.AppendJumpBack(ref finalCaveCode, nuint.Add(targetAddress, totalAmountOfOpcodes));
 
         WriteProcessMemory(targetProcessHandle, caveAddress, finalCaveCode.ToArray(), finalCaveCode.Count, out _);
 
@@ -37,7 +46,7 @@ internal static class CodeCaveFactory
     }
 
     private static void ConvertAndAppendRemainingOpcodes(nint targetProcessHandle, ref List<byte> caveCode, int remainingOpcodesLength, 
-        nuint startAddress, out List<byte> convertedRemainingOpcodes)
+        nuint startAddress, int insertIndex, out List<byte> convertedRemainingOpcodes)
     {
         var remainingOpcodes = new byte[remainingOpcodesLength];
 
@@ -45,7 +54,7 @@ internal static class CodeCaveFactory
 
         convertedRemainingOpcodes = CaveHelper.ConvertRemainingInstructions(remainingOpcodes, startAddress);
 
-        caveCode.AddRange(convertedRemainingOpcodes);
+        caveCode.InsertRange(insertIndex, convertedRemainingOpcodes);
     }
 
     private static void WriteJumpToTargetAddress(nint targetProcessHandle, nuint targetAddress, int opcodesToReplace, byte[] jumpBytes, 

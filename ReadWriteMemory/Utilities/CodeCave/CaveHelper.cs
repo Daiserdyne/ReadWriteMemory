@@ -114,7 +114,7 @@ internal static class CaveHelper
         return convertedInstructions;
     }
 
-    internal static void AppendJumpBack(ref List<byte> caveCode, nuint jumpBackAddress)
+    internal static int AppendJumpBack(ref List<byte> caveCode, nuint jumpBackAddress)
     {
         var jumpIndices = new List<int>();
 
@@ -132,18 +132,22 @@ internal static class CaveHelper
         {
             caveCode.AddRange(absoulteJump);
 
-            return;
+            return default;
         }
 
         var targetJump = jumpIndices.LastOrDefault();
 
         if (targetJump == default || targetJump + 5 > caveCode.Count)
         {
-            return;
+            return default;
         }
+
+        caveCode.AddRange(absoulteJump);
 
         caveCode.RemoveRange(targetJump, RelativeJumpInstructionLength);
         caveCode.InsertRange(targetJump, absoulteJump);
+
+        return targetJump;
     }
 
     internal static byte[] GetAbsoluteJumpBytes(nuint jumpToAddress, int opcodesToReplace, bool nopRestOpcodes = false)

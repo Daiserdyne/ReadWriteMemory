@@ -1,4 +1,5 @@
 ﻿using ReadWriteMemory.Models;
+using ReadWriteMemory.NativeImports;
 using ReadWriteMemory.Utilities;
 using ReadWriteMemory.Utilities.CodeCave;
 
