@@ -132,22 +132,20 @@ internal static class CaveHelper
         {
             caveCode.AddRange(absoulteJump);
 
-            return default;
+            return caveCode.Count - _jumpAsmTemplate.Length;
         }
 
-        var targetJump = jumpIndices.LastOrDefault();
+        var targetJumpIndex = jumpIndices.LastOrDefault();
 
-        if (targetJump == default || targetJump + 5 > caveCode.Count)
+        if (targetJumpIndex == default || targetJumpIndex + 5 > caveCode.Count)
         {
             return default;
         }
 
-        caveCode.AddRange(absoulteJump);
+        caveCode.RemoveRange(targetJumpIndex, RelativeJumpInstructionLength);
+        caveCode.InsertRange(targetJumpIndex, absoulteJump);
 
-        caveCode.RemoveRange(targetJump, RelativeJumpInstructionLength);
-        caveCode.InsertRange(targetJump, absoulteJump);
-
-        return targetJump;
+        return targetJumpIndex;
     }
 
     internal static byte[] GetAbsoluteJumpBytes(nuint jumpToAddress, int opcodesToReplace, bool nopRestOpcodes = false)
