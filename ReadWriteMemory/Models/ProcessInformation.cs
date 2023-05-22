@@ -17,5 +17,5 @@ internal sealed record ProcessInformation
 
     internal ProcessModule? MainModule { get; set; }
 
-    internal Dictionary<string, nint> Modules { get; } = new();
+    internal Dictionary<string, nuint> Modules { get; } = new();
 }

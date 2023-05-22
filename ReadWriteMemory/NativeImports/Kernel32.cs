@@ -58,6 +58,50 @@ internal static class Kernel32
         return retVal;
     }
 
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern int VirtualQueryEx(
+    IntPtr hProcess,
+    nuint lpAddress,
+    out MEMORY_BASIC_INFORMATION lpBuffer,
+    uint dwLength
+);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern int VirtualQueryEx(
+IntPtr hProcess,
+nuint lpAddress,
+out MEMORY_BASIC_INFORMATION64 lpBuffer,
+uint dwLength
+);
+
+    [Flags]
+    public enum MemoryProtection : uint
+    {
+        NoAccess = 0x00000001,
+        ReadOnly = 0x00000002,
+        ReadWrite = 0x00000004,
+        WriteCopy = 0x00000008,
+        Execute = 0x00000010,
+        ExecuteRead = 0x00000020,
+        ExecuteReadWrite = 0x00000040,
+        ExecuteWriteCopy = 0x00000080,
+        Guard = 0x00000100,
+        NoCache = 0x00000200,
+        WriteCombine = 0x00000400,
+        TargetsInvalid = 0x40000000,
+        TargetsNoUpdate = 0x40000000
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool VirtualProtectEx(
+    IntPtr hProcess,
+    UIntPtr lpAddress,
+    UIntPtr dwSize,
+    MemoryProtection flNewProtect,
+    out uint lpflOldProtect
+);
+
+
     [DllImport("kernel32.dll", EntryPoint = "VirtualQueryEx")]
     internal static extern UIntPtr Native_VirtualQueryEx(IntPtr hProcess, UIntPtr lpAddress,
         out MEMORY_BASIC_INFORMATION64 lpBuffer, UIntPtr dwLength);
@@ -91,7 +135,7 @@ internal static class Kernel32
     );
 
     [DllImport("kernel32.dll")]
-    internal static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, int nSize, IntPtr lpNumberOfBytesWritten);
+    internal static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, nuint nSize, out IntPtr lpNumberOfBytesWritten);
 
     [DllImport("kernel32.dll")]
     internal static extern bool WriteProcessMemory(IntPtr hProcess, UIntPtr lpBaseAddress, byte[] lpBuffer, int nSize, out IntPtr lpNumberOfBytesWritten);

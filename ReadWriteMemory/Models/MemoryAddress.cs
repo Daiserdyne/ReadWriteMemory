@@ -4,13 +4,13 @@
 /// This record class stores address, offsets and module name. 
 /// This will be needed to calculate the base address and read/write to/from the targets process memory.
 /// <example>
-/// <code>MemoryAddress memoryAddress = new(0x1234567, "elonMusk.exe", 0x42, 0x420, 0x69)</code>
-/// <code>MemoryAddress memoryAddress = new(0x1234567, "falconheavy.dll")</code>
-/// <code>MemoryAddress memoryAddress = new(0x1234567, 0x42, 0x420, 0x69)</code>
-/// <code>MemoryAddress memoryAddress = new(0x1234567)</code>
+/// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567, "elonMusk.exe", 0x42, 0x420, 0x69);</code>
+/// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567, "falconheavy.dll");</code>
+/// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567, 0x42, 0x420, 0x69);</code>
+/// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567);</code>
 /// </example>
-/// <para>See <seealso cref="MemoryAddress(long, int[])"/></para> 
-/// See <seealso cref="MemoryAddress(long, string, int[])"/>
+/// <para>See <seealso cref="MemoryAddress(nuint, int[])"/></para> 
+/// See <seealso cref="MemoryAddress(nuint, string, int[])"/>
 /// </summary>
 public sealed record MemoryAddress
 {
@@ -18,14 +18,14 @@ public sealed record MemoryAddress
     /// This record class stores a memory <paramref name="address"/>, the associated <paramref name="offsets"/> and <paramref name="moduleName"/>. 
     /// This will be needed to calculate the base address and read/write to/from the targets process memory.
     /// <example>
-    /// <code>MemoryAddress memoryAddress = new(0x1234567, "elonMusk.exe", 0x42, 0x420, 0x69)</code>
-    /// <code>MemoryAddress memoryAddress = new(0x1234567, "falconheavy.dll")</code>
+    /// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567, "elonMusk.exe", 0x42, 0x420, 0x69);</code>
+    /// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567, "falconheavy.dll");</code>
     /// </example>
     /// </summary>
     /// <param name="address"></param>
     /// <param name="moduleName"></param>
     /// <param name="offsets"></param>
-    public MemoryAddress(long address, string moduleName = "", params int[]? offsets)
+    public MemoryAddress(nuint address, string moduleName = "", params int[]? offsets)
     {
         Address = address;
         ModuleName = moduleName.ToLower();
@@ -37,20 +37,20 @@ public sealed record MemoryAddress
     /// This will be needed to calculate 
     /// the base address and read/write to/from the targets process memory.
     /// <example>
-    /// <code>MemoryAddress memoryAddress = new(0x1234567, 0x42, 0x420, 0x69)</code>
-    /// <code>MemoryAddress memoryAddress = new(0x1234567)</code>
+    /// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567, 0x42, 0x420, 0x69);</code>
+    /// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567);</code>
     /// </example>
     /// </summary>
     /// <param name="address"></param>
     /// <param name="offsets"></param>
-    public MemoryAddress(long address, params int[] offsets)
+    public MemoryAddress(nuint address, params int[] offsets)
     {
         Address = address;
         ModuleName = string.Empty;
         Offsets = offsets;
     }
 
-    internal long Address { get; }
+    internal nuint Address { get; }
 
     internal string ModuleName { get; }
 

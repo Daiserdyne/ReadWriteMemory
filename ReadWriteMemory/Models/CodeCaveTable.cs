@@ -2,14 +2,14 @@
 
 internal sealed record CodeCaveTable
 {
-    internal CodeCaveTable(byte[] originalOpcode, UIntPtr caveAddress, byte[] jmpBytes)
+    internal CodeCaveTable(byte[] originalOpcode, nuint caveAddress, byte[] jmpBytes)
 	{
 		OriginalOpcodes = originalOpcode;
 		CaveAddress = caveAddress;
 		JmpBytes = jmpBytes;
 	}
 
-	internal UIntPtr CaveAddress { get; }
+	internal nuint CaveAddress { get; }
 
 	internal byte[] OriginalOpcodes { get; }
 

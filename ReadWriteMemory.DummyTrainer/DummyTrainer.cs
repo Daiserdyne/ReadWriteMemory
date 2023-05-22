@@ -1,11 +1,10 @@
-﻿using ReadWriteMemory.Main;
+﻿using ReadWriteMemory.Interfaces;
+using ReadWriteMemory.Main;
 using ReadWriteMemory.Models;
 using ReadWriteMemory.Templates;
 using ReadWriteMemory.Utilities;
-using System;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.Intrinsics;
 
 namespace ReadWriteMemory.DummyTrainer;
 
@@ -24,13 +23,17 @@ internal sealed class DummyTrainer
     private readonly static MemoryAddress _hp = new(0x219FF58, "Outlast2.exe", 0xC38, 0x7F58);
 
 
-    internal static async Task Main()
+    internal static async Task Main2()
     {
-        using var memory = new RWMemory("DeadIsland-Win64-Shipping");
+        using var memory = new RWMemory("Outlast2");
+
+        memory.Process_OnStateChanged += (o) => { Console.WriteLine(o ? "Process is running" : "Process is not running"); };
 
         var stopwatch = new Stopwatch();
 
-        var test = new CancellationTokenSource();   
+        var test = new CancellationTokenSource();
+
+        var trainers = new List<IMemoryTrainer>();
 
         bool enabled = false;
 
@@ -40,8 +43,8 @@ internal sealed class DummyTrainer
             {
                 stopwatch.Start();
 
-                _ = await memory.CreateOrResumeCodeCaveAsync(_movementXAddress, _movementX, 9);
-                _ = await memory.CreateOrResumeCodeCaveAsync(_movementYAddress, _movementY, 5);
+                //_ = await memory.CreateOrResumeCodeCaveAsync(_movementXAddress, _movementX, 9);
+                //_ = await memory.CreateOrResumeCodeCaveAsync(_movementYAddress, _movementY, 5);
 
                 stopwatch.Stop();
 
@@ -54,7 +57,7 @@ internal sealed class DummyTrainer
                 stopwatch.Start();
 
                 memory.PauseOpenedCodeCave(_movementXAddress);
-                memory.PauseOpenedCodeCave(_movementYAddress);
+                //memory.PauseOpenedCodeCave(_movementYAddress);
 
                 stopwatch.Stop();
 
@@ -79,7 +82,7 @@ internal sealed class DummyTrainer
             {
                 stopwatch.Start();
 
-                memory.ChangeAndFreezeValue(_hp, 5f, TimeSpan.FromSeconds(1));
+                memory.FreezeValue<float>(_hp, 5, TimeSpan.FromSeconds(1));
 
                 stopwatch.Stop();
 
@@ -130,7 +133,7 @@ internal sealed class DummyTrainer
                 {
                     memory.ReadValue<float>(_camYaw, out var camYaw);
 
-                    memory.WriteValue(_player_X_Position, Teleportation.TeleportPlayer(value, camYaw - 90f, 45f, 50f));
+                    memory.WriteValue(_player_X_Position, Teleportation.CalculateNewPositionEx(value, camYaw - 90f, 45f, 50f));
                 }
             }
 
