@@ -94,7 +94,6 @@ public sealed partial class RWMemory : IDisposable
         TriggerStateChangedEvent(ref oldProcessState);
     }
 
-
     private void GetAllLoadedProcessModules()
     {
         foreach (var module in _targetProcess.Process.Modules.Cast<ProcessModule>())
