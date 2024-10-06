@@ -13,8 +13,8 @@ internal static class CodeCaveFactory
 
         if (caveAddress == nuint.Zero)
         {
-            jmpBytes = new byte[0];
-            originalOpcodes = new byte[0];
+            jmpBytes = [];
+            originalOpcodes = [];
 
             return false;
         }
@@ -27,8 +27,8 @@ internal static class CodeCaveFactory
 
         if (insertIndex == default)
         {
-            jmpBytes = new byte[0];
-            originalOpcodes = new byte[0];
+            jmpBytes = [];
+            originalOpcodes = [];
             caveAddress = default;
 
             return false;

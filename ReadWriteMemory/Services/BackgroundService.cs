@@ -3,7 +3,7 @@
 internal static class BackgroundService
 {
     private const double MaxFreezeRefreshRateInMilliseconds = double.MaxValue;
-    private const short MinFreezeRefreshRateInMilliseconds = 5;
+    private const ushort MinFreezeRefreshRateInMilliseconds = 5;
 
     internal static async Task ExecuteTaskInfinite(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
     {
