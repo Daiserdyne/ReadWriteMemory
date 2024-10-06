@@ -9,6 +9,7 @@
 		<WindowsPackageType>None</WindowsPackageType>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PublishSingleFile>True</PublishSingleFile>
+		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 	</PropertyGroup>
 
 	<PropertyGroup>
