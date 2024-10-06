@@ -1,5 +1,6 @@
 ﻿using ReadWriteMemory.Interfaces;
 using ReadWriteMemory.Main;
+using System.Collections.Frozen;
 using System.Reflection;
 
 namespace ReadWriteMemory.Services;
@@ -39,7 +40,7 @@ public static class TrainerServices
     /// The key is the <see cref="IMemoryTrainer.TrainerName"/> and the value the instantiated Trainer.
     /// </summary>
     /// <returns>A dictionary of all implemented trainers. If no trainers are found, this will return a <c>empty</c> dictionary.</returns>
-    public static IDictionary<string, IMemoryTrainer> GetAllImplementedTrainers()
+    public static FrozenDictionary<string, IMemoryTrainer> GetAllImplementedTrainers()
     {
         var trainerRegister = new Dictionary<string, IMemoryTrainer>();
 
@@ -47,7 +48,7 @@ public static class TrainerServices
 
         if (entryAssembly is null)
         {
-            return trainerRegister;
+            return trainerRegister.ToFrozenDictionary();
         }
 
         var implementedTrainers = (from type in entryAssembly.GetTypes()
@@ -57,7 +58,7 @@ public static class TrainerServices
 
         if (!implementedTrainers.Any())
         {
-            return trainerRegister;
+            return trainerRegister.ToFrozenDictionary();
         }
 
         foreach (var trainer in implementedTrainers)
@@ -65,6 +66,6 @@ public static class TrainerServices
             trainerRegister.Add(trainer.TrainerName, trainer);
         }
 
-        return trainerRegister;
+        return trainerRegister.ToFrozenDictionary();
     }
 }
