@@ -50,3 +50,13 @@ jobs:
           dotnet pack ReadWriteMemory --configuration $BUILD_CONFIG -o publish --version-suffix "prerelease"
         fi
         dotnet nuget push publish/*.nupkg --source https://nuget.pkg.github.com/Timm3D/index.json --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+
+    - name: Create Github release
+      uses: "marvinpinto/action-automatic-releases@latest"
+      if: startsWith(github.ref, 'refs/tags/v')
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        prerelease: false
+        files: |
+          publish/*.zip
+          publish/*.nupkg
