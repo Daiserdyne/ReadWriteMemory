@@ -2,7 +2,7 @@
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 
-namespace ReadWriteMemory.Main;
+namespace ReadWriteMemory;
 
 public sealed partial class RWMemory
 {

@@ -10,23 +10,23 @@ internal static class CaveHelper
     private const byte RelativeJumpInstruction = 0xE9;
     private const ushort RelativeJumpInstructionLength = 5;
 
-    private static ReadOnlySpan<byte> _jumpAsmTemplate => new byte[]
-    {
+    private static ReadOnlySpan<byte> _jumpAsmTemplate =>
+    [
         0xFF, 0x25, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    };
+    ];
 
-    private static ReadOnlySpan<byte> _callAsmTemplate => new byte[]
-    {
+    private static ReadOnlySpan<byte> _callAsmTemplate =>
+    [
         0xFF, 0x15, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x08,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    };
+    ];
 
     private static byte[] ConvertToAbsoluteCall(byte[] relativeCall, nuint targetAddress, int offset)
     {
         Array.Reverse(relativeCall);
 
-        relativeCall = new byte[] { relativeCall[3], relativeCall[2], relativeCall[1], relativeCall[0] };
+        relativeCall = [relativeCall[3], relativeCall[2], relativeCall[1], relativeCall[0]];
 
         MemoryOperation.ConvertBufferUnsafe<int>(relativeCall, out var value);
 
@@ -47,7 +47,7 @@ internal static class CaveHelper
     {
         Array.Reverse(relativeJump);
 
-        relativeJump = new byte[] { relativeJump[3], relativeJump[2], relativeJump[1], relativeJump[0] };
+        relativeJump = [relativeJump[3], relativeJump[2], relativeJump[1], relativeJump[0]];
 
         MemoryOperation.ConvertBufferUnsafe<int>(relativeJump, out var value);
 

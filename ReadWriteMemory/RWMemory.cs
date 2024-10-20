@@ -3,10 +3,9 @@ using ReadWriteMemory.Models;
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 using System.Diagnostics;
-
 using Kernel32 = ReadWriteMemory.NativeImports.Kernel32;
 
-namespace ReadWriteMemory.Main;
+namespace ReadWriteMemory;
 
 /// <summary>
 /// This is the main component of the <see cref="ReadWriteMemory"/> library. This class includes a lot of powerfull
@@ -29,7 +28,7 @@ public sealed partial class RWMemory : IDisposable
 
     private ProcessInformation _targetProcess;
 
-    private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = new();
+    private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
 
     #endregion
 
@@ -64,7 +63,7 @@ public sealed partial class RWMemory : IDisposable
     {
         if (Process.GetProcessesByName(_targetProcess.ProcessName).Any())
         {
-            if (_targetProcess.Handle == IntPtr.Zero)
+            if (_targetProcess.Handle == nint.Zero)
             {
                 if (OpenProcess())
                 {
@@ -81,7 +80,7 @@ public sealed partial class RWMemory : IDisposable
 
         _targetProcess.ProcessState.IsProcessAlive = false;
 
-        if (_targetProcess.Handle != IntPtr.Zero)
+        if (_targetProcess.Handle != nint.Zero)
         {
             _targetProcess = new()
             {
@@ -96,7 +95,9 @@ public sealed partial class RWMemory : IDisposable
 
     private void GetAllLoadedProcessModules()
     {
-        foreach (var module in _targetProcess.Process.Modules.Cast<ProcessModule>())
+        var processModules = _targetProcess.Process.Modules.Cast<ProcessModule>();
+
+        foreach (var module in processModules)
         {
             if (!_targetProcess.Modules.ContainsKey(module.ModuleName.ToLower()))
             {
@@ -119,7 +120,7 @@ public sealed partial class RWMemory : IDisposable
     /// </summary>
     public void CloseHandle()
     {
-        if (!IsProcessAlive || _targetProcess.Handle == IntPtr.Zero)
+        if (!IsProcessAlive || _targetProcess.Handle == nint.Zero)
         {
             return;
         }
@@ -168,7 +169,7 @@ public sealed partial class RWMemory : IDisposable
         _targetProcess.Process = Process.GetProcessById(pid);
         _targetProcess.Handle = Kernel32.OpenProcess(true, pid);
 
-        if (_targetProcess.Handle == IntPtr.Zero)
+        if (_targetProcess.Handle == nint.Zero)
         {
             _targetProcess = new()
             {
@@ -221,16 +222,16 @@ public sealed partial class RWMemory : IDisposable
 
             MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
 
-            for (ushort index = 0; index < memoryAddress.Offsets.Length; index++)
+            for (ushort i = 0; i < memoryAddress.Offsets.Length; i++)
             {
-                if (index == memoryAddress.Offsets.Length - 1)
+                if (i == memoryAddress.Offsets.Length - 1)
                 {
-                    targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[index]);
+                    targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[i]);
 
                     break;
                 }
 
-                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, memoryAddress.Offsets[index]), buffer);
+                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, memoryAddress.Offsets[i]), buffer);
 
                 MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
             }

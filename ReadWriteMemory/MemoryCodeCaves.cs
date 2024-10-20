@@ -2,7 +2,7 @@
 using ReadWriteMemory.Utilities;
 using ReadWriteMemory.Utilities.CodeCave;
 
-namespace ReadWriteMemory.Main;
+namespace ReadWriteMemory;
 
 public sealed partial class RWMemory
 {

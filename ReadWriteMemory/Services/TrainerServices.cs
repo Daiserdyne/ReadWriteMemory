@@ -1,5 +1,4 @@
 ﻿using ReadWriteMemory.Interfaces;
-using ReadWriteMemory.Main;
 using System.Collections.Frozen;
 using System.Reflection;
 

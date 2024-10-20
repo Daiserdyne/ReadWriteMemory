@@ -130,7 +130,7 @@ public static class Hotkeys
     /// </summary>
     /// <param name="key"></param>
     /// <param name="waitForKeyRelease"></param>
-    public static async Task<bool> KeyPressedAsync(Key key, bool waitForKeyRelease = true)
+    public static async ValueTask<bool> KeyPressedAsync(Key key, bool waitForKeyRelease = true)
     {
         int targetKey = (int)key;
 
@@ -158,7 +158,7 @@ public static class Hotkeys
     /// </summary>
     /// <param name="keyCode"></param>
     /// <param name="waitForKeyRelease"></param>
-    public static async Task<bool> KeyPressedAsync(int keyCode, bool waitForKeyRelease = true)
+    public static async ValueTask<bool> KeyPressedAsync(int keyCode, bool waitForKeyRelease = true)
     {
         if (GetAsyncKeyState(keyCode) < 0)
         {
