@@ -106,9 +106,6 @@ uint dwLength
     internal static extern UIntPtr Native_VirtualQueryEx(IntPtr hProcess, UIntPtr lpAddress,
         out MEMORY_BASIC_INFORMATION64 lpBuffer, UIntPtr dwLength);
 
-    [DllImport("kernel32.dll")]
-    internal static extern void GetSystemInfo(out SYSTEM_INFO lpSystemInfo);
-
     [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
     internal static extern bool VirtualFreeEx(
         IntPtr hProcess,
@@ -142,21 +139,6 @@ uint dwLength
 
     [DllImport("kernel32")]
     internal static extern bool IsWow64Process(IntPtr hProcess, out bool lpSystemInfo);
-
-    internal struct SYSTEM_INFO
-    {
-        public ushort processorArchitecture;
-        ushort reserved;
-        public uint pageSize;
-        public UIntPtr minimumApplicationAddress;
-        public UIntPtr maximumApplicationAddress;
-        public IntPtr activeProcessorMask;
-        public uint numberOfProcessors;
-        public uint processorType;
-        public uint allocationGranularity;
-        public ushort processorLevel;
-        public ushort processorRevision;
-    }
 
     internal struct MEMORY_BASIC_INFORMATION64
     {

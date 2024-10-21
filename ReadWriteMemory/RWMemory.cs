@@ -21,20 +21,56 @@ public sealed partial class RWMemory : IDisposable
     /// <param name="newProcessState"></param>
     public delegate void ProcessStateHasChanged(bool newProcessState);
 
-    /// <summary>
-    /// This event will be triggered when the process state changes.
-    /// </summary>
-    public event ProcessStateHasChanged? Process_OnStateChanged;
+    private ProcessStateHasChanged? _process_OnStateChanged;
+    private readonly HashSet<ProcessStateHasChanged?> _processStateHookCollection = [];
 
     private ProcessInformation _targetProcess;
 
     private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
 
+    /// <summary>
+    /// This event will be triggered when the process state changes.
+    /// </summary>
+    public event ProcessStateHasChanged? Process_OnStateChanged
+    {
+        add
+        {
+            _process_OnStateChanged += value;
+
+            if (_processStateHookCollection.Count == 0)
+            {
+                _ = BackgroundService.ExecuteTaskInfinite(() => StartProcessMonitoringService(),
+                    TimeSpan.FromMilliseconds(125), _targetProcess.ProcessState.ProcessStateTokenSrc.Token);
+            }
+
+            _processStateHookCollection.Add(value);
+        }
+        remove
+        {
+            var objectWhichUnsubscriped = _process_OnStateChanged - value;
+
+            if (objectWhichUnsubscriped != null)
+            {
+                objectWhichUnsubscriped -= value;
+
+                _processStateHookCollection.Remove(value);
+
+                if (!_processStateHookCollection.Any())
+                {
+                    _targetProcess.ProcessState.ProcessStateTokenSrc.Cancel();
+                }
+            }
+        }
+    }
+
     #endregion
 
     #region Properties
 
-    private bool IsProcessAlive => _targetProcess.ProcessState.IsProcessAlive;
+    /// <summary>
+    /// Returns the current state of the process. 
+    /// </summary>
+    public bool IsProcessAlive => _targetProcess.ProcessState.IsProcessAlive;
 
     #endregion
 
@@ -50,17 +86,14 @@ public sealed partial class RWMemory : IDisposable
         {
             ProcessName = processName
         };
-
-        var oldProcessState = _targetProcess.ProcessState.IsProcessAlive;
-
-        _ = BackgroundService.ExecuteTaskInfinite(() => StartProcessMonitoringService(ref oldProcessState),
-            TimeSpan.FromMilliseconds(150), _targetProcess.ProcessState.ProcessStateTokenSrc.Token);
     }
 
     #endregion
 
-    private void StartProcessMonitoringService(ref bool oldProcessState)
+    private void StartProcessMonitoringService()
     {
+        var oldProcessState = IsProcessAlive;   
+
         if (Process.GetProcessesByName(_targetProcess.ProcessName).Any())
         {
             if (_targetProcess.Handle == nint.Zero)
@@ -73,7 +106,7 @@ public sealed partial class RWMemory : IDisposable
 
             _targetProcess.ProcessState.IsProcessAlive = true;
 
-            TriggerStateChangedEvent(ref oldProcessState);
+            TriggerStateChangedEvent(oldProcessState);
 
             return;
         }
@@ -90,7 +123,16 @@ public sealed partial class RWMemory : IDisposable
             _memoryRegister.Clear();
         }
 
-        TriggerStateChangedEvent(ref oldProcessState);
+        TriggerStateChangedEvent(oldProcessState);
+    }
+
+    private void TriggerStateChangedEvent(bool oldProcessState)
+    {
+        if (oldProcessState != IsProcessAlive)
+        {
+            _process_OnStateChanged?.Invoke(IsProcessAlive);
+            oldProcessState = IsProcessAlive;
+        }
     }
 
     private void GetAllLoadedProcessModules()
@@ -103,15 +145,6 @@ public sealed partial class RWMemory : IDisposable
             {
                 _targetProcess.Modules.Add(module.ModuleName.ToLower(), (nuint)module.BaseAddress);
             }
-        }
-    }
-
-    private void TriggerStateChangedEvent(ref bool oldState)
-    {
-        if (oldState != _targetProcess.ProcessState.IsProcessAlive)
-        {
-            Process_OnStateChanged?.Invoke(_targetProcess.ProcessState.IsProcessAlive);
-            oldState = _targetProcess.ProcessState.IsProcessAlive;
         }
     }
 
@@ -320,6 +353,6 @@ public sealed partial class RWMemory : IDisposable
 
         _memoryRegister.Clear();
         _targetProcess.ProcessState.ProcessStateTokenSrc.Cancel();
-        Process_OnStateChanged = null;
+        _process_OnStateChanged = null;
     }
 }
