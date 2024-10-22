@@ -8,7 +8,7 @@ public interface IMemoryTrainer
     /// <summary>
     /// Specifies the trainer by an unique id. This is usefull when you want to order/sort a list of trainer.
     /// </summary>
-    public ushort Id { get; }
+    public int Id { get; }
 
     /// <summary>
     /// Name of the trainer.
