@@ -7,7 +7,6 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Platforms>x64</Platforms>
 		<WindowsPackageType>None</WindowsPackageType>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<OutputType>Library</OutputType>
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 	</PropertyGroup>
