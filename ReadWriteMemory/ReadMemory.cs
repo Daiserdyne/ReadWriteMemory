@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ReadWriteMemory;
 
-public sealed partial class RWMemory
+public sealed partial class RwMemory
 {
     #region Delegates
 

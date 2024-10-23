@@ -4,7 +4,7 @@ using ReadWriteMemory.Utilities;
 
 namespace ReadWriteMemory;
 
-public sealed partial class RWMemory
+public sealed partial class RwMemory
 {
     /// <summary>
     /// <para>Freezes the <paramref name="value"/> of an unmanaged data type by the given <paramref name="memoryAddress"/> with a 

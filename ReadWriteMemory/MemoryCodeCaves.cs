@@ -4,7 +4,7 @@ using ReadWriteMemory.Utilities.CodeCave;
 
 namespace ReadWriteMemory;
 
-public sealed partial class RWMemory
+public sealed partial class RwMemory
 {
     /// <summary>
     /// Creates a code cave to apply custom code in target process. 

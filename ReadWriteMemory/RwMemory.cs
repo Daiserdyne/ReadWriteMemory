@@ -11,10 +11,10 @@ namespace ReadWriteMemory;
 /// This is the main component of the <see cref="ReadWriteMemory"/> library. This class includes a lot of powerfull
 /// read and write operations to manipulate the memory of an process.
 /// </summary>
-public sealed partial class RWMemory : IDisposable
+public sealed partial class RwMemory : IDisposable
 {
     /// <summary>
-    /// Delegate for the <see cref="Process_OnStateChanged"/> event.
+    /// Delegate for the <see cref="RwMemory.ProcessOnStateChanged"/> event.
     /// </summary>
     /// <param name="newProcessState"></param>
     public delegate void ProcessStateHasChanged(bool newProcessState);
@@ -33,7 +33,7 @@ public sealed partial class RWMemory : IDisposable
     /// <summary>
     /// This event will be triggered when the process state changes.
     /// </summary>
-    public event ProcessStateHasChanged? Process_OnStateChanged
+    public event ProcessStateHasChanged? ProcessOnStateChanged
     {
         add
         {
@@ -91,7 +91,7 @@ public sealed partial class RWMemory : IDisposable
     /// This is the main component of the <see cref="ReadWriteMemory"/> library. This class includes a lot of powerfull
     /// read and write operations to manipulate the memory of an process.
     /// </summary>
-    public RWMemory(string processName)
+    public RwMemory(string processName)
     {
         _targetProcess = new()
         {

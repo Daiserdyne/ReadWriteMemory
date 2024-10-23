@@ -10,21 +10,21 @@ namespace ReadWriteMemory.Services;
 public static class TrainerServices
 {
     private static object? _threadObject;
-    private static RWMemory? _memory;
+    private static RwMemory? _memory;
 
     /// <summary>
-    /// Gives you a <see cref="RWMemory"/> instance which you have created before with the <see cref="CreateAndGetSingletonInstance(string)"/> function.
+    /// Gives you a <see cref="RwMemory"/> instance which you have created before with the <see cref="CreateAndGetSingletonInstance(string)"/> function.
     /// </summary>
-    public static RWMemory GetCreatedSingletonInstance =>
+    public static RwMemory GetCreatedSingletonInstance =>
         _memory is not null ? _memory : throw new NullReferenceException("A RWMemory instance has to be created before you can get it. " +
             $"Use the {nameof(CreateAndGetSingletonInstance)} method to creat a instance, then you can use this property.");
 
     /// <summary>
-    /// Gives you a thread-safe singleton instance of the <see cref="RWMemory"/> object.
+    /// Gives you a thread-safe singleton instance of the <see cref="RwMemory"/> object.
     /// </summary>
     /// <param name="processName"></param>
     /// <returns></returns>
-    public static RWMemory CreateAndGetSingletonInstance(string processName)
+    public static RwMemory CreateAndGetSingletonInstance(string processName)
     {
         _threadObject ??= new();
 
