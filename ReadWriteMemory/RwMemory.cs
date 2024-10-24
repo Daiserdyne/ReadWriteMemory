@@ -115,7 +115,11 @@ public sealed partial class RwMemory : IDisposable
                 }
                 else
                 {
-                    // todo: Add logic when process can't be opened.
+                    _targetProcess.ProcessState.IsProcessAlive = false;
+
+                    TriggerStateChangedEvent(oldProcessState);
+
+                    return;
                 }
             }
 
