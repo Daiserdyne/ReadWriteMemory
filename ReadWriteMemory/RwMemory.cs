@@ -17,13 +17,13 @@ public sealed partial class RwMemory : IDisposable
     /// Delegate for the <see cref="RwMemory.ProcessOnStateChanged"/> event.
     /// </summary>
     /// <param name="newProcessState"></param>
-    public delegate void ProcessStateHasChanged(bool newProcessState);
+    public delegate void ProcessStateHasChanged(ProgramState newProcessState);
 
     #region Fields
 
     private readonly HashSet<ProcessStateHasChanged?> _processStateHookCollection = [];
-    private readonly object _lockObjectForProcessState = new();
     private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
+    private readonly object _lockObjectForProcessState = new();
 
     private ProcessInformation _targetProcess;
 
@@ -81,6 +81,7 @@ public sealed partial class RwMemory : IDisposable
     /// <summary>
     /// Returns the current state of the process. 
     /// </summary>
+    // ReSharper disable once MemberCanBePrivate.Global
     public bool IsProcessAlive => _targetProcess.ProcessState.IsProcessAlive;
 
     #endregion
@@ -93,7 +94,7 @@ public sealed partial class RwMemory : IDisposable
     /// </summary>
     public RwMemory(string processName)
     {
-        _targetProcess = new()
+        _targetProcess = new ProcessInformation
         {
             ProcessName = processName
         };
@@ -130,7 +131,7 @@ public sealed partial class RwMemory : IDisposable
 
         if (_targetProcess.Handle != nint.Zero)
         {
-            _targetProcess = new()
+            _targetProcess = new ProcessInformation
             {
                 ProcessName = _targetProcess.ProcessName
             };
@@ -145,8 +146,7 @@ public sealed partial class RwMemory : IDisposable
     {
         if (oldProcessState != IsProcessAlive)
         {
-            _processStateChangedEvent?.Invoke(IsProcessAlive);
-            oldProcessState = IsProcessAlive;
+            _processStateChangedEvent?.Invoke(IsProcessAlive ? ProgramState.Running : ProgramState.NotRunning);
         }
     }
 
@@ -173,7 +173,7 @@ public sealed partial class RwMemory : IDisposable
     /// <summary>
     /// Closes the process when finished.
     /// </summary>
-    public void CloseHandle()
+    private void CloseHandle()
     {
         if (!IsProcessAlive || _targetProcess.Handle == nint.Zero)
         {
@@ -182,7 +182,7 @@ public sealed partial class RwMemory : IDisposable
 
         _ = Kernel32.CloseHandle(_targetProcess.Handle);
 
-        _targetProcess = new()
+        _targetProcess = new ProcessInformation
         {
             ProcessName = _targetProcess.ProcessName
         };
@@ -214,7 +214,7 @@ public sealed partial class RwMemory : IDisposable
     {
         var process = Process.GetProcessesByName(_targetProcess.ProcessName);
 
-        if (process is null || !process.Any())
+        if (!process.Any())
         {
             return false;
         }
@@ -222,11 +222,12 @@ public sealed partial class RwMemory : IDisposable
         var pid = process.First().Id;
 
         _targetProcess.Process = Process.GetProcessById(pid);
+        
         _targetProcess.Handle = Kernel32.OpenProcess(true, pid);
 
         if (_targetProcess.Handle == nint.Zero)
         {
-            _targetProcess = new()
+            _targetProcess = new ProcessInformation
             {
                 ProcessName = _targetProcess.ProcessName
             };
@@ -235,10 +236,10 @@ public sealed partial class RwMemory : IDisposable
         }
 
         if (!(Environment.Is64BitOperatingSystem
-            && Kernel32.IsWow64Process(_targetProcess.Handle, out bool isWow64)
+            && Kernel32.IsWow64Process(_targetProcess.Handle, out var isWow64)
             && isWow64 is false))
         {
-            _targetProcess = new()
+            _targetProcess = new ProcessInformation
             {
                 ProcessName = _targetProcess.ProcessName
             };
@@ -246,19 +247,17 @@ public sealed partial class RwMemory : IDisposable
             return false;
         }
 
-        var mainModule = _targetProcess.Process?.MainModule;
+        var mainModule = _targetProcess.Process.MainModule;
 
         if (mainModule is null)
         {
-            _targetProcess = new()
+            _targetProcess = new ProcessInformation
             {
                 ProcessName = _targetProcess.ProcessName
             };
 
             return false;
         }
-
-        _targetProcess.MainModule = mainModule;
 
         return true;
     }
@@ -294,9 +293,8 @@ public sealed partial class RwMemory : IDisposable
 
         if (!_memoryRegister.ContainsKey(memoryAddress))
         {
-            _memoryRegister.Add(memoryAddress, new()
+            _memoryRegister.Add(memoryAddress, new MemoryAddressTable
             {
-                MemoryAddress = memoryAddress,
                 BaseAddress = baseAddress
             });
         }
@@ -315,9 +313,10 @@ public sealed partial class RwMemory : IDisposable
 
         var moduleName = memoryAddress.ModuleName;
 
-        if (!string.IsNullOrEmpty(moduleName) && _targetProcess.Modules.ContainsKey(moduleName))
+        if (!string.IsNullOrEmpty(moduleName) 
+            && _targetProcess.Modules.TryGetValue(moduleName, out var module))
         {
-            moduleAddress = _targetProcess.Modules[moduleName];
+            moduleAddress = module;
         }
 
         var address = memoryAddress.Address;

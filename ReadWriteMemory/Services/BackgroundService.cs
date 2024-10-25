@@ -11,14 +11,7 @@ internal static class BackgroundService
 
         while (!ct.IsCancellationRequested)
         {
-            try
-            {
-                taskToExecute.Invoke();
-            }
-            catch
-            {
-                throw;
-            }
+            taskToExecute.Invoke();
 
             await Task.Delay(repeatTime, ct);
         }

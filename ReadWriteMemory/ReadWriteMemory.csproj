@@ -5,6 +5,7 @@
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Platforms>x64</Platforms>
+		<OutputType>Library</OutputType>
 		<WindowsPackageType>None</WindowsPackageType>
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 	</PropertyGroup>

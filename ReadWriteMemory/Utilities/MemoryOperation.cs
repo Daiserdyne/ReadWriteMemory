@@ -24,7 +24,7 @@ internal static class MemoryOperation
         return Kernel32.WriteProcessMemory(processHandle, targetAddress, buffer, (nuint)buffer.Length, out _);
     }
 
-    internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer, int length)
+    private static bool WriteProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer, int length)
     {
         return Kernel32.WriteProcessMemory(processHandle, targetAddress, buffer, (nuint)length, out _);
     }
@@ -33,7 +33,7 @@ internal static class MemoryOperation
     {
         var length = sizeof(T);
 
-        Span<byte> valueBuffer = length <= 32 ? stackalloc byte[length] : new byte[length];
+        var valueBuffer = length <= 32 ? stackalloc byte[length] : new byte[length];
 
         Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(valueBuffer), value);
 
@@ -58,6 +58,23 @@ internal static class MemoryOperation
     }
 
     internal static unsafe bool ConvertBufferUnsafe<T>(byte[] buffer, out T value) where T : unmanaged
+    {
+        if (sizeof(T) != buffer.Length)
+        {
+            value = default;
+
+            return false;
+        }
+
+        fixed (byte* pByte = buffer)
+        {
+            value = *(T*)pByte;
+        }
+
+        return true;
+    }
+    
+    internal static unsafe bool ConvertBufferUnsafeRef<T>(byte[] buffer, ref T value) where T : unmanaged
     {
         if (sizeof(T) != buffer.Length)
         {
