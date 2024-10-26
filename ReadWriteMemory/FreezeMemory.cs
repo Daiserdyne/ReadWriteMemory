@@ -4,7 +4,7 @@ using ReadWriteMemory.Utilities;
 
 namespace ReadWriteMemory;
 
-public sealed partial class RwMemory
+public partial class RwMemory
 {
     /// <summary>
     /// <para>Freezes the <paramref name="value"/> of an unmanaged data type by the given <paramref name="memoryAddress"/> with a 
@@ -118,7 +118,7 @@ public sealed partial class RwMemory
     private void StartFreezingValue(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate,
         byte[] buffer, CancellationTokenSource freezeToken)
     {
-        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
             if (!GetTargetAddress(memoryAddress, out var targetAddress)
                 || !MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer))

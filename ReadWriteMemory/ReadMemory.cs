@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ReadWriteMemory;
 
-public sealed partial class RwMemory
+public partial class RwMemory
 {
     #region Delegates
 
@@ -105,7 +105,7 @@ public sealed partial class RwMemory
     public void ReadValue<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, TimeSpan refreshTime, 
         CancellationToken ct) where T : unmanaged
     {
-        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
             var success = ReadValue<T>(memoryAddress, out var value);
             callback(success, value);
@@ -160,7 +160,7 @@ public sealed partial class RwMemory
     /// <param name="ct"></param>
     public void ReadString(MemoryAddress memoryAddress, int length, ReadStringCallback callback, TimeSpan refreshTime, CancellationToken ct)
     {
-        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
             var success = ReadString(memoryAddress, length, out var value);
             callback(success, value);
@@ -203,7 +203,7 @@ public sealed partial class RwMemory
     /// <param name="ct"></param>
     public void ReadBytes(MemoryAddress memoryAddress, int length, ReadBytesCallback callback, TimeSpan refreshTime, CancellationToken ct)
     {
-        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
             var success = ReadBytes(memoryAddress, length, out byte[] value);
             callback(success, value);

@@ -8,9 +8,9 @@ public enum ProgramState : byte
     /// <summary>
     /// Target program is running.
     /// </summary>
-    Running,
+    Started,
     /// <summary>
     /// Target program is not running.
     /// </summary>
-    NotRunning
+    Closed
 }

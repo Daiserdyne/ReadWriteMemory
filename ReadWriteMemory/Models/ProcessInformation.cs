@@ -13,7 +13,7 @@ internal sealed record ProcessInformation
 
     internal nint Handle { get; set; } = nint.Zero;
 
-    internal ProcessState ProcessState { get; } = new();
+    internal bool IsProcessAlive { get; set; }
 
     internal Dictionary<string, nuint> Modules { get; } = [];
 }

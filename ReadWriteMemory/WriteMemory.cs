@@ -3,7 +3,7 @@ using ReadWriteMemory.Utilities;
 
 namespace ReadWriteMemory;
 
-public sealed partial class RwMemory
+public partial class RwMemory
 {
     /// <summary>
     /// This will write the given <seealso cref="string"/>-<paramref name="value"/> to the target <paramref name="memoryAddress"/>.
