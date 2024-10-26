@@ -45,7 +45,7 @@ internal static class Kernel32
     internal static UIntPtr VirtualQueryEx(IntPtr hProcess, UIntPtr lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer)
     {
         MEMORY_BASIC_INFORMATION64 tmp64 = new();
-        var retVal = Native_VirtualQueryEx(hProcess, lpAddress, out tmp64, new UIntPtr((uint)Marshal.SizeOf(tmp64)));
+        var retVal = Native_VirtualQueryEx(hProcess, lpAddress, out tmp64, new((uint)Marshal.SizeOf(tmp64)));
 
         lpBuffer.BaseAddress = tmp64.BaseAddress;
         lpBuffer.AllocationBase = tmp64.AllocationBase;

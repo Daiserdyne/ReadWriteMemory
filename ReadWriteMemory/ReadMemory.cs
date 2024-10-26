@@ -2,10 +2,11 @@
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 using System.Text;
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace ReadWriteMemory;
 
-public sealed partial class RWMemory
+public partial class RwMemory
 {
     #region Delegates
 
@@ -28,7 +29,7 @@ public sealed partial class RWMemory
     /// </summary>
     /// <param name="wasReadingSuccessfull"></param>
     /// <param name="unmanagedValue"></param>
-    public delegate void ReadValueCallback<T>(bool wasReadingSuccessfull, T unmanagedValue) where T : unmanaged;
+    public delegate void ReadValueCallback<in T>(bool wasReadingSuccessfull, T unmanagedValue) where T : unmanaged;
 
     #endregion
 
@@ -62,6 +63,35 @@ public sealed partial class RWMemory
 
         return true;
     }
+    
+    /// <summary>
+    /// This will read the <paramref name="value"/> out of the given <paramref name="memoryAddress"/>.
+    /// Don't forget to specify the <typeparamref name="T"/> type correctly to prevent errors or unintended outcomes.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="value"></param>
+    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
+    public unsafe bool ReadValueRef<T>(MemoryAddress memoryAddress, ref T value) where T : unmanaged
+    {
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
+        {
+            return false;
+        }
+
+        var buffer = new byte[sizeof(T)];
+
+        if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
+        {
+            return false;
+        }
+
+        if (!MemoryOperation.ConvertBufferUnsafeRef(buffer, ref value))
+        {
+            return false;
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// This will read the <typeparamref name="T"/>-value and executes the <paramref name="callback"/>
@@ -72,9 +102,10 @@ public sealed partial class RWMemory
     /// <param name="callback"></param>
     /// <param name="refreshTime"></param>
     /// <param name="ct"></param>
-    public void ReadValue<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, TimeSpan refreshTime, CancellationToken ct) where T : unmanaged
+    public void ReadValue<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, TimeSpan refreshTime, 
+        CancellationToken ct) where T : unmanaged
     {
-        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
             var success = ReadValue<T>(memoryAddress, out var value);
             callback(success, value);
@@ -82,7 +113,8 @@ public sealed partial class RWMemory
     }
 
     /// <summary>
-    /// This method reads the <see cref="string"/> value of <paramref name="length"/> from the specified <paramref name="memoryAddress"/> and stores it in the <paramref name="value"/> parameter.
+    /// This method reads the <see cref="string"/> value of <paramref name="length"/> from the specified
+    /// <paramref name="memoryAddress"/> and stores it in the <paramref name="value"/> parameter.
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="length"></param>
@@ -128,9 +160,9 @@ public sealed partial class RWMemory
     /// <param name="ct"></param>
     public void ReadString(MemoryAddress memoryAddress, int length, ReadStringCallback callback, TimeSpan refreshTime, CancellationToken ct)
     {
-        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
-            var success = ReadString(memoryAddress, length, out string value);
+            var success = ReadString(memoryAddress, length, out var value);
             callback(success, value);
         }, refreshTime, ct);
     }
@@ -171,7 +203,7 @@ public sealed partial class RWMemory
     /// <param name="ct"></param>
     public void ReadBytes(MemoryAddress memoryAddress, int length, ReadBytesCallback callback, TimeSpan refreshTime, CancellationToken ct)
     {
-        _ = BackgroundService.ExecuteTaskInfinite(() =>
+        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
             var success = ReadBytes(memoryAddress, length, out byte[] value);
             callback(success, value);

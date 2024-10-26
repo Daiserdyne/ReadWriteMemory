@@ -5,9 +5,7 @@
 /// </summary>
 internal sealed record MemoryAddressTable
 {
-    internal MemoryAddress? MemoryAddress { get; set; }
-
-    internal nuint BaseAddress { get; set; } = nuint.Zero;
+    internal nuint BaseAddress { get; init; } = nuint.Zero;
 
     internal CodeCaveTable? CodeCaveTable { get; set; }
 

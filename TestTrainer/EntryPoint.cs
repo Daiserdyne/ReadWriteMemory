@@ -1,0 +1,1 @@
+﻿await new TestTrainer.TestTrainer().Main();

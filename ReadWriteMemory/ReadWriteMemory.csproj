@@ -1,17 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net8.0-windows10.0.26100.0</TargetFramework>
-		<SupportedOSPlatformVersion>8.0</SupportedOSPlatformVersion>
+		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Platforms>x64</Platforms>
+		<OutputType>Library</OutputType>
 		<WindowsPackageType>None</WindowsPackageType>
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.0.1-dev</Version>
+		<Version>1.0.2-dev</Version>
 		<Authors>Timm3D</Authors>
 		<Product>ReadWriteMemory</Product>
 		<Description>A powerfull memory editing dll.</Description>

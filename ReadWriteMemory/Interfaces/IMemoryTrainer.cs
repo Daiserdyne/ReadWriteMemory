@@ -21,7 +21,7 @@ public interface IMemoryTrainer
     public string Description { get; }
 
     /// <summary>
-    /// If true, the <see cref="Disable"/> function will be called when the <see cref="RWMemory"/> object will be disposed.
+    /// If true, the <see cref="Disable"/> function will be called when the <see cref="RwMemory"/> object will be disposed.
     /// </summary>
     public bool DisableWhenDispose { get; }
 

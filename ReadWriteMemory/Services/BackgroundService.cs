@@ -3,22 +3,15 @@
 internal static class BackgroundService
 {
     private const double MaxFreezeRefreshRateInMilliseconds = double.MaxValue;
-    private const ushort MinFreezeRefreshRateInMilliseconds = 5;
+    private const ushort MinFreezeRefreshRateInMilliseconds = 1;
 
-    internal static async Task ExecuteTaskInfinite(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
+    internal static async Task ExecuteTaskRepeatedly(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
     {
         repeatTime = GetValidRefreshRate(repeatTime);
 
         while (!ct.IsCancellationRequested)
         {
-            try
-            {
-                taskToExecute.Invoke();
-            }
-            catch
-            {
-                throw;
-            }
+            taskToExecute.Invoke();
 
             await Task.Delay(repeatTime, ct);
         }

@@ -103,11 +103,6 @@ internal static class CaveHelper
 
                         break;
                     }
-
-                default:
-                    {
-                        break;
-                    }
             }
         }
 

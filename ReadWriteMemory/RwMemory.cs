@@ -11,29 +11,30 @@ namespace ReadWriteMemory;
 /// This is the main component of the <see cref="ReadWriteMemory"/> library. This class includes a lot of powerfull
 /// read and write operations to manipulate the memory of an process.
 /// </summary>
-public sealed partial class RWMemory : IDisposable
+public partial class RwMemory : IDisposable
 {
     /// <summary>
-    /// Delegate for the <see cref="Process_OnStateChanged"/> event.
+    /// Delegate for the <see cref="RwMemory.ProcessOnStateChanged"/> event.
     /// </summary>
     /// <param name="newProcessState"></param>
-    public delegate void ProcessStateHasChanged(bool newProcessState);
+    public delegate void ProcessStateHasChanged(ProgramState newProcessState);
 
     #region Fields
 
-    private readonly HashSet<ProcessStateHasChanged?> _processStateHookCollection = [];
-    private readonly object _lockObjectForProcessState = new();
     private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
+    private readonly object _lockObjectForProcessState = new();
 
     private ProcessInformation _targetProcess;
 
     private ProcessStateHasChanged? _processStateChangedEvent;
-    private Task? _isMonitoringServiceRunning;
+    private Task? _monitoringServiceTask;
+    private CancellationTokenSource? _processStateTokenSrc;
+    private HashSet<ProcessStateHasChanged?>? _processStateHookCollection;
 
     /// <summary>
     /// This event will be triggered when the process state changes.
     /// </summary>
-    public event ProcessStateHasChanged? Process_OnStateChanged
+    public event ProcessStateHasChanged? ProcessOnStateChanged
     {
         add
         {
@@ -41,11 +42,14 @@ public sealed partial class RWMemory : IDisposable
             {
                 _processStateChangedEvent += value;
 
-                if (_processStateHookCollection.Count == 0 ||
-                    (_isMonitoringServiceRunning is not null && _isMonitoringServiceRunning.Status != TaskStatus.Running))
+                _processStateHookCollection ??= [];
+
+                if (!_processStateHookCollection.Any() && _monitoringServiceTask is null)
                 {
-                    _isMonitoringServiceRunning = BackgroundService.ExecuteTaskInfinite(StartProcessMonitoringService,
-                        TimeSpan.FromMilliseconds(125), _targetProcess.ProcessState.ProcessStateTokenSrc.Token);
+                    _processStateTokenSrc ??= new();
+
+                    _monitoringServiceTask = BackgroundService.ExecuteTaskRepeatedly(ProcessMonitoringService,
+                        TimeSpan.FromMilliseconds(125), _processStateTokenSrc.Token);
                 }
 
                 _processStateHookCollection.Add(value);
@@ -55,20 +59,17 @@ public sealed partial class RWMemory : IDisposable
         {
             lock (_lockObjectForProcessState)
             {
-                if (!_processStateHookCollection.Remove(value))
-                {
-                    _targetProcess.ProcessState.ProcessStateTokenSrc.Cancel();
-                    _isMonitoringServiceRunning = null;
-
-                    return;
-                }
+                _processStateHookCollection!.Remove(value);
 
                 _processStateChangedEvent -= value;
 
-                if (!_processStateHookCollection.Any())
+                if (!_processStateHookCollection!.Any())
                 {
-                    _targetProcess.ProcessState.ProcessStateTokenSrc.Cancel();
-                    _isMonitoringServiceRunning = null;
+                    _processStateTokenSrc?.Cancel();
+                    _processStateTokenSrc?.Dispose();
+                    _processStateTokenSrc = null;
+                    _monitoringServiceTask = null;
+                    _processStateHookCollection = null;
                 }
             }
         }
@@ -81,7 +82,8 @@ public sealed partial class RWMemory : IDisposable
     /// <summary>
     /// Returns the current state of the process. 
     /// </summary>
-    public bool IsProcessAlive => _targetProcess.ProcessState.IsProcessAlive;
+    // ReSharper disable once MemberCanBePrivate.Global
+    public bool IsProcessAlive => _targetProcess.IsProcessAlive;
 
     #endregion
 
@@ -91,7 +93,7 @@ public sealed partial class RWMemory : IDisposable
     /// This is the main component of the <see cref="ReadWriteMemory"/> library. This class includes a lot of powerfull
     /// read and write operations to manipulate the memory of an process.
     /// </summary>
-    public RWMemory(string processName)
+    public RwMemory(string processName)
     {
         _targetProcess = new()
         {
@@ -101,7 +103,7 @@ public sealed partial class RWMemory : IDisposable
 
     #endregion
 
-    private void StartProcessMonitoringService()
+    private void ProcessMonitoringService()
     {
         var oldProcessState = IsProcessAlive;
 
@@ -113,20 +115,16 @@ public sealed partial class RWMemory : IDisposable
                 {
                     GetAllLoadedProcessModules();
                 }
-                else
-                {
-                    // todo: Add logic when process can't be opened.
-                }
             }
 
-            _targetProcess.ProcessState.IsProcessAlive = true;
+            _targetProcess.IsProcessAlive = true;
 
             TriggerStateChangedEvent(oldProcessState);
 
             return;
         }
 
-        _targetProcess.ProcessState.IsProcessAlive = false;
+        _targetProcess.IsProcessAlive = false;
 
         if (_targetProcess.Handle != nint.Zero)
         {
@@ -145,8 +143,7 @@ public sealed partial class RWMemory : IDisposable
     {
         if (oldProcessState != IsProcessAlive)
         {
-            _processStateChangedEvent?.Invoke(IsProcessAlive);
-            oldProcessState = IsProcessAlive;
+            _processStateChangedEvent?.Invoke(IsProcessAlive ? ProgramState.Started : ProgramState.Closed);
         }
     }
 
@@ -173,7 +170,7 @@ public sealed partial class RWMemory : IDisposable
     /// <summary>
     /// Closes the process when finished.
     /// </summary>
-    public void CloseHandle()
+    private void CloseHandle()
     {
         if (!IsProcessAlive || _targetProcess.Handle == nint.Zero)
         {
@@ -203,8 +200,8 @@ public sealed partial class RWMemory : IDisposable
     private void UnfreezeAllValues()
     {
         foreach (var freezeTokenSrc in _memoryRegister.Values
-            .Where(addr => addr.FreezeTokenSrc is not null)
-            .Select(addr => addr.FreezeTokenSrc))
+                     .Where(addr => addr.FreezeTokenSrc is not null)
+                     .Select(addr => addr.FreezeTokenSrc))
         {
             freezeTokenSrc!.Cancel();
         }
@@ -214,7 +211,7 @@ public sealed partial class RWMemory : IDisposable
     {
         var process = Process.GetProcessesByName(_targetProcess.ProcessName);
 
-        if (process is null || !process.Any())
+        if (!process.Any())
         {
             return false;
         }
@@ -222,6 +219,7 @@ public sealed partial class RWMemory : IDisposable
         var pid = process.First().Id;
 
         _targetProcess.Process = Process.GetProcessById(pid);
+
         _targetProcess.Handle = Kernel32.OpenProcess(true, pid);
 
         if (_targetProcess.Handle == nint.Zero)
@@ -235,8 +233,8 @@ public sealed partial class RWMemory : IDisposable
         }
 
         if (!(Environment.Is64BitOperatingSystem
-            && Kernel32.IsWow64Process(_targetProcess.Handle, out bool isWow64)
-            && isWow64 is false))
+              && Kernel32.IsWow64Process(_targetProcess.Handle, out var isWow64)
+              && isWow64 is false))
         {
             _targetProcess = new()
             {
@@ -246,7 +244,7 @@ public sealed partial class RWMemory : IDisposable
             return false;
         }
 
-        var mainModule = _targetProcess.Process?.MainModule;
+        var mainModule = _targetProcess.Process.MainModule;
 
         if (mainModule is null)
         {
@@ -257,8 +255,6 @@ public sealed partial class RWMemory : IDisposable
 
             return false;
         }
-
-        _targetProcess.MainModule = mainModule;
 
         return true;
     }
@@ -286,7 +282,8 @@ public sealed partial class RWMemory : IDisposable
                     break;
                 }
 
-                MemoryOperation.ReadProcessMemory(_targetProcess.Handle, nuint.Add(targetAddress, memoryAddress.Offsets[i]), buffer);
+                MemoryOperation.ReadProcessMemory(_targetProcess.Handle,
+                    nuint.Add(targetAddress, memoryAddress.Offsets[i]), buffer);
 
                 MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
             }
@@ -296,7 +293,6 @@ public sealed partial class RWMemory : IDisposable
         {
             _memoryRegister.Add(memoryAddress, new()
             {
-                MemoryAddress = memoryAddress,
                 BaseAddress = baseAddress
             });
         }
@@ -315,9 +311,10 @@ public sealed partial class RWMemory : IDisposable
 
         var moduleName = memoryAddress.ModuleName;
 
-        if (!string.IsNullOrEmpty(moduleName) && _targetProcess.Modules.ContainsKey(moduleName))
+        if (!string.IsNullOrEmpty(moduleName)
+            && _targetProcess.Modules.TryGetValue(moduleName, out var module))
         {
-            moduleAddress = _targetProcess.Modules[moduleName];
+            moduleAddress = module;
         }
 
         var address = memoryAddress.Address;
@@ -363,7 +360,7 @@ public sealed partial class RWMemory : IDisposable
         if (implementedTrainer is not null)
         {
             foreach (var trainer in implementedTrainer.Values
-                .Where(x => x.DisableWhenDispose))
+                         .Where(x => x.DisableWhenDispose))
             {
                 trainer.Disable();
             }
@@ -374,7 +371,7 @@ public sealed partial class RWMemory : IDisposable
         CloseHandle();
 
         _memoryRegister.Clear();
-        _targetProcess.ProcessState.ProcessStateTokenSrc.Cancel();
+        _processStateTokenSrc?.Cancel();
         _processStateChangedEvent = null;
     }
 }
