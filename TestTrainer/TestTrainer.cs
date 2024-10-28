@@ -11,6 +11,7 @@ public sealed class TestTrainer
     
     public TestTrainer()
     {
+        _memory.ProcessOnStateChanged -= OnProcessOnStateChanged;
     }
 
     public async Task Main()

@@ -59,7 +59,12 @@ public partial class RwMemory : IDisposable
         {
             lock (_lockObjectForProcessState)
             {
-                _processStateHookCollection!.Remove(value);
+                if (_processStateHookCollection is null)
+                {
+                    return;
+                }
+                
+                _processStateHookCollection.Remove(value);
 
                 _processStateChangedEvent -= value;
 
@@ -302,7 +307,8 @@ public partial class RwMemory : IDisposable
 
     private nuint GetBaseAddress(MemoryAddress memoryAddress)
     {
-        if (_memoryRegister.TryGetValue(memoryAddress, out var value) && value.BaseAddress != nuint.Zero)
+        if (_memoryRegister.TryGetValue(memoryAddress, out var value) 
+            && value.BaseAddress != nuint.Zero)
         {
             return _memoryRegister[memoryAddress].BaseAddress;
         }
@@ -371,7 +377,8 @@ public partial class RwMemory : IDisposable
         CloseHandle();
 
         _memoryRegister.Clear();
-        _processStateTokenSrc?.Cancel();
+        _processStateTokenSrc?.Cancel();        
+        _processStateTokenSrc?.Dispose();
         _processStateChangedEvent = null;
     }
 }

@@ -73,23 +73,6 @@ internal static class MemoryOperation
 
         return true;
     }
-    
-    internal static unsafe bool ConvertBufferUnsafeRef<T>(byte[] buffer, ref T value) where T : unmanaged
-    {
-        if (sizeof(T) != buffer.Length)
-        {
-            value = default;
-
-            return false;
-        }
-
-        fixed (byte* pByte = buffer)
-        {
-            value = *(T*)pByte;
-        }
-
-        return true;
-    }
 
     internal static bool DeallocateMemory(nint processHandle, nuint address)
     {
