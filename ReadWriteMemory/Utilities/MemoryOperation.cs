@@ -29,20 +29,16 @@ internal static class MemoryOperation
         return Kernel32.WriteProcessMemory(processHandle, targetAddress, buffer, (nuint)length, out _);
     }
 
-    internal static unsafe bool WriteProcessMemory<T>(nint processHandle, nuint targetAddress, T value) where T : unmanaged
+    internal static bool WriteProcessMemory<T>(nint processHandle, nuint targetAddress, T value) where T : unmanaged
     {
-        var length = sizeof(T);
+        var valueBuffer = ConvertToByteArrayUnsafe(value);
 
-        var valueBuffer = length <= 32 ? stackalloc byte[length] : new byte[length];
-
-        Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(valueBuffer), value);
-
-        return WriteProcessMemory(processHandle, targetAddress, valueBuffer.ToArray());
+        return WriteProcessMemory(processHandle, targetAddress, valueBuffer);
     }
 
     internal static bool ReadProcessMemory(nint processHandle, nuint targetAddress, byte[] buffer)
     {
-        return Kernel32.ReadProcessMemory(processHandle, targetAddress, buffer, buffer.Length, IntPtr.Zero);
+        return Kernel32.ReadProcessMemory(processHandle, targetAddress, buffer, buffer.Length, nint.Zero);
     }
 
     internal static unsafe byte[] ConvertToByteArrayUnsafe<T>(T value) where T : unmanaged
