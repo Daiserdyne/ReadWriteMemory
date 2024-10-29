@@ -11,21 +11,21 @@ public partial class RwMemory
     #region Delegates
 
     /// <summary>
-    /// A function pointer that will be called after reading the string value.
+    /// A delegate that will be called after reading the string value.
     /// </summary>
     /// <param name="wasReadingSuccessfull"></param>
     /// <param name="stringValue"></param>
     public delegate void ReadStringCallback(bool wasReadingSuccessfull, string stringValue);
 
     /// <summary>
-    /// A function pointer that will be called after reading the byte array value.
+    /// A delegate that will be called after reading the byte array value.
     /// </summary>
     /// <param name="wasReadingSuccessfull"></param>
     /// <param name="byteArrayValue"></param>
     public delegate void ReadBytesCallback(bool wasReadingSuccessfull, byte[] byteArrayValue);
 
     /// <summary>
-    /// A function pointer that will be called after reading the unmanaged value.
+    /// A delegate that will be called after reading the unmanaged value.
     /// </summary>
     /// <param name="wasReadingSuccessfull"></param>
     /// <param name="unmanagedValue"></param>

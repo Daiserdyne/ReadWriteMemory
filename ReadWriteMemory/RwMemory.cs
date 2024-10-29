@@ -66,7 +66,11 @@ public partial class RwMemory : IDisposable
     }
 
     #endregion
-
+    
+    /// <summary>
+    /// This service updates the current state of the program. It also triggers the program
+    /// state changed event.
+    /// </summary>
     private void ProcessMonitoringService()
     {
         var oldProcessState = IsProcessAlive;
