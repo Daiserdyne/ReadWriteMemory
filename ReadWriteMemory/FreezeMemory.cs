@@ -109,6 +109,7 @@ public partial class RwMemory
         }
 
         freezeToken.Cancel();
+        freezeToken.Dispose();
 
         _memoryRegister[memoryAddress].FreezeTokenSrc = null;
 
@@ -125,7 +126,7 @@ public partial class RwMemory
             {
                 freezeToken.Cancel();
                 freezeToken.Dispose();
-
+                
                 _memoryRegister[memoryAddress].FreezeTokenSrc = null;
             }
         }, freezeRefreshRate, freezeToken.Token);
@@ -142,8 +143,7 @@ public partial class RwMemory
         return true;
     }
 
-    private void InitAndStartFreezeProcedure(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate, 
-        byte[] buffer)
+    private void InitAndStartFreezeProcedure(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate, byte[] buffer)
     {
         var freezeToken = new CancellationTokenSource();
 

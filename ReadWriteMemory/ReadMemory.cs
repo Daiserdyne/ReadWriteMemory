@@ -30,7 +30,7 @@ public partial class RwMemory
     /// <param name="wasReadingSuccessfull"></param>
     /// <param name="unmanagedValue"></param>
     public delegate void ReadValueCallback<in T>(bool wasReadingSuccessfull, T unmanagedValue) where T : unmanaged;
-
+    
     #endregion
 
     /// <summary>
@@ -57,35 +57,6 @@ public partial class RwMemory
         }
 
         if (!MemoryOperation.ConvertBufferUnsafe(buffer, out value))
-        {
-            return false;
-        }
-
-        return true;
-    }
-    
-    /// <summary>
-    /// This will read the <paramref name="value"/> out of the given <paramref name="memoryAddress"/>.
-    /// Don't forget to specify the <typeparamref name="T"/> type correctly to prevent errors or unintended outcomes.
-    /// </summary>
-    /// <param name="memoryAddress"></param>
-    /// <param name="value"></param>
-    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
-    public unsafe bool ReadValueRef<T>(MemoryAddress memoryAddress, ref T value) where T : unmanaged
-    {
-        if (!GetTargetAddress(memoryAddress, out var targetAddress))
-        {
-            return false;
-        }
-
-        var buffer = new byte[sizeof(T)];
-
-        if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
-        {
-            return false;
-        }
-
-        if (!MemoryOperation.ConvertBufferUnsafeRef(buffer, ref value))
         {
             return false;
         }
@@ -168,7 +139,8 @@ public partial class RwMemory
     }
 
     /// <summary>
-    /// This method reads the <c>bytes</c> value of <paramref name="length"/> from the specified <paramref name="memoryAddress"/> and stores it in the <paramref name="value"/> parameter.
+    /// This method reads the <c>bytes</c> value of <paramref name="length"/> from the specified <paramref name="memoryAddress"/>
+    /// and stores it in the <paramref name="value"/> parameter.
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="length"></param>
@@ -205,7 +177,7 @@ public partial class RwMemory
     {
         _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
-            var success = ReadBytes(memoryAddress, length, out byte[] value);
+            var success = ReadBytes(memoryAddress, length, out var value);
             callback(success, value);
         }, refreshTime, ct);
     }
