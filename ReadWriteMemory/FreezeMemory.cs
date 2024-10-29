@@ -124,6 +124,7 @@ public partial class RwMemory
                 || !MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer))
             {
                 freezeToken.Cancel();
+                freezeToken.Dispose();
 
                 _memoryRegister[memoryAddress].FreezeTokenSrc = null;
             }
