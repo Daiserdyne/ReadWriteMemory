@@ -1,4 +1,4 @@
-﻿namespace ReadWriteMemory.Models;
+﻿namespace ReadWriteMemory.Entities;
 
 /// <summary>
 /// Gives you the current state of the program.

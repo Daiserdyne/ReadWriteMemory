@@ -1,38 +1,50 @@
-﻿using ReadWriteMemory;
-using ReadWriteMemory.Models;
+﻿using System.Collections.Frozen;
+using ReadWriteMemory;
+using ReadWriteMemory.Entities;
+using ReadWriteMemory.Interfaces;
+using ReadWriteMemory.Services;
+using ReadWriteMemory.Utilities;
+using TestTrainer.Trainer;
 
 namespace TestTrainer;
 
-public sealed class TestTrainer
+public sealed class TestTrainer : IDisposable
 {
-    private readonly RwMemory _memory = new("signal");
-    //private readonly MemoryAddress _playPosition = new(0x3, 0, 0);
-    
-    public async Task Main()
+    private readonly RwMemory _memory = RwMemoryHelper.CreateAndGetSingletonInstance("Outlast2");
+    private readonly FrozenDictionary<string, IMemoryTrainer> _implementedTrainer = RwMemoryHelper.GetAllImplementedTrainers();
+
+    public async Task Main(CancellationToken cancellationToken)
     {
-        await Task.Run(() =>
+        _memory.OnProcessStateChanged += MemoryOnProcessOnStateChanged;
+        
+        while (!cancellationToken.IsCancellationRequested)
         {
-            Console.ReadLine();
-            _memory.OnProcessStateChanged += OnProcessOnStateChanged;
-            Console.ReadLine();
-            _memory.OnProcessStateChanged += MemoryOnProcessOnStateChanged;
-            Console.ReadLine();
-            _memory.OnProcessStateChanged -= OnProcessOnStateChanged;
-            Console.ReadLine();
-            _memory.OnProcessStateChanged -= MemoryOnProcessOnStateChanged;
-            Console.ReadLine();
-            _memory.OnProcessStateChanged += MemoryOnProcessOnStateChanged;
-            Console.ReadLine();
-        });
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F2))
+            {
+                await _implementedTrainer[nameof(PlayerPosition)].Enable("SavePosition");
+            }
+
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F3))
+            {
+                await _implementedTrainer[nameof(PlayerPosition)].Enable("LoadPosition");
+            }
+            
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F4))
+            {
+                await _implementedTrainer[nameof(PlayerPosition)].Enable("DisplayPosition");
+            }
+
+            await Task.Delay(1);
+        }
     }
 
-    private void MemoryOnProcessOnStateChanged(ProgramState newprocessstate)
+    private static void MemoryOnProcessOnStateChanged(ProgramState newState)
     {
-        Console.WriteLine($"ProcessOnStateChanged: {newprocessstate}");
+        Console.WriteLine($"Process has been {newState}.");
     }
 
-    private void OnProcessOnStateChanged(ProgramState newprocessstate)
+    public void Dispose()
     {
-        Console.WriteLine($"ProcessOnStateChanged: {newprocessstate}");
+        _memory.Dispose();
     }
 }

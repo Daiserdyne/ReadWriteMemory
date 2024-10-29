@@ -1,4 +1,4 @@
-﻿namespace ReadWriteMemory.Models;
+﻿namespace ReadWriteMemory.Entities;
 
 /// <summary>
 /// Contains/holds some information about the target memory address address.

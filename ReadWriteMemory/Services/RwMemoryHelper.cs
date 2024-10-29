@@ -7,7 +7,7 @@ namespace ReadWriteMemory.Services;
 /// <summary>
 /// Contains some usefull trainer helper-methods.
 /// </summary>
-public static class TrainerServices
+public static class RwMemoryHelper
 {
     private static object? _threadObject;
     private static RwMemory? _memory;
@@ -16,8 +16,8 @@ public static class TrainerServices
     /// Gives you a <see cref="RwMemory"/> instance which you have created before with the <see cref="CreateAndGetSingletonInstance(string)"/> function.
     /// </summary>
     public static RwMemory GetCreatedSingletonInstance =>
-        _memory is not null ? _memory : throw new NullReferenceException("A RWMemory instance has to be created before you can get it. " +
-            $"Use the {nameof(CreateAndGetSingletonInstance)} method to creat a instance, then you can use this property.");
+        _memory ?? throw new NullReferenceException("A RWMemory instance has to be created before you can get it. " +
+                                                    $"Use the {nameof(CreateAndGetSingletonInstance)} method to creat a instance, then you can use this property.");
 
     /// <summary>
     /// Gives you a thread-safe singleton instance of the <see cref="RwMemory"/> object.

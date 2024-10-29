@@ -37,8 +37,5 @@ public interface IMemoryTrainer
     /// </summary>
     /// <param name="args"></param>
     /// <returns></returns>
-    public Task Disable(params string[]? args)
-    {
-        return Task.CompletedTask;
-    }
+    public Task Disable(params string[]? args);
 }

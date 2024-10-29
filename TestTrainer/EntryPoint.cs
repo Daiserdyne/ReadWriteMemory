@@ -1,1 +1,1 @@
-﻿await new TestTrainer.TestTrainer().Main();
+﻿await new TestTrainer.TestTrainer().Main(default);

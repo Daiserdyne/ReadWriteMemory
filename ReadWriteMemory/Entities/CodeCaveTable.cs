@@ -1,4 +1,4 @@
-﻿namespace ReadWriteMemory.Models;
+﻿namespace ReadWriteMemory.Entities;
 
 internal sealed record CodeCaveTable
 {

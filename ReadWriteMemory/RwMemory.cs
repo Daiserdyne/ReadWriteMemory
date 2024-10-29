@@ -1,5 +1,5 @@
 ﻿using ReadWriteMemory.Interfaces;
-using ReadWriteMemory.Models;
+using ReadWriteMemory.Entities;
 using ReadWriteMemory.Services;
 using ReadWriteMemory.Utilities;
 using System.Diagnostics;
@@ -318,7 +318,7 @@ public partial class RwMemory : IDisposable
 
         try
         {
-            implementedTrainer = TrainerServices.GetAllImplementedTrainers();
+            implementedTrainer = RwMemoryHelper.GetAllImplementedTrainers();
         }
         catch
         {
