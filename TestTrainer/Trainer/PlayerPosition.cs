@@ -8,7 +8,7 @@ namespace TestTrainer.Trainer;
 
 public sealed class PlayerPosition : IMemoryTrainer
 {
-    private readonly RwMemory _memory = RwMemoryHelper.GetCreatedSingletonInstance;
+    private readonly RwMemory _memory = RwMemoryHelper.RwMemory;
     private readonly MemoryAddress _playerPosition = new(0x219FF58, "Outlast2.exe", 0x250, 0x88);
 
     private Vector3 _savedPlayerPosition = Vector3.Zero;
