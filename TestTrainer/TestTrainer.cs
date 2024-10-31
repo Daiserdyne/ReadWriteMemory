@@ -11,12 +11,14 @@ namespace TestTrainer;
 public sealed class TestTrainer : IDisposable
 {
     private readonly RwMemory _memory = RwMemoryHelper.CreateAndGetSingletonInstance("Outlast2");
-    private readonly FrozenDictionary<string, IMemoryTrainer> _implementedTrainer = RwMemoryHelper.GetAllImplementedTrainers();
+
+    private readonly FrozenDictionary<string, IMemoryTrainer> _implementedTrainer =
+        RwMemoryHelper.GetAllImplementedTrainers();
 
     public async Task Main(CancellationToken cancellationToken)
     {
         _memory.OnProcessStateChanged += MemoryOnProcessOnStateChanged;
-        
+
         while (!cancellationToken.IsCancellationRequested)
         {
             if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F2))
@@ -28,7 +30,7 @@ public sealed class TestTrainer : IDisposable
             {
                 await _implementedTrainer[nameof(PlayerPosition)].Enable("LoadPosition");
             }
-            
+
             if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F4))
             {
                 await _implementedTrainer[nameof(PlayerPosition)].Enable("DisplayPosition");
@@ -38,7 +40,7 @@ public sealed class TestTrainer : IDisposable
             {
                 await _implementedTrainer[nameof(PlayerPosition)].Enable("FreezePlayer");
             }
-            
+
             if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F6))
             {
                 await _implementedTrainer[nameof(PlayerPosition)].Enable("DisplayPositionAsBytes");

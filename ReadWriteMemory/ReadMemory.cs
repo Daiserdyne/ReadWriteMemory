@@ -15,38 +15,38 @@ public partial class RwMemory
     /// </summary>
     /// <param name="unmanagedValue"></param>
     public delegate void ReadValueCallback<in T>(T unmanagedValue) where T : unmanaged;
-    
+
     /// <summary>
     /// A delegate that will be called after reading the byte array value.
     /// </summary>
     /// <param name="byteArrayValue"></param>
     public delegate void ReadBytesCallback(byte[] byteArrayValue);
-    
+
     #endregion
 
-    private unsafe void InitAndStartConstantValueReading<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, 
+    private unsafe void InitAndStartConstantValueReading<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback,
         TimeSpan readValueRate) where T : unmanaged
     {
         var readValueConstantTokenSrc = new CancellationTokenSource();
 
         _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = readValueConstantTokenSrc;
-        
+
         var buffer = new byte[sizeof(T)];
-        
+
         StartReadingValueConstant(memoryAddress, callback, readValueRate, buffer, readValueConstantTokenSrc);
     }
-    
-    private void InitAndStartConstantByteReading(MemoryAddress memoryAddress, byte[] buffer, ReadBytesCallback callback, 
+
+    private void InitAndStartConstantByteReading(MemoryAddress memoryAddress, byte[] buffer, ReadBytesCallback callback,
         TimeSpan readValueRate)
     {
         var readValueConstantTokenSrc = new CancellationTokenSource();
 
         _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = readValueConstantTokenSrc;
-        
+
         StartReadingBytesConstant(memoryAddress, callback, readValueRate, buffer, readValueConstantTokenSrc);
     }
-    
-    private void StartReadingBytesConstant(MemoryAddress memoryAddress, ReadBytesCallback callback, 
+
+    private void StartReadingBytesConstant(MemoryAddress memoryAddress, ReadBytesCallback callback,
         TimeSpan readValueRate, byte[] buffer, CancellationTokenSource readValueConstantTokenSrc)
     {
         _ = BackgroundService.ExecuteTaskRepeatedly(() =>
@@ -56,7 +56,7 @@ public partial class RwMemory
             {
                 readValueConstantTokenSrc.Cancel();
                 readValueConstantTokenSrc.Dispose();
-                
+
                 _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
             }
             else
@@ -65,9 +65,9 @@ public partial class RwMemory
             }
         }, readValueRate, readValueConstantTokenSrc.Token);
     }
-    
-    private void StartReadingValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, 
-        TimeSpan readValueRate, byte[] buffer, CancellationTokenSource readValueConstantTokenSrc) 
+
+    private void StartReadingValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback,
+        TimeSpan readValueRate, byte[] buffer, CancellationTokenSource readValueConstantTokenSrc)
         where T : unmanaged
     {
         _ = BackgroundService.ExecuteTaskRepeatedly(() =>
@@ -77,7 +77,7 @@ public partial class RwMemory
             {
                 readValueConstantTokenSrc.Cancel();
                 readValueConstantTokenSrc.Dispose();
-                
+
                 _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
             }
             else
@@ -87,7 +87,7 @@ public partial class RwMemory
             }
         }, readValueRate, readValueConstantTokenSrc.Token);
     }
-    
+
     private bool CheckIfAlreadyReadingConstant(MemoryAddress memoryAddress)
     {
         if (!GetTargetAddress(memoryAddress, out var targetAddress) ||
@@ -100,7 +100,7 @@ public partial class RwMemory
 
         return true;
     }
-    
+
     /// <summary>
     /// Unfreezes a value from the given <paramref name="memoryAddress"/>.
     /// </summary>
@@ -132,7 +132,7 @@ public partial class RwMemory
 
         return true;
     }
-    
+
     /// <summary>
     /// This will read the <paramref name="value"/> out of the given <paramref name="memoryAddress"/>.
     /// Don't forget to specify the <typeparamref name="T"/> type correctly to prevent errors or unintended outcomes.
@@ -163,7 +163,7 @@ public partial class RwMemory
 
         return true;
     }
-    
+
     /// <summary>
     /// This method reads the <c>bytes</c> value of <paramref name="length"/> from the specified <paramref name="memoryAddress"/>
     /// and stores it in the <paramref name="value"/> parameter.
@@ -188,7 +188,7 @@ public partial class RwMemory
 
         return true;
     }
-    
+
     /// <summary>
     /// This method will read the <c>bytes</c> from the specified <paramref name="memoryAddress"/> and execute the 
     /// <paramref name="callback"/> function repeatedly with a specified delay <paramref name="refreshTime"/>, using the given 
@@ -198,15 +198,16 @@ public partial class RwMemory
     /// <param name="bytesToRead"></param>
     /// <param name="callback"></param>
     /// <param name="refreshTime"></param>
-    public bool ReadBytesConstant(MemoryAddress memoryAddress, uint bytesToRead, ReadBytesCallback callback, TimeSpan refreshTime)
+    public bool ReadBytesConstant(MemoryAddress memoryAddress, uint bytesToRead, ReadBytesCallback callback,
+        TimeSpan refreshTime)
     {
         if (!CheckIfAlreadyReadingConstant(memoryAddress))
         {
             return false;
         }
-        
+
         var buffer = new byte[bytesToRead];
-        
+
         InitAndStartConstantByteReading(memoryAddress, buffer, callback, refreshTime);
 
         return true;
@@ -220,14 +221,14 @@ public partial class RwMemory
     /// <param name="memoryAddress"></param>
     /// <param name="callback"></param>
     /// <param name="refreshTime"></param>
-    public bool ReadValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, TimeSpan refreshTime) 
+    public bool ReadValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, TimeSpan refreshTime)
         where T : unmanaged
     {
         if (!CheckIfAlreadyReadingConstant(memoryAddress))
         {
             return false;
         }
-        
+
         InitAndStartConstantValueReading(memoryAddress, callback, refreshTime);
 
         return true;

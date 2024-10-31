@@ -14,34 +14,44 @@ namespace ReadWriteMemory;
 public partial class RwMemory : IDisposable
 {
     #region Events and Delegates
-    
+
     /// <summary>
     /// Delegate for the <see cref="RwMemory.ProcessStateHasChanged"/> event.
     /// </summary>
     /// <param name="newProcessState"></param>
     public delegate void ProcessStateHasChanged(ProgramState newProcessState);
-    
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public delegate void ReinitilizeTargetProcess();
+
     /// <summary>
     /// This event will be triggered when the process state changes.
     /// </summary>
     public event ProcessStateHasChanged? OnProcessStateChanged;
-    
+
+    /// <summary>
+    /// This will be triggered when the whole internal attributes get reinitialized.
+    /// </summary>
+    public event ReinitilizeTargetProcess? OnReinitilizeTargetProcess;
+
     #endregion
 
     #region Fields
-    
+
     //todo: Add event when targetProcess will be reinitilized.
-    
+
     private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
-    
+
     private readonly CancellationTokenSource _monitoringServiceCancellationTokenSrc = new();
 
     private ProcessInformation _targetProcess;
-    
+
     #endregion
-    
+
     #region Properties
-    
+
     /// <summary>
     /// Returns the current state of the process. 
     /// </summary>
@@ -49,7 +59,7 @@ public partial class RwMemory : IDisposable
     public bool IsProcessAlive => _targetProcess.IsProcessAlive;
 
     #endregion
-    
+
     #region C'tor
 
     /// <summary>
@@ -62,13 +72,23 @@ public partial class RwMemory : IDisposable
         {
             ProcessName = processName
         };
-        
+
         _ = BackgroundService.ExecuteTaskRepeatedly(ProcessMonitoringService,
             TimeSpan.FromMilliseconds(125), _monitoringServiceCancellationTokenSrc.Token);
     }
 
+    private void ReinitializeTargetProcess()
+    {
+        _targetProcess = new()
+        {
+            ProcessName = _targetProcess.ProcessName
+        };
+
+        OnReinitilizeTargetProcess?.Invoke();
+    }
+
     #endregion
-    
+
     /// <summary>
     /// This service updates the current state of the program. It also triggers the program
     /// state changed event.
@@ -98,10 +118,7 @@ public partial class RwMemory : IDisposable
 
         if (_targetProcess.Handle != nint.Zero)
         {
-            _targetProcess = new()
-            {
-                ProcessName = _targetProcess.ProcessName
-            };
+            ReinitializeTargetProcess();
 
             _memoryRegister.Clear();
         }
@@ -149,10 +166,7 @@ public partial class RwMemory : IDisposable
 
         _ = Kernel32.CloseHandle(_targetProcess.Handle);
 
-        _targetProcess = new()
-        {
-            ProcessName = _targetProcess.ProcessName
-        };
+        ReinitializeTargetProcess();
 
         _memoryRegister.Clear();
     }
@@ -194,10 +208,7 @@ public partial class RwMemory : IDisposable
 
         if (_targetProcess.Handle == nint.Zero)
         {
-            _targetProcess = new()
-            {
-                ProcessName = _targetProcess.ProcessName
-            };
+            ReinitializeTargetProcess();
 
             return false;
         }
@@ -206,10 +217,7 @@ public partial class RwMemory : IDisposable
               && Kernel32.IsWow64Process(_targetProcess.Handle, out var isWow64)
               && !isWow64))
         {
-            _targetProcess = new()
-            {
-                ProcessName = _targetProcess.ProcessName
-            };
+            ReinitializeTargetProcess();
 
             return false;
         }
@@ -218,10 +226,7 @@ public partial class RwMemory : IDisposable
 
         if (mainModule is null)
         {
-            _targetProcess = new()
-            {
-                ProcessName = _targetProcess.ProcessName
-            };
+            ReinitializeTargetProcess();
 
             return false;
         }
@@ -250,8 +255,8 @@ public partial class RwMemory : IDisposable
 
                 MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
             }
-            
-            targetAddress = nuint.Add(targetAddress, 
+
+            targetAddress = nuint.Add(targetAddress,
                 memoryAddress.Offsets[memoryAddress.Offsets.Length - 1]);
         }
 
@@ -268,7 +273,7 @@ public partial class RwMemory : IDisposable
 
     private nuint GetBaseAddress(MemoryAddress memoryAddress)
     {
-        if (_memoryRegister.TryGetValue(memoryAddress, out var value) 
+        if (_memoryRegister.TryGetValue(memoryAddress, out var value)
             && value.BaseAddress != nuint.Zero)
         {
             return _memoryRegister[memoryAddress].BaseAddress;
@@ -282,7 +287,7 @@ public partial class RwMemory : IDisposable
         {
             _targetProcess.Modules.TryGetValue(moduleName, out moduleAddress);
         }
-        
+
         var address = memoryAddress.Address;
 
         if (moduleAddress != nuint.Zero)

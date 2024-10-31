@@ -126,7 +126,7 @@ public partial class RwMemory
             {
                 freezeToken.Cancel();
                 freezeToken.Dispose();
-                
+
                 _memoryRegister[memoryAddress].FreezeTokenSrc = null;
             }
         }, freezeRefreshRate, freezeToken.Token);

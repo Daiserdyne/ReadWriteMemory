@@ -12,10 +12,22 @@ public sealed class PlayerPosition : IMemoryTrainer
     private readonly MemoryAddress _playerPosition = new(0x219FF58, "Outlast2.exe", 0x250, 0x88);
 
     private Vector3 _savedPlayerPosition = Vector3.Zero;
-
     private bool _displayingCoords;
     private bool _displayingCoordsAsBytes;
     private bool _freezePlayer;
+
+    public PlayerPosition()
+    {
+        _memory.OnReinitilizeTargetProcess += OnReinitilizeTargetProcess;
+    }
+
+    private void OnReinitilizeTargetProcess()
+    {
+        _savedPlayerPosition = Vector3.Zero;
+        _displayingCoords = false;
+        _displayingCoordsAsBytes = false;
+        _freezePlayer = false;
+    }
 
     public int Id { get; } = 0;
     public string TrainerName { get; } = nameof(PlayerPosition);
