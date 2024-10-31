@@ -30,6 +30,8 @@ public partial class RwMemory : IDisposable
 
     #region Fields
     
+    //todo: Add event when targetProcess will be reinitilized.
+    
     private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
     
     private readonly CancellationTokenSource _monitoringServiceCancellationTokenSrc = new();
@@ -235,26 +237,22 @@ public partial class RwMemory : IDisposable
 
         if (memoryAddress.Offsets is not null && memoryAddress.Offsets.Any())
         {
-            var buffer = new byte[nint.Size];
+            var buffer = new byte[nuint.Size];
 
             MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer);
 
             MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
 
-            for (ushort i = 0; i < memoryAddress.Offsets.Length; i++)
+            for (ushort i = 0; i < memoryAddress.Offsets.Length - 1; i++)
             {
-                if (i == memoryAddress.Offsets.Length - 1)
-                {
-                    targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[i]);
-
-                    break;
-                }
-
                 MemoryOperation.ReadProcessMemory(_targetProcess.Handle,
                     nuint.Add(targetAddress, memoryAddress.Offsets[i]), buffer);
 
                 MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
             }
+            
+            targetAddress = nuint.Add(targetAddress, 
+                memoryAddress.Offsets[memoryAddress.Offsets.Length - 1]);
         }
 
         if (!_memoryRegister.ContainsKey(memoryAddress))
@@ -322,7 +320,7 @@ public partial class RwMemory : IDisposable
         }
         catch
         {
-            // Ex in logger.
+            // ignored
         }
 
         if (implementedTrainer is not null)

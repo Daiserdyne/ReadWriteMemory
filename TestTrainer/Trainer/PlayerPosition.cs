@@ -12,10 +12,10 @@ public sealed class PlayerPosition : IMemoryTrainer
     private readonly MemoryAddress _playerPosition = new(0x219FF58, "Outlast2.exe", 0x250, 0x88);
 
     private Vector3 _savedPlayerPosition = Vector3.Zero;
-    
+
     private bool _displayingCoords;
-    
-    private CancellationTokenSource? _coordsMonitorSrc;
+    private bool _displayingCoordsAsBytes;
+    private bool _freezePlayer;
 
     public int Id { get; } = 0;
     public string TrainerName { get; } = nameof(PlayerPosition);
@@ -34,6 +34,7 @@ public sealed class PlayerPosition : IMemoryTrainer
                 {
                     Console.WriteLine(_savedPlayerPosition);
                 }
+
                 break;
             }
 
@@ -50,19 +51,56 @@ public sealed class PlayerPosition : IMemoryTrainer
             case "DisplayPosition":
             {
                 _displayingCoords = !_displayingCoords;
-                
+
                 if (_displayingCoords)
                 {
-                    _coordsMonitorSrc ??= new();
-                    _memory.ReadValue<Vector3>(_playerPosition, PlayerCoords, TimeSpan.FromMilliseconds(250), _coordsMonitorSrc.Token);
+                    if (!_memory.ReadValueConstant<Vector3>(_playerPosition, PlayerCoords,
+                            TimeSpan.FromMilliseconds(250)))
+                    {
+                        Console.WriteLine("Read adress wird schon benutzt.");
+                    }
                 }
                 else
                 {
-                    _coordsMonitorSrc?.Cancel();
-                    _coordsMonitorSrc?.Dispose();
-                    _coordsMonitorSrc = null;
+                    _memory.StopReadingValueConstant(_playerPosition);
                 }
-                
+
+                break;
+            }
+
+            case "DisplayPositionAsBytes":
+            {
+                _displayingCoordsAsBytes = !_displayingCoordsAsBytes;
+
+                if (_displayingCoordsAsBytes)
+                {
+                    if (!_memory.ReadBytesConstant(_playerPosition, 12, PlayerCoordsBytes,
+                            TimeSpan.FromMilliseconds(250)))
+                    {
+                        Console.WriteLine("Read adress wird schon benutzt.");
+                    }
+                }
+                else
+                {
+                    _memory.StopReadingValueConstant(_playerPosition);
+                }
+
+                break;
+            }
+
+            case "FreezePlayer":
+            {
+                _freezePlayer = !_freezePlayer;
+
+                if (_freezePlayer)
+                {
+                    _memory.FreezeValue<Vector3>(_playerPosition, TimeSpan.FromMilliseconds(5));
+                }
+                else
+                {
+                    _memory.UnfreezeValue(_playerPosition);
+                }
+
                 break;
             }
         }
@@ -70,14 +108,21 @@ public sealed class PlayerPosition : IMemoryTrainer
         return Task.CompletedTask;
     }
 
-    private static void PlayerCoords(bool success, Vector3 coords)
+    private static void PlayerCoordsBytes(byte[] coords)
     {
-        if (success)
+        foreach (var coord in coords)
         {
-            Console.WriteLine(coords);
+            Console.Write(coord);
         }
+
+        Console.WriteLine();
     }
-    
+
+    private static void PlayerCoords(Vector3 coords)
+    {
+        Console.WriteLine(coords);
+    }
+
     public Task Disable(params string[]? args)
     {
         return Task.CompletedTask;

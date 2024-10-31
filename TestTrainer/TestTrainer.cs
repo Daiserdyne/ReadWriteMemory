@@ -34,6 +34,16 @@ public sealed class TestTrainer : IDisposable
                 await _implementedTrainer[nameof(PlayerPosition)].Enable("DisplayPosition");
             }
 
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F5))
+            {
+                await _implementedTrainer[nameof(PlayerPosition)].Enable("FreezePlayer");
+            }
+            
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F6))
+            {
+                await _implementedTrainer[nameof(PlayerPosition)].Enable("DisplayPositionAsBytes");
+            }
+
             await Task.Delay(1);
         }
     }

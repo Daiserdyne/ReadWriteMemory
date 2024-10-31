@@ -16,7 +16,7 @@ public partial class RwMemory
     /// <returns></returns>
     public bool FreezeValue<T>(MemoryAddress memoryAddress, T value, TimeSpan freezeRefreshRate) where T : unmanaged
     {
-        if (!IsFreezingPossible(memoryAddress, out _))
+        if (!CheckIfAlreadyFrozen(memoryAddress, out _))
         {
             return false;
         }
@@ -39,7 +39,7 @@ public partial class RwMemory
     /// <returns></returns>
     public unsafe bool FreezeValue<T>(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate) where T : unmanaged
     {
-        if (!IsFreezingPossible(memoryAddress, out var targetAddress))
+        if (!CheckIfAlreadyFrozen(memoryAddress, out var targetAddress))
         {
             return false;
         }
@@ -67,7 +67,7 @@ public partial class RwMemory
     /// <returns></returns>
     public bool FreezeValue(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate, uint bufferSize)
     {
-        if (!IsFreezingPossible(memoryAddress, out var targetAddress))
+        if (!CheckIfAlreadyFrozen(memoryAddress, out var targetAddress))
         {
             return false;
         }
@@ -132,9 +132,9 @@ public partial class RwMemory
         }, freezeRefreshRate, freezeToken.Token);
     }
 
-    private bool IsFreezingPossible(MemoryAddress memoryAddress, out nuint targetAddress)
+    private bool CheckIfAlreadyFrozen(MemoryAddress memoryAddress, out nuint targetAddress)
     {
-        if (!GetTargetAddress(memoryAddress, out targetAddress) &&
+        if (!GetTargetAddress(memoryAddress, out targetAddress) ||
             _memoryRegister[memoryAddress].FreezeTokenSrc is not null)
         {
             return false;
