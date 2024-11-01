@@ -40,8 +40,6 @@ public partial class RwMemory : IDisposable
 
     #region Fields
 
-    //todo: Add event when targetProcess will be reinitilized.
-
     private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
 
     private readonly CancellationTokenSource _monitoringServiceCancellationTokenSrc = new();
