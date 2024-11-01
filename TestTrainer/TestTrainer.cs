@@ -18,7 +18,7 @@ public sealed class TestTrainer : IDisposable
     public async Task Main(CancellationToken cancellationToken)
     {
         _memory.OnProcessStateChanged += MemoryOnProcessOnStateChanged;
-
+        
         while (!cancellationToken.IsCancellationRequested)
         {
             if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F2))

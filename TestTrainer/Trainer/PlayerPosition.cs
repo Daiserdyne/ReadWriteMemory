@@ -9,17 +9,14 @@ namespace TestTrainer.Trainer;
 public sealed class PlayerPosition : IMemoryTrainer
 {
     private readonly RwMemory _memory = RwMemoryHelper.RwMemory;
-    private readonly MemoryAddress _playerPosition = new(0x219FF58, "Outlast2.exe", 0x250, 0x88);
+    private readonly MemoryAddress _playerPositionAddress = new(0x219FF58, "Outlast2.exe", 0x250, 0x88);
 
     private Vector3 _savedPlayerPosition = Vector3.Zero;
     private bool _displayingCoords;
     private bool _displayingCoordsAsBytes;
     private bool _freezePlayer;
 
-    public PlayerPosition()
-    {
-        _memory.OnReinitilizeTargetProcess += OnReinitilizeTargetProcess;
-    }
+    public PlayerPosition() => _memory.OnReinitilizeTargetProcess += OnReinitilizeTargetProcess;
 
     private void OnReinitilizeTargetProcess()
     {
@@ -30,6 +27,7 @@ public sealed class PlayerPosition : IMemoryTrainer
     }
 
     public int Id { get; } = 0;
+    
     public string TrainerName { get; } = nameof(PlayerPosition);
 
     public string Description { get; } = "Player teleportation.";
@@ -42,7 +40,7 @@ public sealed class PlayerPosition : IMemoryTrainer
         {
             case "SavePosition":
             {
-                if (_memory.ReadValue(_playerPosition, out _savedPlayerPosition))
+                if (_memory.ReadValue(_playerPositionAddress, out _savedPlayerPosition))
                 {
                     Console.WriteLine(_savedPlayerPosition);
                 }
@@ -54,7 +52,7 @@ public sealed class PlayerPosition : IMemoryTrainer
             {
                 if (_savedPlayerPosition != Vector3.Zero)
                 {
-                    _memory.WriteValue(_playerPosition, _savedPlayerPosition);
+                    _memory.WriteValue(_playerPositionAddress, _savedPlayerPosition);
                 }
 
                 break;
@@ -66,7 +64,7 @@ public sealed class PlayerPosition : IMemoryTrainer
 
                 if (_displayingCoords)
                 {
-                    if (!_memory.ReadValueConstant<Vector3>(_playerPosition, PlayerCoords,
+                    if (!_memory.ReadValueConstant<Vector3>(_playerPositionAddress, PlayerCoords,
                             TimeSpan.FromMilliseconds(250)))
                     {
                         Console.WriteLine("Read adress wird schon benutzt.");
@@ -74,7 +72,7 @@ public sealed class PlayerPosition : IMemoryTrainer
                 }
                 else
                 {
-                    _memory.StopReadingValueConstant(_playerPosition);
+                    _memory.StopReadingValueConstant(_playerPositionAddress);
                 }
 
                 break;
@@ -86,7 +84,7 @@ public sealed class PlayerPosition : IMemoryTrainer
 
                 if (_displayingCoordsAsBytes)
                 {
-                    if (!_memory.ReadBytesConstant(_playerPosition, 12, PlayerCoordsBytes,
+                    if (!_memory.ReadBytesConstant(_playerPositionAddress, 12, PlayerCoordsBytes,
                             TimeSpan.FromMilliseconds(250)))
                     {
                         Console.WriteLine("Read adress wird schon benutzt.");
@@ -94,7 +92,7 @@ public sealed class PlayerPosition : IMemoryTrainer
                 }
                 else
                 {
-                    _memory.StopReadingValueConstant(_playerPosition);
+                    _memory.StopReadingValueConstant(_playerPositionAddress);
                 }
 
                 break;
@@ -106,11 +104,11 @@ public sealed class PlayerPosition : IMemoryTrainer
 
                 if (_freezePlayer)
                 {
-                    _memory.FreezeValue<Vector3>(_playerPosition, TimeSpan.FromMilliseconds(5));
+                    _memory.FreezeValue<Vector3>(_playerPositionAddress, TimeSpan.FromMilliseconds(5));
                 }
                 else
                 {
-                    _memory.UnfreezeValue(_playerPosition);
+                    _memory.UnfreezeValue(_playerPositionAddress);
                 }
 
                 break;
