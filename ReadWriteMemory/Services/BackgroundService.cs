@@ -16,7 +16,7 @@ internal static class BackgroundService
             await Task.Delay(repeatTime, ct);
         }
     }
-
+    
     private static TimeSpan GetValidRefreshRate(TimeSpan freezeRefreshRate)
     {
         switch ((double)(long)freezeRefreshRate.TotalMilliseconds)

@@ -1,40 +1,62 @@
-﻿using System.Numerics;
+﻿using System.Collections.Frozen;
 using ReadWriteMemory;
-using ReadWriteMemory.Models;
+using ReadWriteMemory.Entities;
+using ReadWriteMemory.Interfaces;
+using ReadWriteMemory.Services;
+using ReadWriteMemory.Utilities;
+using TestTrainer.Trainer;
 
 namespace TestTrainer;
 
-public sealed class TestTrainer
+public sealed class TestTrainer : IDisposable
 {
-    private readonly RwMemory _memory = new("signal");
-    private readonly MemoryAddress _playPosition = new(0x3, 0, 0);
-    
-    public TestTrainer()
+    private readonly RwMemory _memory = RwMemoryHelper.CreateAndGetSingletonInstance("Outlast2");
+
+    private readonly FrozenDictionary<string, IMemoryTrainer> _implementedTrainer =
+        RwMemoryHelper.GetAllImplementedTrainers();
+
+    public async Task Main(CancellationToken cancellationToken)
     {
+        _memory.OnProcessStateChanged += MemoryOnProcessOnStateChanged;
+        
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F2))
+            {
+                await _implementedTrainer[nameof(PlayerPosition)].Enable("SavePosition");
+            }
+
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F3))
+            {
+                await _implementedTrainer[nameof(PlayerPosition)].Enable("LoadPosition");
+            }
+
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F4))
+            {
+                await _implementedTrainer[nameof(PlayerPosition)].Enable("DisplayPosition");
+            }
+
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F5))
+            {
+                await _implementedTrainer[nameof(PlayerPosition)].Enable("FreezePlayer");
+            }
+
+            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F6))
+            {
+                await _implementedTrainer[nameof(PlayerPosition)].Enable("DisplayPositionAsBytes");
+            }
+
+            await Task.Delay(1);
+        }
     }
 
-    public async Task Main()
+    private static void MemoryOnProcessOnStateChanged(ProgramState newState)
     {
-        Console.ReadLine();
-        _memory.ProcessOnStateChanged += OnProcessOnStateChanged;
-        Console.ReadLine();
-        _memory.ProcessOnStateChanged += MemoryOnProcessOnStateChanged;
-        Console.ReadLine();
-        _memory.ProcessOnStateChanged -= OnProcessOnStateChanged;
-        Console.ReadLine();
-        _memory.ProcessOnStateChanged -= MemoryOnProcessOnStateChanged;
-        Console.ReadLine();
-        _memory.ProcessOnStateChanged += MemoryOnProcessOnStateChanged;
-        Console.ReadLine();
+        Console.WriteLine($"Process has been {newState}.");
     }
 
-    private void MemoryOnProcessOnStateChanged(ProgramState newprocessstate)
+    public void Dispose()
     {
-        Console.WriteLine($"ProcessOnStateChanged: {newprocessstate}");
-    }
-
-    private void OnProcessOnStateChanged(ProgramState newprocessstate)
-    {
-        Console.WriteLine($"ProcessOnStateChanged: {newprocessstate}");
+        _memory.Dispose();
     }
 }

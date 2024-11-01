@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace ReadWriteMemory.Models;
+namespace ReadWriteMemory.Entities;
 
 /// <summary>
 /// Holds information about the current opened process.

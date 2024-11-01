@@ -7,20 +7,21 @@ namespace ReadWriteMemory.Services;
 /// <summary>
 /// Contains some usefull trainer helper-methods.
 /// </summary>
-public static class TrainerServices
+public static class RwMemoryHelper
 {
     private static object? _threadObject;
     private static RwMemory? _memory;
 
     /// <summary>
-    /// Gives you a <see cref="RwMemory"/> instance which you have created before with the <see cref="CreateAndGetSingletonInstance(string)"/> function.
+    /// Gives you a <see cref="ReadWriteMemory.RwMemory"/> instance which you have created before with the <see cref="CreateAndGetSingletonInstance(string)"/> function.
     /// </summary>
-    public static RwMemory GetCreatedSingletonInstance =>
-        _memory is not null ? _memory : throw new NullReferenceException("A RWMemory instance has to be created before you can get it. " +
-            $"Use the {nameof(CreateAndGetSingletonInstance)} method to creat a instance, then you can use this property.");
+    /// <exception cref="NullReferenceException"></exception>
+    public static RwMemory RwMemory =>
+        _memory ?? throw new NullReferenceException("A RwMemory instance has to be created before you can get it. " +
+                                                    $"Use the {nameof(CreateAndGetSingletonInstance)} method to creat a instance, then you can use this property.");
 
     /// <summary>
-    /// Gives you a thread-safe singleton instance of the <see cref="RwMemory"/> object.
+    /// Gives you a thread-safe singleton instance of the <see cref="ReadWriteMemory.RwMemory"/> object.
     /// </summary>
     /// <param name="processName"></param>
     /// <returns></returns>
@@ -50,10 +51,12 @@ public static class TrainerServices
             return trainerRegister.ToFrozenDictionary();
         }
 
-        var implementedTrainers = (from type in entryAssembly.GetTypes()
-                                   where type.GetInterfaces().Contains(typeof(IMemoryTrainer))
-                                         && type.GetConstructor(Type.EmptyTypes) != null
-                                   select Activator.CreateInstance(type) as IMemoryTrainer).ToList();
+        var implementedTrainers = entryAssembly
+            .GetTypes()
+            .Where(type => type.GetInterfaces()
+                .Contains(typeof(IMemoryTrainer)) && type.GetConstructor(Type.EmptyTypes) is not null)
+            .Select(type => Activator.CreateInstance(type) as IMemoryTrainer)
+            .ToList();
 
         if (!implementedTrainers.Any())
         {
@@ -62,7 +65,10 @@ public static class TrainerServices
 
         foreach (var trainer in implementedTrainers)
         {
-            trainerRegister.Add(trainer.TrainerName, trainer);
+            if (trainer is not null)
+            {
+                trainerRegister.Add(trainer.TrainerName, trainer);
+            }
         }
 
         return trainerRegister.ToFrozenDictionary();

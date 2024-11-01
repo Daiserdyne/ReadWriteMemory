@@ -1,4 +1,4 @@
-﻿namespace ReadWriteMemory.Models;
+﻿namespace ReadWriteMemory.Entities;
 
 /// <summary>
 /// Contains/holds some information about the target memory address address.
@@ -10,4 +10,6 @@ internal sealed record MemoryAddressTable
     internal CodeCaveTable? CodeCaveTable { get; set; }
 
     internal CancellationTokenSource? FreezeTokenSrc { get; set; }
+    
+    internal CancellationTokenSource? ReadValueConstantTokenSrc { get; set; }
 }

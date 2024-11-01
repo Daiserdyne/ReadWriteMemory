@@ -1,4 +1,4 @@
-﻿namespace ReadWriteMemory.Models;
+﻿namespace ReadWriteMemory.Entities;
 
 /// <summary>
 /// This record class stores address, offsets and module name. 
@@ -14,6 +14,12 @@
 /// </summary>
 public sealed record MemoryAddress
 {
+    internal nuint Address { get; }
+
+    internal string ModuleName { get; }
+
+    internal int[]? Offsets { get; }
+    
     /// <summary>
     /// This record class stores a memory <paramref name="address"/>, the associated <paramref name="offsets"/> and <paramref name="moduleName"/>. 
     /// This will be needed to calculate the base address and read/write to/from the targets process memory.
@@ -49,10 +55,4 @@ public sealed record MemoryAddress
         ModuleName = string.Empty;
         Offsets = offsets;
     }
-
-    internal nuint Address { get; }
-
-    internal string ModuleName { get; }
-
-    internal int[]? Offsets { get; }
 }

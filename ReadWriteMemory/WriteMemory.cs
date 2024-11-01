@@ -1,4 +1,4 @@
-﻿using ReadWriteMemory.Models;
+﻿using ReadWriteMemory.Entities;
 using ReadWriteMemory.Utilities;
 
 namespace ReadWriteMemory;
