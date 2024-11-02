@@ -183,9 +183,21 @@ public partial class RwMemory : IDisposable
     {
         foreach (var freezeTokenSrc in _memoryRegister.Values
                      .Where(addr => addr.FreezeTokenSrc is not null)
-                     .Select(addr => addr.FreezeTokenSrc))
+                     .Select(addr => addr.FreezeTokenSrc!))
         {
-            freezeTokenSrc!.Cancel();
+            freezeTokenSrc.Cancel();
+            freezeTokenSrc.Dispose();
+        }
+    }
+    
+    private void StopReadingValuesConstant()
+    {
+        foreach (var readValueConstantTokenSrc in _memoryRegister.Values
+                     .Where(addr => addr.ReadValueConstantTokenSrc is not null)
+                     .Select(addr => addr.ReadValueConstantTokenSrc!))
+        {
+            readValueConstantTokenSrc.Cancel();
+            readValueConstantTokenSrc.Dispose();
         }
     }
 
@@ -337,6 +349,7 @@ public partial class RwMemory : IDisposable
 
         CloseAllCodeCaves();
         UnfreezeAllValues();
+        StopReadingValuesConstant();
         CloseHandle();
 
         _memoryRegister.Clear();
