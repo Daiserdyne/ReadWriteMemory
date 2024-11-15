@@ -20,10 +20,11 @@ public partial class RwMemory
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    public Task<nuint> CreateOrResumeDetourAsync(MemoryAddress memoryAddress, IReadOnlyList<byte> caveCode, int instructionOpcodesLength, 
-        int totalAmountOfOpcodes, uint size = 4096)
+    public Task<nuint> CreateOrResumeDetour(MemoryAddress memoryAddress, byte[] caveCode, 
+        int instructionOpcodesLength, int totalAmountOfOpcodes, uint size = 4096)
     {
-        return Task.Run(() => CreateOrResumeDetour(memoryAddress, caveCode, instructionOpcodesLength, totalAmountOfOpcodes, size));
+        return Task.Run(() => CreateDetour(memoryAddress, caveCode, instructionOpcodesLength, 
+            totalAmountOfOpcodes, size));
     }
 
     /// <summary>
@@ -41,8 +42,8 @@ public partial class RwMemory
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    public nuint CreateOrResumeDetour(MemoryAddress memoryAddress, IReadOnlyList<byte> caveCode, int instructionOpcodesLength, 
-        int totalAmountOfOpcodes, uint size = 4096)
+    private nuint CreateDetour(MemoryAddress memoryAddress, byte[] caveCode, 
+        int instructionOpcodesLength, int totalAmountOfOpcodes, uint size = 4096)
     {
         if (!IsProcessAlive)
         {
@@ -56,7 +57,8 @@ public partial class RwMemory
 
         var targetAddress = GetTargetAddress(memoryAddress);
 
-        CodeCaveFactory.CreateCaveAndHookFunction(targetAddress, _targetProcess.Handle, caveCode, instructionOpcodesLength, totalAmountOfOpcodes,
+        CodeCaveFactory.CreateCaveAndHookFunction(targetAddress, _targetProcess.Handle, caveCode, 
+            instructionOpcodesLength, totalAmountOfOpcodes,
             out var caveAddress, out var originalOpcodes, out var jmpBytes, size);
 
         _memoryRegister[memoryAddress].CodeCaveTable = new(originalOpcodes, caveAddress, jmpBytes);

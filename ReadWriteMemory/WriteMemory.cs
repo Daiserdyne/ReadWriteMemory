@@ -6,40 +6,6 @@ namespace ReadWriteMemory;
 public partial class RwMemory
 {
     /// <summary>
-    /// This will write the given <seealso cref="string"/>-<paramref name="value"/> to the target <paramref name="memoryAddress"/>.
-    /// </summary>
-    /// <param name="memoryAddress"></param>
-    /// <param name="value"></param>
-    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
-    public bool WriteString(MemoryAddress memoryAddress, string value)
-    {
-        if (!GetTargetAddress(memoryAddress, out var targetAddress))
-        {
-            return false;
-        }
-
-        return MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, value);
-    }
-
-    /// <summary>
-    /// This will write the given <seealso cref="string"/>-<paramref name="value"/> with the given <paramref name="length"/> 
-    /// to the target <paramref name="memoryAddress"/>.
-    /// </summary>
-    /// <param name="memoryAddress"></param>
-    /// <param name="value"></param>
-    /// <param name="length"></param>
-    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
-    public bool WriteString(MemoryAddress memoryAddress, string value, int length)
-    {
-        if (!GetTargetAddress(memoryAddress, out var targetAddress))
-        {
-            return false;
-        }
-
-        return MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, value, length);
-    }
-
-    /// <summary>
     /// This will write the given <c>ByteArray</c>-<paramref name="value"/> to the target <paramref name="memoryAddress"/>.
     /// </summary>
     /// <param name="memoryAddress"></param>
