@@ -12,7 +12,7 @@
 /// <para>See <seealso cref="MemoryAddress(nuint, int[])"/></para> 
 /// See <seealso cref="MemoryAddress(nuint, string, int[])"/>
 /// </summary>
-public sealed record MemoryAddress
+public readonly record struct MemoryAddress
 {
     internal nuint Address { get; }
 
