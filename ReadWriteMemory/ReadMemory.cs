@@ -96,8 +96,6 @@ public partial class RwMemory
             return false;
         }
 
-        Console.WriteLine(targetAddress);
-
         return true;
     }
 
