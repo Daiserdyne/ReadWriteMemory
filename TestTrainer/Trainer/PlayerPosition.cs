@@ -34,7 +34,7 @@ public sealed class PlayerPosition : IMemoryTrainer
 
     public bool DisableWhenDispose { get; } = false;
 
-    public Task Enable(params string[]? args)
+    public async Task<bool> Enable(params string[]? args)
     {
         switch (args![0])
         {
@@ -115,7 +115,9 @@ public sealed class PlayerPosition : IMemoryTrainer
             }
         }
 
-        return Task.CompletedTask;
+        await Task.CompletedTask;
+        
+        return true;
     }
 
     private static void PlayerCoordsBytes(byte[] coords)
@@ -133,8 +135,10 @@ public sealed class PlayerPosition : IMemoryTrainer
         Console.WriteLine(coords);
     }
 
-    public Task Disable(params string[]? args)
+    public async Task<bool> Disable(params string[]? args)
     {
-        return Task.CompletedTask;
+        await Task.CompletedTask;
+        
+        return true;
     }
 }
