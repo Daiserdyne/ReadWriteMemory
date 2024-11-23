@@ -30,12 +30,12 @@ public interface IMemoryTrainer
     /// </summary>
     /// <param name="args"></param>
     /// <returns></returns>
-    public Task Enable(params string[]? args);
+    public Task<bool> Enable(params string[]? args);
 
     /// <summary>
     /// This function restores the official state of the program.
     /// </summary>
     /// <param name="args"></param>
     /// <returns></returns>
-    public Task Disable(params string[]? args);
+    public Task<bool> Disable(params string[]? args);
 }
