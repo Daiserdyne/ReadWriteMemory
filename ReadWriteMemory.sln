@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32901.215
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReadWriteMemory", "ReadWriteMemory\ReadWriteMemory.csproj", "{29F0B8A2-6844-4AEC-829A-B51C367AB2AF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReadWriteMemory.External", "ReadWriteMemory.External\ReadWriteMemory.External.csproj", "{29F0B8A2-6844-4AEC-829A-B51C367AB2AF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestTrainer", "TestTrainer\TestTrainer.csproj", "{2FAEF815-8356-4F04-B334-4053137110E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadWriteMemory.Shared", "ReadWriteMemory.Shared\ReadWriteMemory.Shared.csproj", "{93521330-9F1C-4E9B-A4BF-056B5E71EE15}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +33,14 @@ Global
 		{2FAEF815-8356-4F04-B334-4053137110E6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2FAEF815-8356-4F04-B334-4053137110E6}.Release|x64.ActiveCfg = Release|Any CPU
 		{2FAEF815-8356-4F04-B334-4053137110E6}.Release|x64.Build.0 = Release|Any CPU
+		{93521330-9F1C-4E9B-A4BF-056B5E71EE15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93521330-9F1C-4E9B-A4BF-056B5E71EE15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93521330-9F1C-4E9B-A4BF-056B5E71EE15}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{93521330-9F1C-4E9B-A4BF-056B5E71EE15}.Debug|x64.Build.0 = Debug|Any CPU
+		{93521330-9F1C-4E9B-A4BF-056B5E71EE15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93521330-9F1C-4E9B-A4BF-056B5E71EE15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93521330-9F1C-4E9B-A4BF-056B5E71EE15}.Release|x64.ActiveCfg = Release|Any CPU
+		{93521330-9F1C-4E9B-A4BF-056B5E71EE15}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

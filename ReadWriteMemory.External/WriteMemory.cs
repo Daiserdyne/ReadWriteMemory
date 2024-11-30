@@ -1,7 +1,7 @@
-﻿using ReadWriteMemory.Entities;
-using ReadWriteMemory.Utilities;
+﻿using ReadWriteMemory.External.Utilities;
+using ReadWriteMemory.Shared.Entities;
 
-namespace ReadWriteMemory;
+namespace ReadWriteMemory.External;
 
 public partial class RwMemory
 {

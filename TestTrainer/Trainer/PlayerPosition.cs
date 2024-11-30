@@ -1,15 +1,16 @@
 ﻿using System.Numerics;
-using ReadWriteMemory;
-using ReadWriteMemory.Entities;
-using ReadWriteMemory.Interfaces;
-using ReadWriteMemory.Services;
+using ReadWriteMemory.External.Services;
+using ReadWriteMemory.Shared.Entities;
+using ReadWriteMemory.Shared.Interfaces;
+using RwMemory = ReadWriteMemory.External.RwMemory;
 
 namespace TestTrainer.Trainer;
 
 public sealed class PlayerPosition : IMemoryTrainer
 {
     private readonly RwMemory _memory = RwMemoryHelper.RwMemory;
-    private readonly MemoryAddress _playerPositionAddress = new(0x219FF58, "Outlast2.exe", 0x250, 0x88);
+    private readonly MemoryAddress _playerPositionAddress = new(0x219FF58, "Outlast2.exe", 
+        0x250, 0x88);
 
     private Vector3 _savedPlayerPosition = Vector3.Zero;
     private bool _displayingCoords;
@@ -36,7 +37,7 @@ public sealed class PlayerPosition : IMemoryTrainer
 
     public async Task<bool> Enable(params string[]? args)
     {
-        switch (args![0])
+      switch (args![0])
         {
             case "SavePosition":
             {

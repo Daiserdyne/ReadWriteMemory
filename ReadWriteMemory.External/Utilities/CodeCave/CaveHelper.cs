@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace ReadWriteMemory.Utilities.CodeCave;
+namespace ReadWriteMemory.External.Utilities.CodeCave;
 
 internal static class CaveHelper
 {

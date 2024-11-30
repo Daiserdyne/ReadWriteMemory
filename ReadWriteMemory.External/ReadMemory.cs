@@ -1,10 +1,11 @@
-﻿using ReadWriteMemory.Entities;
-using ReadWriteMemory.Services;
-using ReadWriteMemory.Utilities;
+﻿using ReadWriteMemory.External.Services;
+using ReadWriteMemory.External.Utilities;
+using ReadWriteMemory.Shared.Entities;
+using ReadWriteMemory.Shared.Services;
 
 // ReSharper disable MemberCanBePrivate.Global
 
-namespace ReadWriteMemory;
+namespace ReadWriteMemory.External;
 
 public partial class RwMemory
 {

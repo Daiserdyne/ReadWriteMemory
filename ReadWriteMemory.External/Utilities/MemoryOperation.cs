@@ -1,9 +1,7 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
-using Kernel32 = ReadWriteMemory.NativeImports.Kernel32;
+﻿using System.Text;
+using Kernel32 = ReadWriteMemory.External.NativeImports.Kernel32;
 
-namespace ReadWriteMemory.Utilities;
+namespace ReadWriteMemory.External.Utilities;
 
 internal static class MemoryOperation
 {

@@ -1,11 +1,11 @@
-﻿namespace ReadWriteMemory.Services;
+﻿namespace ReadWriteMemory.Shared.Services;
 
-internal static class BackgroundService
+public static class BackgroundService
 {
     private const double MaxFreezeRefreshRateInMilliseconds = double.MaxValue;
     private const byte MinFreezeRefreshRateInMilliseconds = 1;
 
-    internal static async Task ExecuteTaskRepeatedly(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
+    public static async Task ExecuteTaskRepeatedly(Action taskToExecute, TimeSpan repeatTime, CancellationToken ct)
     {
         repeatTime = GetValidRefreshRate(repeatTime);
 

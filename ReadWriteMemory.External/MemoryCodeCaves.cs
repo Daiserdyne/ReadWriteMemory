@@ -1,8 +1,8 @@
-﻿using ReadWriteMemory.Entities;
-using ReadWriteMemory.Utilities;
-using ReadWriteMemory.Utilities.CodeCave;
+﻿using ReadWriteMemory.External.Utilities;
+using ReadWriteMemory.External.Utilities.CodeCave;
+using ReadWriteMemory.Shared.Entities;
 
-namespace ReadWriteMemory;
+namespace ReadWriteMemory.External;
 
 public partial class RwMemory
 {
@@ -92,9 +92,9 @@ public partial class RwMemory
         {
             caveAddress = caveTable.CaveAddress;
 
-            if (!MemoryOperation.WriteProcessMemory(_targetProcess.Handle, memoryTable.BaseAddress, caveTable.JmpBytes))
+            if (!MemoryOperation.WriteProcessMemory((IntPtr)_targetProcess.Handle, (UIntPtr)memoryTable.BaseAddress, (byte[])caveTable.JmpBytes))
             {
-                MemoryOperation.WriteProcessMemory(_targetProcess.Handle, memoryTable.BaseAddress, caveTable.OriginalOpcodes);
+                MemoryOperation.WriteProcessMemory((IntPtr)_targetProcess.Handle, (UIntPtr)memoryTable.BaseAddress, (byte[])caveTable.OriginalOpcodes);
 
                 DeallocateMemory(caveTable.CaveAddress);
 
@@ -136,7 +136,7 @@ public partial class RwMemory
             return false;
         }
 
-        MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.OriginalOpcodes);
+        MemoryOperation.WriteProcessMemory((IntPtr)_targetProcess.Handle, (UIntPtr)baseAddress, (byte[])caveTable.OriginalOpcodes);
 
         return true;
     }
@@ -165,7 +165,7 @@ public partial class RwMemory
             return false;
         }
 
-        MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.OriginalOpcodes);
+        MemoryOperation.WriteProcessMemory((IntPtr)_targetProcess.Handle, (UIntPtr)baseAddress, (byte[])caveTable.OriginalOpcodes);
 
         memoryTable.CodeCaveTable = null;
 
@@ -177,8 +177,8 @@ public partial class RwMemory
     /// </summary>
     private void CloseAllCodeCaves()
     {
-        foreach (var memoryTable in _memoryRegister.Values
-            .Where(addr => addr.CodeCaveTable is not null))
+        foreach (var memoryTable in Enumerable
+            .Where<MemoryAddressTable>(_memoryRegister.Values, addr => addr.CodeCaveTable is not null))
         {
             var baseAddress = memoryTable.BaseAddress;
             var caveTable = memoryTable.CodeCaveTable;

@@ -1,13 +1,15 @@
-﻿using ReadWriteMemory.Entities;
-using ReadWriteMemory.Services;
-using ReadWriteMemory.Utilities;
+﻿using ReadWriteMemory.External.Services;
+using ReadWriteMemory.External.Utilities;
+using ReadWriteMemory.Shared.Entities;
+using ReadWriteMemory.Shared.Services;
 
-namespace ReadWriteMemory;
+namespace ReadWriteMemory.External;
 
 public partial class RwMemory
 {
     /// <summary>
-    /// <para>Freezes the <paramref name="value"/> of an unmanaged data type by the given <paramref name="memoryAddress"/> with a 
+    /// <para>Freezes the <paramref name="value"/> of an unmanaged data type by the given
+    /// <paramref name="memoryAddress"/> with a 
     /// given <paramref name="freezeRefreshRate"></paramref>.</para>
     /// </summary>
     /// <param name="memoryAddress"></param>
@@ -31,7 +33,8 @@ public partial class RwMemory
     /// <summary>
     /// Freezes the value of an unmanaged data type by the given <paramref name="memoryAddress"/> with a
     /// given <paramref name="freezeRefreshRate"></paramref>. The value will be read out once and then applied to to 
-    /// <paramref name="memoryAddress"/>. You have the specify the data type <typeparamref name="T"/> to get the size of the buffer.
+    /// <paramref name="memoryAddress"/>. You have the specify the data type <typeparamref name="T"/> to get
+    /// the size of the buffer.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="memoryAddress"></param>

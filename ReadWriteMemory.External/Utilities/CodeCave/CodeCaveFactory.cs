@@ -1,6 +1,6 @@
-﻿using static ReadWriteMemory.NativeImports.Kernel32;
+﻿using static ReadWriteMemory.External.NativeImports.Kernel32;
 
-namespace ReadWriteMemory.Utilities.CodeCave;
+namespace ReadWriteMemory.External.Utilities.CodeCave;
 
 internal static class CodeCaveFactory
 {

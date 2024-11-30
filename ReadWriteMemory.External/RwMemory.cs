@@ -1,14 +1,15 @@
-﻿using ReadWriteMemory.Interfaces;
-using ReadWriteMemory.Entities;
-using ReadWriteMemory.Services;
-using ReadWriteMemory.Utilities;
-using System.Diagnostics;
-using Kernel32 = ReadWriteMemory.NativeImports.Kernel32;
+﻿using System.Diagnostics;
+using ReadWriteMemory.External.Services;
+using ReadWriteMemory.External.Utilities;
+using ReadWriteMemory.Shared.Entities;
+using ReadWriteMemory.Shared.Interfaces;
+using ReadWriteMemory.Shared.Services;
+using Kernel32 = ReadWriteMemory.External.NativeImports.Kernel32;
 
-namespace ReadWriteMemory;
+namespace ReadWriteMemory.External;
 
 /// <summary>
-/// This is the main component of the <see cref="ReadWriteMemory"/> library. This class includes a lot of powerfull
+/// This is the main component of the <see cref="ReadWriteMemory.External"/> library. This class includes a lot of powerfull
 /// read and write operations to manipulate the memory of an process.
 /// </summary>
 public partial class RwMemory : IDisposable
@@ -16,7 +17,7 @@ public partial class RwMemory : IDisposable
     #region Events and Delegates
 
     /// <summary>
-    /// Delegate for the <see cref="RwMemory.ProcessStateHasChanged"/> event.
+    /// Delegate for the <see cref="ProcessStateHasChanged"/> event.
     /// </summary>
     /// <param name="newProcessState"></param>
     public delegate void ProcessStateHasChanged(ProgramState newProcessState);
@@ -61,7 +62,7 @@ public partial class RwMemory : IDisposable
     #region C'tor
 
     /// <summary>
-    /// This is the main component of the <see cref="ReadWriteMemory"/> library. This class includes a lot of powerfull
+    /// This is the main component of the <see cref="ReadWriteMemory.External"/> library. This class includes a lot of powerfull
     /// read and write operations to manipulate the memory of an process.
     /// </summary>
     public RwMemory(string processName)

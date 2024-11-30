@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ReadWriteMemory.NativeImports;
+namespace ReadWriteMemory.External.NativeImports;
 
 internal static class Kernel32
 {

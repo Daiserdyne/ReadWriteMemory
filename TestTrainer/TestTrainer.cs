@@ -1,10 +1,10 @@
 ﻿using System.Collections.Frozen;
-using ReadWriteMemory;
-using ReadWriteMemory.Entities;
-using ReadWriteMemory.Interfaces;
-using ReadWriteMemory.Services;
-using ReadWriteMemory.Utilities;
+using ReadWriteMemory.External.Services;
+using ReadWriteMemory.External.Utilities;
+using ReadWriteMemory.Shared.Entities;
+using ReadWriteMemory.Shared.Interfaces;
 using TestTrainer.Trainer;
+using RwMemory = ReadWriteMemory.External.RwMemory;
 
 namespace TestTrainer;
 

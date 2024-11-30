@@ -1,4 +1,4 @@
-﻿namespace ReadWriteMemory.Entities;
+﻿namespace ReadWriteMemory.Shared.Entities;
 
 /// <summary>
 /// This record class stores address, offsets and module name. 
@@ -14,11 +14,11 @@
 /// </summary>
 public readonly record struct MemoryAddress
 {
-    internal nuint Address { get; }
+    public nuint Address { get; }
 
-    internal string ModuleName { get; }
+    public string ModuleName { get; }
 
-    internal int[]? Offsets { get; }
+    public int[]? Offsets { get; }
     
     /// <summary>
     /// This record class stores a memory <paramref name="address"/>, the associated <paramref name="offsets"/> and <paramref name="moduleName"/>. 

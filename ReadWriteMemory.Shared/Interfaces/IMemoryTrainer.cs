@@ -1,4 +1,4 @@
-﻿namespace ReadWriteMemory.Interfaces;
+﻿namespace ReadWriteMemory.Shared.Interfaces;
 
 /// <summary>
 /// Standard interface for a trainer.

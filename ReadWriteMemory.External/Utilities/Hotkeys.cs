@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ReadWriteMemory.Utilities;
+namespace ReadWriteMemory.External.Utilities;
 
 /// <summary>
 /// Allows you to create hotkeys to call your code.
