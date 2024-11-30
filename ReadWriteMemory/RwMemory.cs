@@ -350,6 +350,7 @@ public partial class RwMemory : IDisposable
         CloseAllCodeCaves();
         UnfreezeAllValues();
         StopReadingValuesConstant();
+        RestoreAllReplacedBytes();
         CloseHandle();
 
         _memoryRegister.Clear();
