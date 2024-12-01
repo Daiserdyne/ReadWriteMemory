@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <Platforms>x64</Platforms>
+        <OutputType>Library</OutputType>
+        <WindowsPackageType>None</WindowsPackageType>
+        <EnableWindowsTargeting>true</EnableWindowsTargeting>
+        <RootNamespace>ReadWriteMemory.Internal</RootNamespace>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Version>1.0.0</Version>
+        <Authors>Timm3D</Authors>
+        <Product>ReadWriteMemoryInternal</Product>
+        <Description>A powerfull memory editing dll.</Description>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ReadWriteMemory.Shared\ReadWriteMemory.Shared.csproj" />
+    </ItemGroup>
+
+</Project>
