@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Frozen;
+using System.Diagnostics;
 using ReadWriteMemory.Shared.Entities;
 
 namespace ReadWriteMemory.Internal;
@@ -9,26 +10,33 @@ namespace ReadWriteMemory.Internal;
 public partial class RwMemory
 {
     private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
-    private readonly Dictionary<string, nuint> _modules = [];
-    
-    private void GetAllLoadedProcessModules()
+    private readonly FrozenDictionary<string, nuint> _modules;
+
+    /// <summary>
+    /// This is the main component of the <see cref="ReadWriteMemory.Internal"/> library. This class includes a lot of powerfull
+    /// read and write operations to manipulate the memory of an process.
+    /// </summary>
+    public RwMemory()
     {
-        var processModules = Process.GetCurrentProcess().Modules
-            .Cast<ProcessModule>()
-            .ToList();
+        _modules = GetAllLoadedProcessModules();
+    }
+    
+    private static FrozenDictionary<string, nuint> GetAllLoadedProcessModules()
+    {
+        var modules = new Dictionary<string, nuint>();
+
+        var processModules = Process.GetCurrentProcess()
+            .Modules
+            .Cast<ProcessModule>();
 
         foreach (var module in processModules)
         {
             var moduleName = module.ModuleName.ToLower();
 
-            if (!_modules.ContainsKey(moduleName))
-            {
-                _modules.Add(moduleName, (nuint)module.BaseAddress);
-                continue;
-            }
-
-            _modules[moduleName] = (nuint)module.BaseAddress;
+            modules.Add(moduleName, (nuint)module.BaseAddress);
         }
+
+        return modules.ToFrozenDictionary();
     }
 
     private unsafe nuint GetTargetAddress(MemoryAddress memoryAddress)
@@ -39,14 +47,13 @@ public partial class RwMemory
         
         if (memoryAddress.Offsets is not null && memoryAddress.Offsets.Any())
         {
-            for (uint i = 0; i < memoryAddress.Offsets.Length - 1; i++)
+            for (ushort i = 0; i < memoryAddress.Offsets.Length - 1; i++)
             {
                 targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[i]);
                 targetAddress = *(nuint*)targetAddress;
             }
             
-            targetAddress = nuint.Add(targetAddress, 
-                memoryAddress.Offsets[memoryAddress.Offsets.Length - 1]);
+            targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[^1]);
         }
 
         if (!_memoryRegister.ContainsKey(memoryAddress))
