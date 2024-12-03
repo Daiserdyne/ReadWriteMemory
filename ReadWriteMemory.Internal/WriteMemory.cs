@@ -9,16 +9,15 @@ public partial class RwMemory
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="bytes"></param>
-    public unsafe void WriteBytes(MemoryAddress memoryAddress, byte[] bytes)
+    public unsafe void WriteBytes(MemoryAddress memoryAddress, Span<byte> bytes)
     {
         var targetAddress = GetTargetAddress(memoryAddress);
-        
+
+        var destPtr = (byte*)targetAddress;
+
         fixed (byte* sourcePtr = bytes)
         {
-            var destPtr = (byte*)targetAddress;
-            
-            Buffer.MemoryCopy(sourcePtr, destPtr, 
-                bytes.Length, bytes.Length);
+            Buffer.MemoryCopy(sourcePtr, destPtr, bytes.Length, bytes.Length);
         }
     }
     

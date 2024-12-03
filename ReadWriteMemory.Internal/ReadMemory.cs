@@ -1,4 +1,5 @@
 ﻿using ReadWriteMemory.Shared.Entities;
+using ReadWriteMemory.Shared.Services;
 
 namespace ReadWriteMemory.Internal;
 
@@ -52,5 +53,101 @@ public partial class RwMemory
         }
 
         return buffer;
+    }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="callback"></param>
+    /// <param name="refreshTime"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public bool ReadValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, 
+        TimeSpan refreshTime) where T : unmanaged
+    {
+        if (_memoryRegister[memoryAddress].ReadValueConstantTokenSrc is not null)
+        {
+            return false;
+        }
+
+        var readValueConstantTokenSrc = new CancellationTokenSource();
+
+        _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = readValueConstantTokenSrc;
+
+        StartReadingValueConstant(memoryAddress, callback, refreshTime, readValueConstantTokenSrc);
+
+        return true;
+    }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <param name="bytesToRead"></param>
+    /// <param name="callback"></param>
+    /// <param name="refreshTime"></param>
+    /// <returns></returns>
+    public bool ReadBytesConstant(MemoryAddress memoryAddress, uint bytesToRead, ReadBytesCallback callback,
+        TimeSpan refreshTime)
+    {
+        if (_memoryRegister[memoryAddress].ReadValueConstantTokenSrc is not null)
+        {
+            return false;
+        }
+
+        var readValueConstantTokenSrc = new CancellationTokenSource();
+
+        _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = readValueConstantTokenSrc;
+
+        StartReadingBytesConstant(memoryAddress, bytesToRead, callback, refreshTime, readValueConstantTokenSrc);
+
+        return true;
+    }
+    
+    /// <summary>
+    /// Unfreezes a value from the given <paramref name="memoryAddress"/>.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <returns></returns>
+    public bool StopReadingValueConstant(MemoryAddress memoryAddress)
+    {
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var value))
+        {
+            return false;
+        }
+
+        var readValueConstantToken = value.ReadValueConstantTokenSrc;
+
+        if (readValueConstantToken is null)
+        {
+            return false;
+        }
+
+        readValueConstantToken.Cancel();
+        readValueConstantToken.Dispose();
+
+        _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
+
+        return true;
+    }
+    
+    private void StartReadingValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback,
+        TimeSpan refreshTime, CancellationTokenSource readValueConstantTokenSrc)
+        where T : unmanaged
+    {
+        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
+        {
+            callback(ReadValue<T>(memoryAddress));
+        }, refreshTime, readValueConstantTokenSrc.Token);
+    }
+    
+    private void StartReadingBytesConstant(MemoryAddress memoryAddress, uint byteLengthToRead, 
+        ReadBytesCallback callback, TimeSpan refreshRate, CancellationTokenSource readValueConstantTokenSrc)
+    {
+        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
+        {
+            callback(ReadBytes(memoryAddress, byteLengthToRead));
+        }, refreshRate, readValueConstantTokenSrc.Token);
     }
 }
