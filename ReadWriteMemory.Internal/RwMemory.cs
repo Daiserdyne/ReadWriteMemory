@@ -10,7 +10,7 @@ namespace ReadWriteMemory.Internal;
 public partial class RwMemory
 {
     private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
-    private readonly FrozenDictionary<string, nuint> _modules;
+    private readonly FrozenDictionary<string, nuint> _modules = GetAllLoadedProcessModules();
 
     /// <summary>
     /// This is the main component of the <see cref="ReadWriteMemory.Internal"/> library. This class includes a lot of powerfull
@@ -18,7 +18,6 @@ public partial class RwMemory
     /// </summary>
     public RwMemory()
     {
-        _modules = GetAllLoadedProcessModules();
     }
     
     private static FrozenDictionary<string, nuint> GetAllLoadedProcessModules()
