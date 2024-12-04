@@ -4,7 +4,7 @@ using ReadWriteMemory.Shared.Entities;
 using ReadWriteMemory.Shared.Interfaces;
 using RwMemory = ReadWriteMemory.External.RwMemory;
 
-namespace TestTrainer.Trainer;
+namespace TestTrainer.External.Trainer;
 
 public sealed class PlayerPosition : IMemoryTrainer
 {

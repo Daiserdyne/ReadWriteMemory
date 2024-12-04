@@ -1,0 +1,1 @@
+﻿await new TestTrainer.External.TestTrainer().Main(default);

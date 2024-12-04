@@ -5,11 +5,13 @@ VisualStudioVersion = 17.3.32901.215
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReadWriteMemory.External", "ReadWriteMemory.External\ReadWriteMemory.External.csproj", "{29F0B8A2-6844-4AEC-829A-B51C367AB2AF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestTrainer", "TestTrainer\TestTrainer.csproj", "{2FAEF815-8356-4F04-B334-4053137110E6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestTrainer.External", "TestTrainer.External\TestTrainer.External.csproj", "{2FAEF815-8356-4F04-B334-4053137110E6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadWriteMemory.Shared", "ReadWriteMemory.Shared\ReadWriteMemory.Shared.csproj", "{93521330-9F1C-4E9B-A4BF-056B5E71EE15}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadWriteMemory.Internal", "ReadWriteMemory.Internal\ReadWriteMemory.Internal.csproj", "{DAC85736-BBF9-4A14-A22A-F8D0C3891FC4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestTrainer.Internal.InjectMe", "TestTrainer.Internal.InjectMe\TestTrainer.Internal.InjectMe.csproj", "{7115EBDC-AE18-4F89-AED8-15775AD0E85D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,14 @@ Global
 		{DAC85736-BBF9-4A14-A22A-F8D0C3891FC4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DAC85736-BBF9-4A14-A22A-F8D0C3891FC4}.Release|x64.ActiveCfg = Release|Any CPU
 		{DAC85736-BBF9-4A14-A22A-F8D0C3891FC4}.Release|x64.Build.0 = Release|Any CPU
+		{7115EBDC-AE18-4F89-AED8-15775AD0E85D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7115EBDC-AE18-4F89-AED8-15775AD0E85D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7115EBDC-AE18-4F89-AED8-15775AD0E85D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7115EBDC-AE18-4F89-AED8-15775AD0E85D}.Debug|x64.Build.0 = Debug|Any CPU
+		{7115EBDC-AE18-4F89-AED8-15775AD0E85D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7115EBDC-AE18-4F89-AED8-15775AD0E85D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7115EBDC-AE18-4F89-AED8-15775AD0E85D}.Release|x64.ActiveCfg = Release|Any CPU
+		{7115EBDC-AE18-4F89-AED8-15775AD0E85D}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

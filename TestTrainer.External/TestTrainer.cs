@@ -3,10 +3,10 @@ using ReadWriteMemory.External.Services;
 using ReadWriteMemory.External.Utilities;
 using ReadWriteMemory.Shared.Entities;
 using ReadWriteMemory.Shared.Interfaces;
-using TestTrainer.Trainer;
+using TestTrainer.External.Trainer;
 using RwMemory = ReadWriteMemory.External.RwMemory;
 
-namespace TestTrainer;
+namespace TestTrainer.External;
 
 public sealed class TestTrainer : IDisposable
 {
