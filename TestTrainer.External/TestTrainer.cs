@@ -46,7 +46,7 @@ public sealed class TestTrainer : IDisposable
                 await _implementedTrainer[nameof(PlayerPosition)].Enable("DisplayPositionAsBytes");
             }
 
-            await Task.Delay(1);
+            await Task.Delay(1, cancellationToken);
         }
     }
 
