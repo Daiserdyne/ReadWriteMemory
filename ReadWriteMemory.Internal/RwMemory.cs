@@ -51,6 +51,8 @@ public partial class RwMemory
         
         if (memoryAddress.Offsets is not null && memoryAddress.Offsets.Any())
         {
+            targetAddress = *(nuint*)targetAddress;
+            
             for (ushort i = 0; i < memoryAddress.Offsets.Length - 1; i++)
             {
                 targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[i]);
@@ -71,7 +73,7 @@ public partial class RwMemory
         return targetAddress;
     }
     
-    private unsafe nuint GetBaseAddress(MemoryAddress memoryAddress)
+    private nuint GetBaseAddress(MemoryAddress memoryAddress)
     {
         if (_memoryRegister.TryGetValue(memoryAddress, out var value)
             && value.BaseAddress != nuint.Zero)
@@ -92,9 +94,9 @@ public partial class RwMemory
 
         if (moduleAddress != nuint.Zero)
         {
-            return *(nuint*)(moduleAddress + address);
+            return moduleAddress + address;
         }
 
-        return *(nuint*)memoryAddress.Address;
+        return memoryAddress.Address;
     }
 }

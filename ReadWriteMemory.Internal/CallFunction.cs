@@ -157,7 +157,7 @@ public partial class RwMemory
         var targetAddress = GetTargetAddress(memoryAddress);
 
         // Funktionszeiger mit vier Parametern aufrufen
-        return ((delegate* unmanaged<T1, T2, T3, T4, TResult>)targetAddress)(arg1, arg2, arg3, arg4);
+        return ((delegate* unmanaged[Stdcall]<T1, T2, T3, T4, TResult>)targetAddress)(arg1, arg2, arg3, arg4);
     }
 
     public unsafe TResult CallFunction<T1, T2, T3, T4, T5, TResult>(MemoryAddress memoryAddress, T1 arg1, T2 arg2,
