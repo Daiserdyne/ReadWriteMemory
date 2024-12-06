@@ -38,6 +38,11 @@ public partial class RwMemory
         return modules.ToFrozenDictionary();
     }
 
+    /// <summary>
+    /// Calculates the final address of the given address with module name and offsets.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <returns></returns>
     private unsafe nuint GetTargetAddress(MemoryAddress memoryAddress)
     {
         var baseAddress = GetBaseAddress(memoryAddress);
