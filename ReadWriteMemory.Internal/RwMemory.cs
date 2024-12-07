@@ -49,7 +49,7 @@ public partial class RwMemory
 
         var targetAddress = baseAddress;
         
-        if (memoryAddress.Offsets is not null && memoryAddress.Offsets.Any())
+        if (memoryAddress.Offsets.Any())
         {
             targetAddress = *(nuint*)targetAddress;
             
@@ -94,7 +94,7 @@ public partial class RwMemory
 
         if (moduleAddress != nuint.Zero)
         {
-            return moduleAddress + address;
+            return address + moduleAddress;
         }
 
         return memoryAddress.Address;

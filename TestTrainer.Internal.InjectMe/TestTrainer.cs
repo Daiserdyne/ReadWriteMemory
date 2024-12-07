@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using ReadWriteMemory.Internal;
+using ReadWriteMemory.Internal.Entities;
 using ReadWriteMemory.Internal.NativeImports;
 using ReadWriteMemory.Shared.Entities;
 
@@ -8,8 +9,8 @@ namespace TestTrainer.Internal.InjectMe;
 public sealed class TestTrainer
 {
     private readonly MemoryAddress _cameraCoordinatesAddress =
-        new(0x05D759E0, "TOTClient-Win64-Shipping.exe",
-            0x218, 0x3A0, 0x2A0, 0x1E0);
+        new("TOTClient-Win64-Shipping.exe",
+            0x05D759E0, 0x218, 0x3A0, 0x2A0, 0x1E0);
     
     private readonly RwMemory _memory = new();
 
@@ -17,10 +18,13 @@ public sealed class TestTrainer
     {
         Kernel32.AllocConsole();
 
-        var msgBox = new MemoryAddress(0x8C4B0, "user32.dll");
+        var messageBoxA = new MemoryAddress("user32.dll", 0x8C4B0);
 
-        _memory.CallFunction<nint, string, string, nint, int>(msgBox, nint.Zero, 
-            "Information", "Dll injection successfull", 0x000000100);
+        _memory.CallFunction<nint, string, string, nint, int>(messageBoxA, 
+            nint.Zero, 
+            "Information", 
+            "Dll injection successfull", 
+            0x000000100, CallConv.Stdcall);
 
         while (!cancellationToken.IsCancellationRequested)
         {

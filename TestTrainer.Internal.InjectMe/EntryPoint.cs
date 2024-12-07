@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace TestTrainer.Internal.InjectMe;
 
-public class EntryPoint
+public static class EntryPoint
 {
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvFastcall)], EntryPoint = nameof(DllMain))]
     public static int DllMain(nint hModule, uint ulReasonForCall, nint lpReserved)
@@ -11,6 +11,7 @@ public class EntryPoint
         if (ulReasonForCall == 1)
         {
             _ = Task.Run(() => new TestTrainer().Main(default));
+            Task.Delay(250);
         }
 
         return 1; 

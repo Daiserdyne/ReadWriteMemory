@@ -251,7 +251,7 @@ public partial class RwMemory : IDisposable
 
         var targetAddress = baseAddress;
 
-        if (memoryAddress.Offsets is not null && memoryAddress.Offsets.Any())
+        if (memoryAddress.Offsets.Any())
         {
             var buffer = new byte[nuint.Size];
 

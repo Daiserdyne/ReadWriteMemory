@@ -10,7 +10,7 @@
 /// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567);</code>
 /// </example>
 /// <para>See <seealso cref="MemoryAddress(nuint, int[])"/></para> 
-/// See <seealso cref="MemoryAddress(nuint, string, int[])"/>
+/// See <seealso cref="MemoryAddress(string, nuint, int[])"/>
 /// </summary>
 public readonly record struct MemoryAddress
 {
@@ -18,8 +18,8 @@ public readonly record struct MemoryAddress
 
     public string ModuleName { get; }
 
-    public int[]? Offsets { get; }
-    
+    public int[] Offsets { get; }
+
     /// <summary>
     /// This record class stores a memory <paramref name="address"/>, the associated <paramref name="offsets"/> and <paramref name="moduleName"/>. 
     /// This will be needed to calculate the base address and read/write to/from the targets process memory.
@@ -28,14 +28,14 @@ public readonly record struct MemoryAddress
     /// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567, "falconheavy.dll");</code>
     /// </example>
     /// </summary>
-    /// <param name="address"></param>
     /// <param name="moduleName"></param>
+    /// <param name="address"></param>
     /// <param name="offsets"></param>
-    public MemoryAddress(nuint address, string moduleName = "", params int[]? offsets)
+    public MemoryAddress(string moduleName, nuint address, params int[]? offsets)
     {
         Address = address;
         ModuleName = moduleName.ToLower();
-        Offsets = offsets;
+        Offsets = offsets ?? [];
     }
 
     /// <summary>
@@ -49,10 +49,10 @@ public readonly record struct MemoryAddress
     /// </summary>
     /// <param name="address"></param>
     /// <param name="offsets"></param>
-    public MemoryAddress(nuint address, params int[] offsets)
+    public MemoryAddress(nuint address, params int[]? offsets)
     {
         Address = address;
         ModuleName = string.Empty;
-        Offsets = offsets;
+        Offsets = offsets ?? [];
     }
 }
