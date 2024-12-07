@@ -881,13 +881,14 @@ public partial class RwMemory
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
     public unsafe TResult CallFunction<T1, T2, T3, T4, TResult>(MemoryAddress memoryAddress, T1 arg1, T2 arg2, T3 arg3,
-        T4 arg4, CallConv callConv = CallConv.Cdecl)
+        T4 arg4, CallConv callConv = CallConv.Default)
     {
         var targetAddress = GetTargetAddress(memoryAddress);
 
+        Console.WriteLine(targetAddress.ToString("X"));
+        
         switch (callConv)
         {
-            default:
             case CallConv.Cdecl:
             {
                 var func = (delegate* unmanaged[Cdecl]<T1, T2, T3, T4, TResult>)targetAddress;
@@ -915,6 +916,14 @@ public partial class RwMemory
             case CallConv.SuppressGcTransition:
             {
                 var func = (delegate* unmanaged[SuppressGCTransition]<T1, T2, T3, T4, TResult>)targetAddress;
+
+                return func(arg1, arg2, arg3, arg4);
+            }
+            default:
+            {
+                Console.WriteLine("Standard wird gecallt.");
+                
+                var func = (delegate* unmanaged<T1, T2, T3, T4, TResult>)targetAddress;
 
                 return func(arg1, arg2, arg3, arg4);
             }

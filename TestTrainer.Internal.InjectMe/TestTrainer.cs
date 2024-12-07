@@ -24,7 +24,7 @@ public sealed class TestTrainer
             nint.Zero, 
             "Information", 
             "Dll injection successfull", 
-            0x000000100, CallConv.Stdcall);
+            0x000000100);
 
         while (!cancellationToken.IsCancellationRequested)
         {

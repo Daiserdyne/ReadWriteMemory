@@ -3,8 +3,13 @@
 /// <summary>
 /// Represents the different calling conventions used for unmanaged function calls.
 /// </summary>
-public enum CallConv : byte
+public enum CallConv : ushort
 {
+    /// <summary>
+    /// Uses the default callConv from the process. I guess?
+    /// </summary>
+    Default,
+    
     /// <summary>
     /// The C calling convention (Cdecl). 
     /// Parameters are pushed onto the stack from right to left, 
