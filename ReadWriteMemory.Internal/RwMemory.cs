@@ -1,5 +1,7 @@
 ﻿using System.Collections.Frozen;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using ReadWriteMemory.Shared.Entities;
 
 namespace ReadWriteMemory.Internal;
@@ -19,7 +21,7 @@ public partial class RwMemory
     public RwMemory()
     {
     }
-    
+
     private static FrozenDictionary<string, nuint> GetAllLoadedProcessModules()
     {
         var modules = new Dictionary<string, nuint>();
@@ -48,17 +50,17 @@ public partial class RwMemory
         var baseAddress = GetBaseAddress(memoryAddress);
 
         var targetAddress = baseAddress;
-        
+
         if (memoryAddress.Offsets.Any())
         {
             targetAddress = *(nuint*)targetAddress;
-            
+
             for (ushort i = 0; i < memoryAddress.Offsets.Length - 1; i++)
             {
                 targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[i]);
                 targetAddress = *(nuint*)targetAddress;
             }
-            
+
             targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[^1]);
         }
 
@@ -72,7 +74,7 @@ public partial class RwMemory
 
         return targetAddress;
     }
-    
+
     private nuint GetBaseAddress(MemoryAddress memoryAddress)
     {
         if (_memoryRegister.TryGetValue(memoryAddress, out var value)
@@ -80,11 +82,11 @@ public partial class RwMemory
         {
             return _memoryRegister[memoryAddress].BaseAddress;
         }
-        
+
         var moduleAddress = nuint.Zero;
 
         var moduleName = memoryAddress.ModuleName;
-        
+
         if (!string.IsNullOrEmpty(moduleName))
         {
             _modules.TryGetValue(moduleName, out moduleAddress);

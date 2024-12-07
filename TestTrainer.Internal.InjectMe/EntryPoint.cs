@@ -5,12 +5,12 @@ namespace TestTrainer.Internal.InjectMe;
 
 public static class EntryPoint
 {
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)], EntryPoint = nameof(DllMain))]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvFastcall)], EntryPoint = nameof(DllMain))]
     public static int DllMain(nint hModule, uint ulReasonForCall, nint lpReserved)
     {
         if (ulReasonForCall == 1)
         {
-            _ = Task.Run(() => new SignalTrainer().Main(default));
+            _ = Task.Run(() => new TestTrainer().Main(default));
         }
 
         return 1; 

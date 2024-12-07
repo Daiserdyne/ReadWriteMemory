@@ -9,29 +9,57 @@ public partial class RwMemory
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="bytes"></param>
-    public unsafe void WriteBytes(MemoryAddress memoryAddress, Span<byte> bytes)
+    public unsafe bool WriteBytes(MemoryAddress memoryAddress, Span<byte> bytes)
     {
-        var targetAddress = GetTargetAddress(memoryAddress);
-
-        var destPtr = (byte*)targetAddress;
-
-        fixed (byte* sourcePtr = bytes)
+        try
         {
-            Buffer.MemoryCopy(sourcePtr, destPtr, bytes.Length, bytes.Length);
+            var targetAddress = GetTargetAddress(memoryAddress);
+
+            if (targetAddress == nuint.Zero)
+            {
+                return false;
+            }
+
+            var destPtr = (byte*)targetAddress;
+
+            fixed (byte* sourcePtr = bytes)
+            {
+                Buffer.MemoryCopy(sourcePtr, destPtr, bytes.Length, bytes.Length);
+            }
         }
+        catch
+        {
+            return false;
+        }
+
+        return true;
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
-    public unsafe void WriteValue<T>(MemoryAddress memoryAddress, T value) where T : unmanaged
+    public unsafe bool WriteValue<T>(MemoryAddress memoryAddress, T value) where T : unmanaged
     {
-        var targetAddress = GetTargetAddress(memoryAddress);
-        
-        var destPtr = (T*)targetAddress;
+        try
+        {
+            var targetAddress = GetTargetAddress(memoryAddress);
 
-        *destPtr = value;
+            if (targetAddress == nuint.Zero)
+            {
+                return false;
+            }
+
+            var destPtr = (T*)targetAddress;
+
+            *destPtr = value;
+        }
+        catch
+        {
+            return false;
+        }
+
+        return true;
     }
 }

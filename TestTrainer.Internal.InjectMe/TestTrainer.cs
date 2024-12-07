@@ -1,6 +1,5 @@
 ﻿using System.Numerics;
 using ReadWriteMemory.Internal;
-using ReadWriteMemory.Internal.Entities;
 using ReadWriteMemory.Internal.NativeImports;
 using ReadWriteMemory.Shared.Entities;
 
@@ -22,7 +21,7 @@ public sealed class TestTrainer
 
         _memory.CallFunction<nint, string, string, nint, int>(messageBoxA, 
             nint.Zero, 
-            "Information", 
+            "Trapped in the trials", 
             "Dll injection successfull", 
             0x000000100);
 

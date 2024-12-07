@@ -29,9 +29,23 @@ public partial class RwMemory
     /// <returns></returns>
     public unsafe T ReadValue<T>(MemoryAddress memoryAddress) where T : unmanaged
     {
-        var targetAddress = GetTargetAddress(memoryAddress);
+        try
+        {
+            var targetAddress = GetTargetAddress(memoryAddress);
         
-        return *(T*)(nuint*)targetAddress;
+            if (targetAddress == nuint.Zero)
+            {
+                return default;
+            }
+        
+            return *(T*)(nuint*)targetAddress;
+        }
+        catch
+        {
+            // do nothing
+        }
+
+        return default;
     }
 
     /// <summary>
@@ -42,17 +56,31 @@ public partial class RwMemory
     /// <returns></returns>
     public unsafe byte[] ReadBytes(MemoryAddress memoryAddress, uint length)
     {
-        var targetAddress = GetTargetAddress(memoryAddress);
-
-        var buffer = new byte[length];
-
-        fixed (byte* bufferPtr = buffer)
+        try
         {
-            Buffer.MemoryCopy((void*)targetAddress, bufferPtr, 
-                length, length);
+            var targetAddress = GetTargetAddress(memoryAddress);
+
+            if (targetAddress == nuint.Zero)
+            {
+                return [];
+            }
+        
+            var buffer = new byte[length];
+
+            fixed (byte* bufferPtr = buffer)
+            {
+                Buffer.MemoryCopy((void*)targetAddress, bufferPtr, 
+                    length, length);
+            }
+
+            return buffer;
+        }
+        catch
+        {
+            // do nothing
         }
 
-        return buffer;
+        return [];
     }
     
     /// <summary>
