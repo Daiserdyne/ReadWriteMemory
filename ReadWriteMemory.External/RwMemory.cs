@@ -267,8 +267,7 @@ public partial class RwMemory : IDisposable
                 MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
             }
 
-            targetAddress = nuint.Add(targetAddress,
-                memoryAddress.Offsets[memoryAddress.Offsets.Length - 1]);
+            targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[^1]);
         }
 
         if (!_memoryRegister.ContainsKey(memoryAddress))

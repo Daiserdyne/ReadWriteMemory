@@ -20,7 +20,7 @@ public partial class RwMemory
     public delegate void ReadBytesCallback(byte[] byteArrayValue);
 
     #endregion
-
+    
     /// <summary>
     /// 
     /// </summary>
@@ -42,10 +42,8 @@ public partial class RwMemory
         }
         catch
         {
-            // do nothing
+            return default;
         }
-
-        return default;
     }
 
     /// <summary>
@@ -69,18 +67,15 @@ public partial class RwMemory
 
             fixed (byte* bufferPtr = buffer)
             {
-                Buffer.MemoryCopy((void*)targetAddress, bufferPtr, 
-                    length, length);
+                Buffer.MemoryCopy((void*)targetAddress, bufferPtr, length, length);
             }
 
             return buffer;
         }
         catch
         {
-            // do nothing
+            return [];
         }
-
-        return [];
     }
     
     /// <summary>
@@ -94,20 +89,24 @@ public partial class RwMemory
     public bool ReadValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, 
         TimeSpan refreshTime) where T : unmanaged
     {
-        if (_memoryRegister[memoryAddress].ReadValueConstantTokenSrc is not null)
+        if (!_memoryRegister.ContainsKey(memoryAddress))
+        {
+            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
+        }
+        else if (_memoryRegister[memoryAddress].ReadValueConstantTokenSrc is not null)
         {
             return false;
         }
-
+        
         var readValueConstantTokenSrc = new CancellationTokenSource();
 
         _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = readValueConstantTokenSrc;
-
+        
         StartReadingValueConstant(memoryAddress, callback, refreshTime, readValueConstantTokenSrc);
 
         return true;
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -119,9 +118,13 @@ public partial class RwMemory
     public bool ReadBytesConstant(MemoryAddress memoryAddress, uint bytesToRead, ReadBytesCallback callback,
         TimeSpan refreshTime)
     {
-        if (_memoryRegister[memoryAddress].ReadValueConstantTokenSrc is not null)
+        if (!_memoryRegister.ContainsKey(memoryAddress))
         {
-            return false;
+            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
+        }
+        else if (_memoryRegister[memoryAddress].ReadValueConstantTokenSrc is not null)
+        {
+            return true;
         }
 
         var readValueConstantTokenSrc = new CancellationTokenSource();

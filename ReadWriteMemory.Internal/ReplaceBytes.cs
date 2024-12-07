@@ -14,17 +14,32 @@ public partial class RwMemory
     /// <returns></returns>
     public bool ReplaceBytes(MemoryAddress memoryAddress, byte[] replacement)
     {
-        if (_memoryRegister[memoryAddress].ReplacedBytes is not null)
+        if (!_memoryRegister.ContainsKey(memoryAddress))
+        {
+            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
+        }
+        else if (_memoryRegister[memoryAddress].ReplacedBytes is not null)
         {
             return false;
         }
 
+        var originalOpcodes = ReadBytes(memoryAddress, (uint)replacement.Length);
+
+        if (!originalOpcodes.Any())
+        {
+            return false;
+        }
+        
         _memoryRegister[memoryAddress].ReplacedBytes = new()
         {
-            OriginalOpcodes = ReadBytes(memoryAddress, (uint)replacement.Length)
+            OriginalOpcodes = originalOpcodes
         };
-        
-        WriteBytes(memoryAddress, replacement);
+
+        if (!WriteBytes(memoryAddress, replacement))
+        {
+            _memoryRegister[memoryAddress].ReplacedBytes = null;
+            return false;
+        }
 
         return true;
     }
@@ -36,7 +51,12 @@ public partial class RwMemory
     /// <returns></returns>
     public bool UndoReplaceBytes(MemoryAddress memoryAddress)
     {
-        if (_memoryRegister[memoryAddress].ReplacedBytes is null)
+        if (!_memoryRegister.ContainsKey(memoryAddress))
+        {
+            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
+            return false;
+        }
+        else if (_memoryRegister[memoryAddress].ReplacedBytes is null)
         {
             return false;
         }
@@ -45,8 +65,11 @@ public partial class RwMemory
             .ReplacedBytes!
             .Value
             .OriginalOpcodes;
-        
-        WriteBytes(memoryAddress, originalBytes);
+
+        if (!WriteBytes(memoryAddress, originalBytes))
+        {
+            return false;
+        }
         
         _memoryRegister[memoryAddress].ReplacedBytes = null;
 

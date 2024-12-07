@@ -24,11 +24,12 @@ public sealed class TestTrainer
             "Trapped in the trials", 
             "Dll injection successfull", 
             0x000000100);
+        
+        _memory.ReadValueConstant(_cameraCoordinatesAddress, (Vector3 v) => { Console.WriteLine(v); }, 
+            TimeSpan.FromMilliseconds(100));
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            Console.WriteLine(_memory.ReadValue<Vector3>(_cameraCoordinatesAddress));
-            
             await Task.Delay(250, cancellationToken);
         }
     }

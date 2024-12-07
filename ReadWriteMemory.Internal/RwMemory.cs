@@ -1,7 +1,5 @@
 ﻿using System.Collections.Frozen;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using ReadWriteMemory.Shared.Entities;
 
 namespace ReadWriteMemory.Internal;
@@ -74,7 +72,7 @@ public partial class RwMemory
 
         return targetAddress;
     }
-
+    
     private nuint GetBaseAddress(MemoryAddress memoryAddress)
     {
         if (_memoryRegister.TryGetValue(memoryAddress, out var value)
