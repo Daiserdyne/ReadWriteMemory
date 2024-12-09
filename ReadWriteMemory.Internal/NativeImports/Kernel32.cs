@@ -8,4 +8,7 @@ public static class Kernel32
 {
     [DllImport("kernel32")]
     public static extern bool AllocConsole();
+    
+    [DllImport("kernel32")]
+    public static extern void FreeLibraryAndExitThread(nint hLibModule, int dwExitCode);
 }

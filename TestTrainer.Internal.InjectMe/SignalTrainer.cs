@@ -17,9 +17,8 @@ public sealed class SignalTrainer
         _memory.CallFunction<nint, string, string, nint, int>(messageBoxA, nint.Zero, 
             "Success", "Dll injection was successfull", 0x000000100);
 
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            await Task.Delay(250, cancellationToken);
-        }
+        await Task.CompletedTask;
+        
+        Console.ReadLine();
     }
 }
