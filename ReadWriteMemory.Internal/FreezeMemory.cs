@@ -15,11 +15,11 @@ public partial class RwMemory
     /// <returns></returns>
     public bool FreezeValue<T>(MemoryAddress memoryAddress, T value, TimeSpan freezeRefreshRate) where T : unmanaged
     {
-        if (!_memoryRegister.ContainsKey(memoryAddress))
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
         {
             _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
         }
-        else if (_memoryRegister[memoryAddress].FreezeTokenSrc is not null)
+        else if (table.FreezeTokenSrc is not null)
         {
             return false;
         }
@@ -56,11 +56,11 @@ public partial class RwMemory
     /// <returns></returns>
     public bool FreezeBytes(MemoryAddress memoryAddress, byte[] bytes, TimeSpan freezeRefreshRate)
     {
-        if (!_memoryRegister.ContainsKey(memoryAddress))
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
         {
             _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
         }
-        else if (_memoryRegister[memoryAddress].FreezeTokenSrc is not null)
+        else if (table.FreezeTokenSrc is not null)
         {
             return false;
         }
@@ -95,12 +95,12 @@ public partial class RwMemory
     /// <returns></returns>
     public bool UnfreezeValue(MemoryAddress memoryAddress)
     {
-        if (!_memoryRegister.TryGetValue(memoryAddress, out var value))
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
         {
             return false;
         }
 
-        var freezeToken = value.FreezeTokenSrc;
+        var freezeToken = table.FreezeTokenSrc;
 
         if (freezeToken is null)
         {

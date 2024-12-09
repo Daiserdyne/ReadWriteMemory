@@ -33,11 +33,6 @@ public partial class RwMemory
         {
             var targetAddress = GetTargetAddress(memoryAddress);
         
-            if (targetAddress == nuint.Zero)
-            {
-                return default;
-            }
-        
             return *(T*)(nuint*)targetAddress;
         }
         catch
@@ -57,12 +52,7 @@ public partial class RwMemory
         try
         {
             var targetAddress = GetTargetAddress(memoryAddress);
-
-            if (targetAddress == nuint.Zero)
-            {
-                return [];
-            }
-        
+            
             var buffer = new byte[length];
 
             fixed (byte* bufferPtr = buffer)
@@ -89,11 +79,11 @@ public partial class RwMemory
     public bool ReadValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, 
         TimeSpan refreshTime) where T : unmanaged
     {
-        if (!_memoryRegister.ContainsKey(memoryAddress))
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var value))
         {
             _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
         }
-        else if (_memoryRegister[memoryAddress].ReadValueConstantTokenSrc is not null)
+        else if (value.ReadValueConstantTokenSrc is not null)
         {
             return false;
         }
@@ -118,11 +108,11 @@ public partial class RwMemory
     public bool ReadBytesConstant(MemoryAddress memoryAddress, uint bytesToRead, ReadBytesCallback callback,
         TimeSpan refreshTime)
     {
-        if (!_memoryRegister.ContainsKey(memoryAddress))
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var value))
         {
             _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
         }
-        else if (_memoryRegister[memoryAddress].ReadValueConstantTokenSrc is not null)
+        else if (value.ReadValueConstantTokenSrc is not null)
         {
             return true;
         }
