@@ -92,9 +92,9 @@ public partial class RwMemory
         {
             caveAddress = caveTable.CaveAddress;
 
-            if (!MemoryOperation.WriteProcessMemory((IntPtr)_targetProcess.Handle, (UIntPtr)memoryTable.BaseAddress, (byte[])caveTable.JmpBytes))
+            if (!MemoryOperation.WriteProcessMemory((nint)_targetProcess.Handle, (nuint)memoryTable.BaseAddress, (byte[])caveTable.JmpBytes))
             {
-                MemoryOperation.WriteProcessMemory((IntPtr)_targetProcess.Handle, (UIntPtr)memoryTable.BaseAddress, (byte[])caveTable.OriginalOpcodes);
+                MemoryOperation.WriteProcessMemory((nint)_targetProcess.Handle, (nuint)memoryTable.BaseAddress, (byte[])caveTable.OriginalOpcodes);
 
                 DeallocateMemory(caveTable.CaveAddress);
 
@@ -136,7 +136,7 @@ public partial class RwMemory
             return false;
         }
 
-        MemoryOperation.WriteProcessMemory((IntPtr)_targetProcess.Handle, (UIntPtr)baseAddress, (byte[])caveTable.OriginalOpcodes);
+        MemoryOperation.WriteProcessMemory((nint)_targetProcess.Handle, (nuint)baseAddress, (byte[])caveTable.OriginalOpcodes);
 
         return true;
     }
@@ -165,7 +165,7 @@ public partial class RwMemory
             return false;
         }
 
-        MemoryOperation.WriteProcessMemory((IntPtr)_targetProcess.Handle, (UIntPtr)baseAddress, (byte[])caveTable.OriginalOpcodes);
+        MemoryOperation.WriteProcessMemory((nint)_targetProcess.Handle, (nuint)baseAddress, (byte[])caveTable.OriginalOpcodes);
 
         memoryTable.CodeCaveTable = null;
 

@@ -190,7 +190,7 @@ public partial class RwMemory : IDisposable
             freezeTokenSrc.Dispose();
         }
     }
-    
+
     private void StopReadingValuesConstant()
     {
         foreach (var readValueConstantTokenSrc in _memoryRegister.Values
@@ -255,14 +255,20 @@ public partial class RwMemory : IDisposable
         {
             var buffer = new byte[nuint.Size];
 
-            MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer);
+            if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
+            {
+                return nuint.Zero;
+            }
 
             MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
 
             for (ushort i = 0; i < memoryAddress.Offsets.Length - 1; i++)
             {
-                MemoryOperation.ReadProcessMemory(_targetProcess.Handle,
-                    nuint.Add(targetAddress, memoryAddress.Offsets[i]), buffer);
+                if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle,
+                        nuint.Add(targetAddress, memoryAddress.Offsets[i]), buffer))
+                {
+                    return nuint.Zero;
+                }
 
                 MemoryOperation.ConvertBufferUnsafe(buffer, out targetAddress);
             }
@@ -319,6 +325,11 @@ public partial class RwMemory : IDisposable
 
         targetAddress = GetTargetAddress(memoryAddress);
 
+        if (targetAddress == nuint.Zero)
+        {
+            return false;
+        }
+        
         return true;
     }
 

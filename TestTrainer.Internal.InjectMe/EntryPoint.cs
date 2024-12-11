@@ -11,9 +11,11 @@ public static class EntryPoint
     {
         if (reason == 1)
         {
-            _ = Task.Run(async () =>
+            _ = Task.Run(() =>
             {
-                await new SignalTrainer().Main(default);
+                new SignalTrainer().Main(CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
             });
         }
         

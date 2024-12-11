@@ -25,113 +25,6 @@ public partial class RwMemory
 
     #endregion
 
-    private unsafe void InitAndStartConstantValueReading<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback,
-        TimeSpan readValueRate) where T : unmanaged
-    {
-        var readValueConstantTokenSrc = new CancellationTokenSource();
-
-        _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = readValueConstantTokenSrc;
-
-        var buffer = new byte[sizeof(T)];
-
-        StartReadingValueConstant(memoryAddress, callback, readValueRate, buffer, readValueConstantTokenSrc);
-    }
-
-    private void InitAndStartConstantByteReading(MemoryAddress memoryAddress, byte[] buffer, ReadBytesCallback callback,
-        TimeSpan readValueRate)
-    {
-        var readValueConstantTokenSrc = new CancellationTokenSource();
-
-        _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = readValueConstantTokenSrc;
-
-        StartReadingBytesConstant(memoryAddress, callback, readValueRate, buffer, readValueConstantTokenSrc);
-    }
-
-    private void StartReadingBytesConstant(MemoryAddress memoryAddress, ReadBytesCallback callback,
-        TimeSpan readValueRate, byte[] buffer, CancellationTokenSource readValueConstantTokenSrc)
-    {
-        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
-        {
-            if (!GetTargetAddress(memoryAddress, out var targetAddress)
-                || !MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
-            {
-                readValueConstantTokenSrc.Cancel();
-                readValueConstantTokenSrc.Dispose();
-
-                _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
-            }
-            else
-            {
-                callback.Invoke(buffer);
-            }
-        }, readValueRate, readValueConstantTokenSrc.Token);
-    }
-
-    private void StartReadingValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback,
-        TimeSpan readValueRate, byte[] buffer, CancellationTokenSource readValueConstantTokenSrc)
-        where T : unmanaged
-    {
-        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
-        {
-            if (!GetTargetAddress(memoryAddress, out var targetAddress)
-                || !MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
-            {
-                readValueConstantTokenSrc.Cancel();
-                readValueConstantTokenSrc.Dispose();
-
-                _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
-            }
-            else
-            {
-                MemoryOperation.ConvertBufferUnsafe(buffer, out T value);
-                callback.Invoke(value);
-            }
-        }, readValueRate, readValueConstantTokenSrc.Token);
-    }
-
-    private bool CheckIfAlreadyReadingConstant(MemoryAddress memoryAddress)
-    {
-        if (!GetTargetAddress(memoryAddress, out var targetAddress) ||
-            _memoryRegister[memoryAddress].ReadValueConstantTokenSrc is not null)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Unfreezes a value from the given <paramref name="memoryAddress"/>.
-    /// </summary>
-    /// <param name="memoryAddress"></param>
-    /// <returns></returns>
-    public bool StopReadingValueConstant(MemoryAddress memoryAddress)
-    {
-        if (!IsProcessAlive)
-        {
-            return false;
-        }
-
-        if (!_memoryRegister.TryGetValue(memoryAddress, out var value))
-        {
-            return false;
-        }
-
-        var readValueConstantToken = value.ReadValueConstantTokenSrc;
-
-        if (readValueConstantToken is null)
-        {
-            return false;
-        }
-
-        readValueConstantToken.Cancel();
-        readValueConstantToken.Dispose();
-
-        _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
-
-        return true;
-    }
-
     /// <summary>
     /// This will read the <paramref name="value"/> out of the given <paramref name="memoryAddress"/>.
     /// Don't forget to specify the <typeparamref name="T"/> type correctly to prevent errors or unintended outcomes.
@@ -200,14 +93,32 @@ public partial class RwMemory
     public bool ReadBytesConstant(MemoryAddress memoryAddress, uint bytesToRead, ReadBytesCallback callback,
         TimeSpan refreshTime)
     {
-        if (!CheckIfAlreadyReadingConstant(memoryAddress))
+        if (!IsAlreadReadingConstant(memoryAddress))
         {
             return false;
         }
 
         var buffer = new byte[bytesToRead];
 
-        InitAndStartConstantByteReading(memoryAddress, buffer, callback, refreshTime);
+        var readValueConstantTokenSrc = new CancellationTokenSource();
+
+        _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = readValueConstantTokenSrc;
+
+        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
+        {
+            if (!GetTargetAddress(memoryAddress, out var targetAddress)
+                || !MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
+            {
+                readValueConstantTokenSrc.Cancel();
+                readValueConstantTokenSrc.Dispose();
+
+                _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
+
+                return;
+            }
+
+            callback.Invoke(buffer);
+        }, refreshTime, readValueConstantTokenSrc.Token);
 
         return true;
     }
@@ -220,15 +131,82 @@ public partial class RwMemory
     /// <param name="memoryAddress"></param>
     /// <param name="callback"></param>
     /// <param name="refreshTime"></param>
-    public bool ReadValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, TimeSpan refreshTime)
-        where T : unmanaged
+    public unsafe bool ReadValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback,
+        TimeSpan refreshTime) where T : unmanaged
     {
-        if (!CheckIfAlreadyReadingConstant(memoryAddress))
+        if (!IsAlreadReadingConstant(memoryAddress))
         {
             return false;
         }
 
-        InitAndStartConstantValueReading(memoryAddress, callback, refreshTime);
+        var readValueConstantTokenSrc = new CancellationTokenSource();
+
+        _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = readValueConstantTokenSrc;
+
+        var buffer = new byte[sizeof(T)];
+
+        _ = BackgroundService.ExecuteTaskRepeatedly(() =>
+        {
+            if (!GetTargetAddress(memoryAddress, out var targetAddress)
+                || !MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
+            {
+                readValueConstantTokenSrc.Cancel();
+                readValueConstantTokenSrc.Dispose();
+
+                _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
+
+                return;
+            }
+
+            MemoryOperation.ConvertBufferUnsafe(buffer, out T unmanagedValue);
+            callback.Invoke(unmanagedValue);
+        }, refreshTime, readValueConstantTokenSrc.Token);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Unfreezes a value from the given <paramref name="memoryAddress"/>.
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <returns></returns>
+    public bool StopReadingValueConstant(MemoryAddress memoryAddress)
+    {
+        if (!IsProcessAlive)
+        {
+            return false;
+        }
+
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
+        {
+            return false;
+        }
+
+        var readValueConstantToken = table.ReadValueConstantTokenSrc;
+
+        if (readValueConstantToken is null)
+        {
+            return false;
+        }
+
+        readValueConstantToken.Cancel();
+        readValueConstantToken.Dispose();
+
+        _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
+
+        return true;
+    }
+
+    private bool IsAlreadReadingConstant(MemoryAddress memoryAddress)
+    {
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var value))
+        {
+            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
+        }
+        else if (value.ReadValueConstantTokenSrc is not null)
+        {
+            return false;
+        }
 
         return true;
     }

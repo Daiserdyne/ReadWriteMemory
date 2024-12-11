@@ -10,13 +10,13 @@ internal static class CaveHelper
     private const byte RelativeJumpInstruction = 0xE9;
     private const ushort RelativeJumpInstructionLength = 5;
 
-    private static ReadOnlySpan<byte> _jumpAsmTemplate =>
+    private static ReadOnlySpan<byte> JumpAsmTemplate =>
     [
         0xFF, 0x25, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     ];
 
-    private static ReadOnlySpan<byte> _callAsmTemplate =>
+    private static ReadOnlySpan<byte> CallAsmTemplate =>
     [
         0xFF, 0x15, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x08,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -34,9 +34,9 @@ internal static class CaveHelper
         var relativeAddress = value + RelativeCallInstructionLength;
         var funcAddress = nuint.Add(callerAddress, relativeAddress);
 
-        var absoluteCall = new byte[_callAsmTemplate.Length];
+        var absoluteCall = new byte[CallAsmTemplate.Length];
 
-        _callAsmTemplate.CopyTo(absoluteCall);
+        CallAsmTemplate.CopyTo(absoluteCall);
 
         Unsafe.WriteUnaligned(ref absoluteCall[8], funcAddress);
 
@@ -55,9 +55,9 @@ internal static class CaveHelper
         var relativeAddress = value + RelativeJumpInstructionLength;
         var jumpAddress = nuint.Add(callerAddress, relativeAddress);
 
-        var absoluteJump = new byte[_jumpAsmTemplate.Length];
+        var absoluteJump = new byte[JumpAsmTemplate.Length];
 
-        _jumpAsmTemplate.CopyTo(absoluteJump);
+        JumpAsmTemplate.CopyTo(absoluteJump);
 
         Unsafe.WriteUnaligned(ref absoluteJump[6], jumpAddress);
 
@@ -121,13 +121,13 @@ internal static class CaveHelper
             }
         }
 
-        var absoulteJump = GetAbsoluteJumpBytes(jumpBackAddress, _jumpAsmTemplate.Length);
+        var absoulteJump = GetAbsoluteJumpBytes(jumpBackAddress, JumpAsmTemplate.Length);
 
         if (!jumpIndices.Any())
         {
             caveCode.AddRange(absoulteJump);
 
-            return caveCode.Count - _jumpAsmTemplate.Length;
+            return caveCode.Count - JumpAsmTemplate.Length;
         }
 
         var targetJumpIndex = jumpIndices.LastOrDefault();
@@ -145,9 +145,9 @@ internal static class CaveHelper
 
     internal static byte[] GetAbsoluteJumpBytes(nuint jumpToAddress, int opcodesToReplace, bool nopRestOpcodes = false)
     {
-        var jumpBytes = new byte[nopRestOpcodes ? opcodesToReplace : _jumpAsmTemplate.Length];
+        var jumpBytes = new byte[nopRestOpcodes ? opcodesToReplace : JumpAsmTemplate.Length];
 
-        _jumpAsmTemplate.CopyTo(jumpBytes);
+        JumpAsmTemplate.CopyTo(jumpBytes);
 
         Unsafe.WriteUnaligned(ref jumpBytes[6], jumpToAddress);
 

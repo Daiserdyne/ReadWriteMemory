@@ -12,7 +12,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.1.0</Version>
+		<Version>1.2.0</Version>
 		<Authors>Timm3D</Authors>
 		<Product>ReadWriteMemoryExternal</Product>
 		<Description>A powerfull memory editing dll.</Description>

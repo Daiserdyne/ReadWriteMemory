@@ -1,8 +1,11 @@
 ﻿using System.Collections.Frozen;
+using System.Diagnostics;
 using ReadWriteMemory.External.Services;
 using ReadWriteMemory.External.Utilities;
 using ReadWriteMemory.Shared.Entities;
 using ReadWriteMemory.Shared.Interfaces;
+using ReadWriteMemory.Shared.Utilities;
+using TestTrainer.External.NativeImports;
 using TestTrainer.External.Trainer;
 using RwMemory = ReadWriteMemory.External.RwMemory;
 
@@ -10,49 +13,114 @@ namespace TestTrainer.External;
 
 public sealed class TestTrainer : IDisposable
 {
-    private readonly RwMemory _memory = RwMemoryHelper.CreateAndGetSingletonInstance("Outlast2");
+    private static Kernel32.ConsoleCtrlDelegate? _handler;
+
+    private readonly RwMemory _memory =
+        RwMemoryHelper.CreateAndGetSingletonInstance("TOTClient-Win64-Shipping");
 
     private readonly FrozenDictionary<string, IMemoryTrainer> _implementedTrainer =
-        RwMemoryHelper.GetAllImplementedTrainers();
+        new Dictionary<string, IMemoryTrainer>
+        {
+            {
+                nameof(Freecam), new Freecam()
+            }
+        }.ToFrozenDictionary();
+
+    private bool _freecamEnabled;
 
     public async Task Main(CancellationToken cancellationToken)
     {
-        _memory.OnProcessStateChanged += MemoryOnProcessOnStateChanged;
-        
+        _handler = Handler;
+        Kernel32.SetConsoleCtrlHandler(_handler, true);
+
+        _memory.OnProcessStateChanged += OnProcessStateChanged;
+
         while (!cancellationToken.IsCancellationRequested)
         {
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F2))
+            if (_memory.IsProcessAlive)
             {
-                await _implementedTrainer[nameof(PlayerPosition)].Enable("SavePosition");
-            }
-
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F3))
-            {
-                await _implementedTrainer[nameof(PlayerPosition)].Enable("LoadPosition");
-            }
-
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F4))
-            {
-                await _implementedTrainer[nameof(PlayerPosition)].Enable("DisplayPosition");
-            }
-
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F5))
-            {
-                await _implementedTrainer[nameof(PlayerPosition)].Enable("FreezePlayer");
-            }
-
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.VK_F6))
-            {
-                await _implementedTrainer[nameof(PlayerPosition)].Enable("DisplayPositionAsBytes");
+                await HandleTrainerTree(cancellationToken);
             }
 
             await Task.Delay(1, cancellationToken);
         }
     }
 
-    private static void MemoryOnProcessOnStateChanged(ProgramState newState)
+    private bool Handler(Kernel32.CtrlTypes ctrlType)
     {
-        Console.WriteLine($"Process has been {newState}.");
+        if (ctrlType is Kernel32.CtrlTypes.CTRL_CLOSE_EVENT
+            or Kernel32.CtrlTypes.CTRL_C_EVENT)
+        {
+            _memory.Dispose();
+        }
+
+        return false;
+    }
+
+    private async Task HandleTrainerTree(CancellationToken cancellationToken)
+    {
+        while (_freecamEnabled)
+        {
+            await HandleFreecam();
+            await Task.Delay(1, cancellationToken);
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.F4))
+        {
+            _freecamEnabled = await _implementedTrainer[nameof(Freecam)]
+                .Enable("enable_freecam");
+        }
+    }
+
+    private async Task HandleFreecam()
+    {
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.F4))
+        {
+            _freecamEnabled = false;
+
+            await _implementedTrainer[nameof(Freecam)].Disable();
+
+            return;
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.W, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable("forward");
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.S, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable("backward");
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.E, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable("up");
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.Q, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable("down");
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.A, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable("left");
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.D, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable("right");
+        }
+    }
+
+
+    private void OnProcessStateChanged(ProgramState state)
+    {
+        if (state == ProgramState.Closed)
+        {
+            _freecamEnabled = false;
+        }
     }
 
     public void Dispose()

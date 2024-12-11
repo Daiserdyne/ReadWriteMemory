@@ -1,1 +1,1 @@
-﻿await new TestTrainer.External.TestTrainer().Main(default);
+﻿await new TestTrainer.External.TestTrainer().Main(CancellationToken.None);

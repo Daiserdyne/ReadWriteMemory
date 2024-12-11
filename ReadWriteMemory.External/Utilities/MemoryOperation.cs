@@ -70,6 +70,6 @@ internal static class MemoryOperation
 
     internal static bool DeallocateMemory(nint processHandle, nuint address)
     {
-        return Kernel32.VirtualFreeEx(processHandle, address, 0, Kernel32.MEM_RELEASE);
+        return Kernel32.VirtualFreeEx(processHandle, address, 0, Kernel32.MemRelease);
     }
 }

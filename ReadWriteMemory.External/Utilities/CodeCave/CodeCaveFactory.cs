@@ -9,7 +9,7 @@ internal static class CodeCaveFactory
     {
         var finalCaveCode = new List<byte>(caveCode);
 
-        caveAddress = VirtualAllocEx(targetProcessHandle, nuint.Zero, size, MEM_COMMIT | MEM_RESERVE | 0x00100000, PAGE_EXECUTE_READWRITE);
+        caveAddress = VirtualAllocEx(targetProcessHandle, nuint.Zero, size, MemCommit | MemReserve | 0x00100000, PageExecuteReadwrite);
 
         if (caveAddress == nuint.Zero)
         {

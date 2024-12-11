@@ -13,7 +13,6 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <Version>1.0.0</Version>
         <Authors>Timm3D</Authors>
         <Product>ReadWriteMemoryInternal</Product>
         <Description>A powerfull memory editing dll.</Description>

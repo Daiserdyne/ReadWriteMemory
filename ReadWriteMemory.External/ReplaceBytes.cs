@@ -15,12 +15,17 @@ public partial class RwMemory
     /// <returns></returns>
     public bool ReplaceBytes(MemoryAddress memoryAddress, byte[] replacement)
     {
-        if (!CheckIfNotAlreadyReplaced(memoryAddress, out var targetAddress))
+        if (!BytesAlreadyReplaced(memoryAddress))
         {
             return false;
         }
 
         var buffer = new byte[replacement.Length];
+
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
+        {
+            return false;
+        }
 
         if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
         {
@@ -40,6 +45,20 @@ public partial class RwMemory
         return false;
     }
 
+    private bool BytesAlreadyReplaced(MemoryAddress memoryAddress)
+    {
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
+        {
+            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
+        }
+        else if (table.ReplacedBytes is not null)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     /// <summary>
     /// Writes the original opcodes to the address you replaced with <see cref="ReplaceBytes"/>.
     /// </summary>
@@ -47,11 +66,16 @@ public partial class RwMemory
     /// <returns></returns>
     public bool UndoReplaceBytes(MemoryAddress memoryAddress)
     {
-        if (CheckIfNotAlreadyReplaced(memoryAddress, out var targetAddress))
+        if (BytesAlreadyReplaced(memoryAddress))
         {
             return false;
         }
 
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
+        {
+            return false;
+        }
+        
         if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress,
                 _memoryRegister[memoryAddress].ReplacedBytes!.Value.OriginalOpcodes))
         {
@@ -61,17 +85,6 @@ public partial class RwMemory
         }
 
         return false;
-    }
-
-    private bool CheckIfNotAlreadyReplaced(MemoryAddress memoryAddress, out nuint targetAddress)
-    {
-        if (!GetTargetAddress(memoryAddress, out targetAddress) ||
-            _memoryRegister[memoryAddress].ReplacedBytes is not null)
-        {
-            return false;
-        }
-
-        return true;
     }
 
     private void RestoreAllReplacedBytes()
