@@ -1,5 +1,4 @@
-﻿using ReadWriteMemory.External.Services;
-using ReadWriteMemory.External.Utilities;
+﻿using ReadWriteMemory.External.Utilities;
 using ReadWriteMemory.Shared.Entities;
 using ReadWriteMemory.Shared.Services;
 

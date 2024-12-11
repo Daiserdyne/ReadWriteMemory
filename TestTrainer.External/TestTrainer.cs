@@ -1,7 +1,5 @@
 ﻿using System.Collections.Frozen;
-using System.Diagnostics;
 using ReadWriteMemory.External.Services;
-using ReadWriteMemory.External.Utilities;
 using ReadWriteMemory.Shared.Entities;
 using ReadWriteMemory.Shared.Interfaces;
 using ReadWriteMemory.Shared.Utilities;
