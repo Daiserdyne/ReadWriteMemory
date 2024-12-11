@@ -20,7 +20,7 @@ jobs:
       pull-requests: read
     env:
       BUILD_CONFIG: 'Release'
-      PROJECT_NAME: 'ReadWriteMemory'
+      PROJECT_NAME: 'ReadWriteMemory.External'
 
     steps:
     - name: Checkout
@@ -44,10 +44,10 @@ jobs:
       run: |
         if [[ $GITHUB_REF == refs/heads/master ]]; then
           echo "Publishing from the master branch."
-          dotnet pack ReadWriteMemory --configuration $BUILD_CONFIG -o publish
+          dotnet pack ReadWriteMemory.External --configuration $BUILD_CONFIG -o publish
         else
           echo "Publishing from a non-master branch."
-          dotnet pack ReadWriteMemory --configuration $BUILD_CONFIG -o publish --version-suffix "prerelease"
+          dotnet pack ReadWriteMemory.External --configuration $BUILD_CONFIG -o publish --version-suffix "prerelease"
         fi
         dotnet nuget push publish/*.nupkg --source https://nuget.pkg.github.com/Daiserdyne/index.json --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
 
