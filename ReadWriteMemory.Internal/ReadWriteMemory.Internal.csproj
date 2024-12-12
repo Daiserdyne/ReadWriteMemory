@@ -23,4 +23,19 @@
       <ProjectReference Include="..\ReadWriteMemory.Shared\ReadWriteMemory.Shared.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="CallFunction.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>CallFunction.cs</LastGenOutput>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="CallFunction.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>CallFunction.tt</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>
