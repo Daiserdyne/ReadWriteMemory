@@ -1,6 +1,6 @@
-﻿using ReadWriteMemory.External.Utilities;
-using ReadWriteMemory.Shared.Entities;
-using ReadWriteMemory.Shared.Services;
+﻿using ReadWriteMemory.External.Entities;
+using ReadWriteMemory.External.Services;
+using ReadWriteMemory.External.Utilities;
 
 namespace ReadWriteMemory.External;
 

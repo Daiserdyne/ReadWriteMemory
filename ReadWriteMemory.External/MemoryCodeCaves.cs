@@ -1,6 +1,6 @@
-﻿using ReadWriteMemory.External.Utilities;
+﻿using ReadWriteMemory.External.Entities;
+using ReadWriteMemory.External.Utilities;
 using ReadWriteMemory.External.Utilities.CodeCave;
-using ReadWriteMemory.Shared.Entities;
 
 namespace ReadWriteMemory.External;
 

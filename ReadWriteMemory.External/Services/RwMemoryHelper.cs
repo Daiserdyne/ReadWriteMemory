@@ -1,6 +1,6 @@
-﻿using System.Collections.Frozen;
+﻿using ReadWriteMemory.External.Interfaces;
+using System.Collections.Frozen;
 using System.Reflection;
-using ReadWriteMemory.Shared.Interfaces;
 
 namespace ReadWriteMemory.External.Services;
 

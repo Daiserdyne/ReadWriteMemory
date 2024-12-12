@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
+using ReadWriteMemory.External.Entities;
+using ReadWriteMemory.External.Interfaces;
 using ReadWriteMemory.External.Services;
-using ReadWriteMemory.Shared.Entities;
-using ReadWriteMemory.Shared.Interfaces;
 using TestTrainer.External.Utilities;
 using RwMemory = ReadWriteMemory.External.RwMemory;
 
