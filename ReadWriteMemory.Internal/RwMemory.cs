@@ -39,7 +39,6 @@ public partial class RwMemory
         return modules.ToFrozenDictionary();
     }
 
-
     /// <summary>
     /// Calculates the final address of the given address with module name and offsets.
     /// </summary>

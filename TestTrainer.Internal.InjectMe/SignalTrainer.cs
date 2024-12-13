@@ -12,9 +12,9 @@ public sealed class SignalTrainer
     {
         Kernel32.AllocConsole();
         
-        var messageBoxA = new MemoryAddress("user32.dll", 0x8C4B0);
+        var messageBoxA = new MemoryAddress("user32.dll", 0x8C5D0);
 
-        _memory.CallFunctionCdecl<int, nuint, string, string, nint>(
+        _memory.CallFunctionStdcall<int, nuint, string, string, nint>(
             messageBoxA,
             nuint.Zero,
             "Success",

@@ -214,7 +214,7 @@ public partial class RwMemory : IDisposable
 
         _targetProcess.Process = Process.GetProcessById(pid);
 
-        _targetProcess.Handle = Kernel32.OpenProcess(true, pid);
+        _targetProcess.Handle = MemoryOperation.OpenProcess(true, pid);
 
         if (_targetProcess.Handle == nint.Zero)
         {

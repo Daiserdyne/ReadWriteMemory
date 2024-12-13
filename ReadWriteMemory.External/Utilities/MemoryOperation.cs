@@ -5,6 +5,11 @@ namespace ReadWriteMemory.External.Utilities;
 
 internal static class MemoryOperation
 {
+    internal static nint OpenProcess(bool bInheritHandle, int dwProcessId)
+    {
+        return Kernel32.OpenProcess(Kernel32.FullMemoryAccess, bInheritHandle, dwProcessId);
+    }
+
     internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, string value)
     {
         var stringAsByteArray = Encoding.UTF8.GetBytes(value);
