@@ -1,8 +1,8 @@
 ﻿using System.Collections.Frozen;
+using ReadWriteMemory.External.Entities;
+using ReadWriteMemory.External.Interfaces;
 using ReadWriteMemory.External.Services;
-using ReadWriteMemory.Shared.Entities;
-using ReadWriteMemory.Shared.Interfaces;
-using ReadWriteMemory.Shared.Utilities;
+using ReadWriteMemory.External.Utilities;
 using TestTrainer.External.NativeImports;
 using TestTrainer.External.Trainer;
 using RwMemory = ReadWriteMemory.External.RwMemory;

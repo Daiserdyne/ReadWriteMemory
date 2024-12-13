@@ -1,5 +1,6 @@
 ﻿using System.Collections.Frozen;
 using System.Diagnostics;
+using ReadWriteMemory.Internal.NativeImports;
 using ReadWriteMemory.Shared.Entities;
 
 namespace ReadWriteMemory.Internal;
@@ -37,6 +38,7 @@ public partial class RwMemory
 
         return modules.ToFrozenDictionary();
     }
+
 
     /// <summary>
     /// Calculates the final address of the given address with module name and offsets.

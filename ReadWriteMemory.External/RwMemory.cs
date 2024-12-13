@@ -1,9 +1,8 @@
 ﻿using System.Diagnostics;
+using ReadWriteMemory.External.Entities;
+using ReadWriteMemory.External.Interfaces;
 using ReadWriteMemory.External.Services;
 using ReadWriteMemory.External.Utilities;
-using ReadWriteMemory.Shared.Entities;
-using ReadWriteMemory.Shared.Interfaces;
-using ReadWriteMemory.Shared.Services;
 using Kernel32 = ReadWriteMemory.External.NativeImports.Kernel32;
 
 namespace ReadWriteMemory.External;

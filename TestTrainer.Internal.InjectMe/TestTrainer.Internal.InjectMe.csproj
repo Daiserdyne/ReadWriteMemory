@@ -12,11 +12,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ReadWriteMemory.Internal\ReadWriteMemory.Internal.csproj" />
+      <Compile Remove="Trainer\**" />
+      <EmbeddedResource Remove="Trainer\**" />
+      <None Remove="Trainer\**" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Trainer\" />
+      <ProjectReference Include="..\ReadWriteMemory.Internal\ReadWriteMemory.Internal.csproj" />
     </ItemGroup>
 
 </Project>
