@@ -1,5 +1,4 @@
-﻿using System.Collections.Frozen;
-using System.Diagnostics;
+﻿using ReadWriteMemory.Internal.NativeImports;
 using ReadWriteMemory.Shared.Entities;
 
 namespace ReadWriteMemory.Internal;
@@ -10,7 +9,7 @@ namespace ReadWriteMemory.Internal;
 public partial class RwMemory
 {
     private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
-    private readonly FrozenDictionary<string, nuint> _modules = GetAllLoadedProcessModules();
+    private readonly Dictionary<string, nuint> _modules = [];
 
     /// <summary>
     /// This is the main component of the <see cref="ReadWriteMemory.Internal"/> library. This class includes a lot of powerfull
@@ -20,22 +19,24 @@ public partial class RwMemory
     {
     }
 
-    private static FrozenDictionary<string, nuint> GetAllLoadedProcessModules()
+    private bool TryGetModuleHandle(string moduleName, out nuint moduleHandle)
     {
-        var modules = new Dictionary<string, nuint>();
-
-        var processModules = Process.GetCurrentProcess()
-            .Modules
-            .Cast<ProcessModule>();
-
-        foreach (var module in processModules)
+        if (_modules.TryGetValue(moduleName, out moduleHandle))
         {
-            var moduleName = module.ModuleName.ToLower();
-
-            modules.Add(moduleName, (nuint)module.BaseAddress);
+            return true;
         }
+        
+        var handle = Kernel32.GetModuleHandle(moduleName);
 
-        return modules.ToFrozenDictionary();
+        if (handle == nint.Zero)
+        {
+            moduleHandle = nuint.Zero;
+            return false;
+        }
+        
+        _modules.Add(moduleName, (nuint)handle);
+
+        return true;
     }
 
     /// <summary>

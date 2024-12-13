@@ -1,22 +1,25 @@
 ﻿using System.Runtime.InteropServices;
+// ReSharper disable UnusedMember.Global
 
 #pragma warning disable CS1591
 
 namespace ReadWriteMemory.Internal.NativeImports;
 
-public static class Kernel32
+public static partial class Kernel32
 {
-    [DllImport("kernel32")]
-    public static extern bool AllocConsole();
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool AllocConsole();
     
-    [DllImport("kernel32")]
-    public static extern void FreeLibraryAndExitThread(nint hLibModule, int dwExitCode);
+    [LibraryImport("kernel32.dll")]
+    public static partial void FreeLibraryAndExitThread(nint hLibModule, int dwExitCode);
     
-    [DllImport("kernel32")]
-    public static extern bool FreeLibrary(nint hLibModule);
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool FreeLibrary(nint hLibModule);
     
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern nint CreateThread(
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    public static partial nint CreateThread(
         nint lpThreadAttributes,
         uint dwStackSize,
         nint lpStartAddress,
@@ -25,6 +28,9 @@ public static class Kernel32
         out uint lpThreadId
     );
     
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern void ExitThread(uint dwExitCode);
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    public static partial void ExitThread(uint dwExitCode);
+   
+    [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial nint GetModuleHandle(string moduleName);
 }

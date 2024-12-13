@@ -14,11 +14,11 @@ public partial class RwMemory
     /// <returns></returns>
     public bool ReplaceBytes(MemoryAddress memoryAddress, byte[] replacement)
     {
-        if (!_memoryRegister.ContainsKey(memoryAddress))
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
         {
             _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
         }
-        else if (_memoryRegister[memoryAddress].ReplacedBytes is not null)
+        else if (table.ReplacedBytes is not null)
         {
             return false;
         }
@@ -51,12 +51,12 @@ public partial class RwMemory
     /// <returns></returns>
     public bool UndoReplaceBytes(MemoryAddress memoryAddress)
     {
-        if (!_memoryRegister.ContainsKey(memoryAddress))
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
         {
             _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
             return false;
         }
-        else if (_memoryRegister[memoryAddress].ReplacedBytes is null)
+        else if (table.ReplacedBytes is null)
         {
             return false;
         }
