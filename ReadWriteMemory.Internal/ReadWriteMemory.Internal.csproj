@@ -36,6 +36,11 @@
         <DesignTime>True</DesignTime>
         <DependentUpon>CallFunction.tt</DependentUpon>
       </Compile>
+      <Compile Update="CallFunction.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>CallFunction.tt</DependentUpon>
+      </Compile>
     </ItemGroup>
 
 </Project>

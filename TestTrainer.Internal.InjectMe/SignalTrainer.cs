@@ -1,18 +1,24 @@
-﻿using System.Runtime.InteropServices;
-using ReadWriteMemory.Internal;
+﻿using ReadWriteMemory.Internal;
+using ReadWriteMemory.Internal.NativeImports;
+using ReadWriteMemory.Shared.Entities;
 
 namespace TestTrainer.Internal.InjectMe;
 
-public sealed partial class SignalTrainer
+public sealed class SignalTrainer
 {
-    [LibraryImport("User32")]
-    public static partial int MessageBoxA(nint hWnd, ReadOnlySpan<byte> msg, ReadOnlySpan<byte> wParam, nint lParam);
-    
     private readonly RwMemory _memory = new();
 
     public Task Main(CancellationToken _)
     {
-        MessageBoxA(nint.Zero, "Amogus"u8, "Christus"u8, nint.Zero);
+        Kernel32.AllocConsole();
+        
+        var messageBoxA = new MemoryAddress("user32.dll", 0x8C4B0);
+
+        _memory.CallFunctionCdecl<int, nuint, string, string, nint>(
+            messageBoxA,
+            nuint.Zero,
+            "Success",
+            "Dll injection was successfull", 0x000000100);
         
         return Task.CompletedTask;
     }

@@ -1,4 +1,5 @@
 ﻿using ReadWriteMemory.External.NativeImports;
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 namespace ReadWriteMemory.External.Utilities;
 
@@ -13,7 +14,7 @@ public static class Hotkeys
     /// Virtual-Key Codes.
     /// </summary>
     [Flags]
-    public enum Key : int
+    public enum Key
     {
         Lbutton = 0X01,
         Rbutton = 0X02,

@@ -1,4 +1,6 @@
-﻿using ReadWriteMemory.Internal.NativeImports;
+﻿using System.Collections.Frozen;
+using System.Diagnostics;
+using ReadWriteMemory.Internal.NativeImports;
 using ReadWriteMemory.Shared.Entities;
 
 namespace ReadWriteMemory.Internal;
@@ -9,7 +11,7 @@ namespace ReadWriteMemory.Internal;
 public partial class RwMemory
 {
     private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
-    private readonly Dictionary<string, nuint> _modules = [];
+    private readonly FrozenDictionary<string, nuint> _modules = GetAllLoadedProcessModules();
 
     /// <summary>
     /// This is the main component of the <see cref="ReadWriteMemory.Internal"/> library. This class includes a lot of powerfull
@@ -19,25 +21,24 @@ public partial class RwMemory
     {
     }
 
-    private bool TryGetModuleHandle(string moduleName, out nuint moduleHandle)
+    private static FrozenDictionary<string, nuint> GetAllLoadedProcessModules()
     {
-        if (_modules.TryGetValue(moduleName, out moduleHandle))
-        {
-            return true;
-        }
-        
-        var handle = Kernel32.GetModuleHandle(moduleName);
+        var modules = new Dictionary<string, nuint>();
 
-        if (handle == nint.Zero)
-        {
-            moduleHandle = nuint.Zero;
-            return false;
-        }
-        
-        _modules.Add(moduleName, (nuint)handle);
+        var processModules = Process.GetCurrentProcess()
+            .Modules
+            .Cast<ProcessModule>();
 
-        return true;
+        foreach (var module in processModules)
+        {
+            var moduleName = module.ModuleName.ToLower();
+
+            modules.Add(moduleName, (nuint)module.BaseAddress);
+        }
+
+        return modules.ToFrozenDictionary();
     }
+
 
     /// <summary>
     /// Calculates the final address of the given address with module name and offsets.

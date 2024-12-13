@@ -12,18 +12,18 @@ public sealed class Freecam : IMemoryTrainer
     private readonly RwMemory _memory = RwMemoryHelper.RwMemory;
 
     private readonly MemoryAddress _cameraFunctionAddress =
-        new("TOTClient-Win64-Shipping.exe", 0x793A8D);
+        new("TOTClient-Win64-Shipping.exe", 0x793B8D);
 
     private readonly MemoryAddress _cameraCoordinatesAddress =
-        new("TOTClient-Win64-Shipping.exe", 0x5DE5A58,
+        new("TOTClient-Win64-Shipping.exe", 0x5DE5A50,
             0x218, 0x3A8, 0x2A0, 0x1E0);
 
     private readonly MemoryAddress _cameraPitchAddress =
-        new("TOTClient-Win64-Shipping.exe", 0x5E9FB20,
+        new("TOTClient-Win64-Shipping.exe", 0x5E9FAD0,
             0x30, 0x260, 0x2A0, 0x6C0, 0x68, 0x430, 0x74);
 
     private readonly MemoryAddress _cameraYawAddress =
-        new("TOTClient-Win64-Shipping.exe", 0x5DE5A58,
+        new("TOTClient-Win64-Shipping.exe", 0x5DE5A50,
             0x208, 0x870, 0x20, 0x29C);
 
     private readonly byte[] _scriptFunction =

@@ -16,7 +16,7 @@ public static class EntryPointHandler
         {
             case DllProcessAttach:
             {
-                Task.Run(Execute);
+                Task.Run(ExecuteProgram);
                 break;
             }
             case DllThreadAttach:
@@ -30,8 +30,9 @@ public static class EntryPointHandler
         return true;
     }
 
-    private static async Task Execute()
+    private static async Task ExecuteProgram()
     {
-        await new SignalTrainer().Main(CancellationToken.None);
+        await new SignalTrainer()
+            .Main(CancellationToken.None);
     }
 }
