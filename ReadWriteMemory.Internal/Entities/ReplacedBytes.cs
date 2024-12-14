@@ -1,4 +1,4 @@
-﻿namespace ReadWriteMemory.External.Interfaces;
+﻿namespace ReadWriteMemory.Internal.Entities;
 
 internal readonly record struct ReplacedBytes
 {

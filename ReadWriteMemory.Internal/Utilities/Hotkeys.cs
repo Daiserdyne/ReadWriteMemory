@@ -1,10 +1,14 @@
-﻿using ReadWriteMemory.Shared.NativeImports;
+﻿using System.Diagnostics.CodeAnalysis;
+using ReadWriteMemory.Internal.NativeImports;
 
-namespace ReadWriteMemory.Shared.Utilities;
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+namespace ReadWriteMemory.Internal.Utilities;
 
 /// <summary>
 /// Allows you to create hotkeys to call your code.
 /// </summary>
+[SuppressMessage("ReSharper", "UnusedMember.Global")]
+[SuppressMessage("ReSharper", "IdentifierTypo")]
 public static class Hotkeys
 {
     #region Enums
@@ -13,7 +17,7 @@ public static class Hotkeys
     /// Virtual-Key Codes.
     /// </summary>
     [Flags]
-    public enum Key : int
+    public enum Key
     {
         Lbutton = 0X01,
         Rbutton = 0X02,
@@ -106,7 +110,7 @@ public static class Hotkeys
         F10 = 0X79,
         F11 = 0X7A,
         F12 = 0X7B,
-        
+
         Numlock = 0X90,
         Scroll = 0X91,
         Lshift = 0XA0,
@@ -125,22 +129,22 @@ public static class Hotkeys
     /// <param name="waitForKeyRelease"></param>
     public static async ValueTask<bool> KeyPressedAsync(Key key, bool waitForKeyRelease = true)
     {
-        if (User32.GetAsyncKeyState(key) < 0)
+        if (User32.GetAsyncKeyState(key) >= 0)
         {
-            if (!waitForKeyRelease)
-            {
-                return true;
-            }
-
-            while (User32.GetAsyncKeyState(key) < 0)
-            {
-                await Task.Delay(1);
-            }
-
+            return false;
+        }
+        
+        if (!waitForKeyRelease)
+        {
             return true;
         }
 
-        return false;
+        while (User32.GetAsyncKeyState(key) < 0)
+        {
+            await Task.Delay(1);
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -151,21 +155,21 @@ public static class Hotkeys
     /// <param name="waitForKeyRelease"></param>
     public static async ValueTask<bool> KeyPressedAsync(int key, bool waitForKeyRelease = true)
     {
-        if (User32.GetAsyncKeyState(key) < 0)
+        if (User32.GetAsyncKeyState(key) >= 0)
         {
-            if (!waitForKeyRelease)
-            {
-                return true;
-            }
-
-            while (User32.GetAsyncKeyState(key) < 0)
-            {
-                await Task.Delay(1);
-            }
-
+            return false;
+        }
+        
+        if (!waitForKeyRelease)
+        {
             return true;
         }
 
-        return false;
+        while (User32.GetAsyncKeyState(key) < 0)
+        {
+            await Task.Delay(1);
+        }
+
+        return true;
     }
 }

@@ -10,15 +10,11 @@ public partial class RwMemory
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
-    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
-    public bool WriteBytes(MemoryAddress memoryAddress, byte[] value)
+    /// <returns>An <seealso cref="bool"/> indicating whether the operation was successful.</returns>
+    public bool WriteBytes(MemoryAddress memoryAddress, ReadOnlySpan<byte> value)
     {
-        if (!GetTargetAddress(memoryAddress, out var targetAddress))
-        {
-            return false;
-        }
-
-        return MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, value);
+        return GetTargetAddress(memoryAddress, out var targetAddress) &&
+               MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, value);
     }
 
     /// <summary>
@@ -27,14 +23,10 @@ public partial class RwMemory
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
-    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
+    /// <returns>An <seealso cref="bool"/> indicating whether the operation was successful.</returns>
     public bool WriteValue<T>(MemoryAddress memoryAddress, T value) where T : unmanaged
     {
-        if (!GetTargetAddress(memoryAddress, out var targetAddress))
-        {
-            return false;
-        }
-
-        return MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, value);
+        return GetTargetAddress(memoryAddress, out var targetAddress) &&
+               MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, value);
     }
 }

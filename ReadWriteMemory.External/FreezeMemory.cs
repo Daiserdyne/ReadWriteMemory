@@ -22,7 +22,7 @@ public partial class RwMemory
             return false;
         }
 
-        if (!GetTargetAddress(memoryAddress, out var targetAddress))
+        if (!GetTargetAddress(memoryAddress, out _))
         {
             return false;
         }
@@ -147,16 +147,18 @@ public partial class RwMemory
         return true;
     }
 
-    private void StartFreezingValue(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate, byte[] buffer)
+    private void StartFreezingValue(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate, ReadOnlySpan<byte> buffer)
     {
         var freezeToken = new CancellationTokenSource();
 
         _memoryRegister[memoryAddress].FreezeTokenSrc = freezeToken;
 
+        var byteBufffer = buffer.ToArray();
+        
         _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
             if (!GetTargetAddress(memoryAddress, out var targetAddress)
-                || !MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, buffer))
+                || !MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, byteBufffer))
             {
                 freezeToken.Cancel();
                 freezeToken.Dispose();

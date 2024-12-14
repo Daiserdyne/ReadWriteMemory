@@ -111,8 +111,7 @@ public sealed class TestTrainer : IDisposable
             await _implementedTrainer[nameof(Freecam)].Enable("right");
         }
     }
-
-
+    
     private void OnProcessStateChanged(ProgramState state)
     {
         if (state == ProgramState.Closed)

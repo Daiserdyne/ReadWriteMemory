@@ -1,6 +1,8 @@
 ﻿using ReadWriteMemory.External.Entities;
 using ReadWriteMemory.External.Utilities;
 
+// ReSharper disable MemberCanBePrivate.Global
+
 namespace ReadWriteMemory.External;
 
 public partial class RwMemory
@@ -13,7 +15,7 @@ public partial class RwMemory
     /// <param name="memoryAddress"></param>
     /// <param name="replacement"></param>
     /// <returns></returns>
-    public bool ReplaceBytes(MemoryAddress memoryAddress, byte[] replacement)
+    public bool ReplaceBytes(MemoryAddress memoryAddress, ReadOnlySpan<byte> replacement)
     {
         if (!BytesAlreadyReplaced(memoryAddress))
         {
@@ -32,17 +34,17 @@ public partial class RwMemory
             return false;
         }
 
-        if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, replacement))
+        if (!MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, replacement))
         {
-            _memoryRegister[memoryAddress].ReplacedBytes = new()
-            {
-                OriginalOpcodes = buffer
-            };
-
-            return true;
+            return false;
         }
 
-        return false;
+        _memoryRegister[memoryAddress].ReplacedBytes = new()
+        {
+            OriginalOpcodes = buffer
+        };
+
+        return true;
     }
 
     private bool BytesAlreadyReplaced(MemoryAddress memoryAddress)
@@ -75,26 +77,15 @@ public partial class RwMemory
         {
             return false;
         }
-        
-        if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress,
+
+        if (!MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress,
                 _memoryRegister[memoryAddress].ReplacedBytes!.Value.OriginalOpcodes))
         {
-            _memoryRegister[memoryAddress].ReplacedBytes = null;
-
-            return true;
+            return false;
         }
 
-        return false;
-    }
+        _memoryRegister[memoryAddress].ReplacedBytes = null;
 
-    private void RestoreAllReplacedBytes()
-    {
-        foreach (var (memoryAddress, table) in _memoryRegister)
-        {
-            if (table.ReplacedBytes is not null)
-            {
-                UndoReplaceBytes(memoryAddress);
-            }
-        }
+        return true;
     }
 }

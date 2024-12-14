@@ -2,6 +2,7 @@
 using ReadWriteMemory.External.Entities;
 using ReadWriteMemory.External.Interfaces;
 using ReadWriteMemory.External.Services;
+using ReadWriteMemory.External.Utilities;
 using TestTrainer.External.Utilities;
 using RwMemory = ReadWriteMemory.External.RwMemory;
 
@@ -26,7 +27,7 @@ public sealed class Freecam : IMemoryTrainer
         new("TOTClient-Win64-Shipping.exe", 0x5DE5A50,
             0x208, 0x870, 0x20, 0x29C);
 
-    private readonly byte[] _scriptFunction =
+    private static ReadOnlySpan<byte> ScriptFunction =>
     [
         0x83, 0xBB, 0x34, 0x01, 0x00, 0x00, 0x00, 0x0F, 0x84, 0x0D, 0x00,
         0x00, 0x00, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0xE9, 0x08, 0x00, 0x00, 0x00, 0x44, 0x0F, 0x11,
@@ -37,9 +38,11 @@ public sealed class Freecam : IMemoryTrainer
     private float _currentPitch;
     private float _currentYaw;
 
-    public Freecam() => _memory.OnReinitilizeTargetProcess += OnReinitilizeTargetProcess;
+    public Freecam() => _memory.OnReInitializeTargetProcess += OnReinitilizeTargetProcess;
 
-    public int Id => 4;
+    public int Id => 0;
+    
+    public Hotkeys.Key Hotkey => Hotkeys.Key.F4;
 
     public string TrainerName => nameof(Freecam);
 
@@ -59,7 +62,7 @@ public sealed class Freecam : IMemoryTrainer
         {
             case "enable_freecam":
             {
-                var caveAddress = await _memory.CreateOrResumeDetour(_cameraFunctionAddress, _scriptFunction,
+                var caveAddress = await _memory.CreateOrResumeDetour(_cameraFunctionAddress, ScriptFunction,
                     8, 18);
 
                 if (caveAddress == nuint.Zero)

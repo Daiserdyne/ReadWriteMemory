@@ -1,7 +1,6 @@
 ﻿using System.Collections.Frozen;
 using System.Diagnostics;
-using ReadWriteMemory.Internal.NativeImports;
-using ReadWriteMemory.Shared.Entities;
+using ReadWriteMemory.Internal.Entities;
 
 namespace ReadWriteMemory.Internal;
 
@@ -14,8 +13,8 @@ public partial class RwMemory
     private readonly FrozenDictionary<string, nuint> _modules = GetAllLoadedProcessModules();
 
     /// <summary>
-    /// This is the main component of the <see cref="ReadWriteMemory.Internal"/> library. This class includes a lot of powerfull
-    /// read and write operations to manipulate the memory of an process.
+    /// This is the main component of the <see cref="ReadWriteMemory.Internal"/> library.
+    /// This class includes a lot of powerful read and write operations to manipulate the memory of a process.
     /// </summary>
     public RwMemory()
     {
@@ -50,7 +49,7 @@ public partial class RwMemory
 
         var targetAddress = baseAddress;
 
-        if (memoryAddress.Offsets.Any())
+        if (memoryAddress.Offsets.Length != 0)
         {
             targetAddress = *(nuint*)targetAddress;
 
@@ -65,7 +64,7 @@ public partial class RwMemory
 
         if (!_memoryRegister.ContainsKey(memoryAddress))
         {
-            _memoryRegister.Add(memoryAddress, new()
+            _memoryRegister.Add(memoryAddress, new MemoryAddressTable()
             {
                 BaseAddress = baseAddress
             });
@@ -99,5 +98,16 @@ public partial class RwMemory
         }
 
         return memoryAddress.Address;
+    }
+    
+    private void RestoreAllReplacedBytes()
+    {
+        foreach (var (memoryAddress, table) in _memoryRegister)
+        {
+            if (table.ReplacedBytes is not null)
+            {
+                UndoReplaceBytes(memoryAddress);
+            }
+        }
     }
 }

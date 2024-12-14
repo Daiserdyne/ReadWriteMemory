@@ -9,8 +9,8 @@
 /// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567, 0x42, 0x420, 0x69);</code>
 /// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567);</code>
 /// </example>
-/// <para>See <seealso cref="MemoryAddress(nuint, int[])"/></para> 
-/// See <seealso cref="MemoryAddress(string, nuint, int[])"/>
+/// <para><seealso cref="MemoryAddress(nuint, int[])"/></para> 
+///  <seealso cref="MemoryAddress(string, nuint, int[])"/>
 /// </summary>
 public readonly record struct MemoryAddress
 {

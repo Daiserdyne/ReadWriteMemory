@@ -13,10 +13,10 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.1.0</Version>
-		<Authors>Timm3D</Authors>
+		<Version>1.1.1</Version>
+		<Authors>Daiserdyne</Authors>
 		<Product>ReadWriteMemoryExternal</Product>
-		<Description>A powerfull memory editing dll.</Description>
+		<Description>A powerfull memory editing library.</Description>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
 </Project>

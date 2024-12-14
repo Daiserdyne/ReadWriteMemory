@@ -1,4 +1,6 @@
-﻿using ReadWriteMemory.Shared.Entities;
+﻿using ReadWriteMemory.Internal.Entities;
+
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace ReadWriteMemory.Internal;
 
@@ -14,34 +16,35 @@ public partial class RwMemory
     /// <returns></returns>
     public bool ReplaceBytes(MemoryAddress memoryAddress, byte[] replacement)
     {
-        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
-        {
-            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
-        }
-        else if (table.ReplacedBytes is not null)
+        if (!BytesAlreadyReplaced(memoryAddress))
         {
             return false;
         }
 
-        var originalOpcodes = ReadBytes(memoryAddress, (uint)replacement.Length);
+        if (!ReadBytes(memoryAddress, (uint)replacement.Length, out var originalOpcodes))
+        {
+            return false;
+        }
 
-        if (!originalOpcodes.Any())
+        if (originalOpcodes.Length == 0)
         {
             return false;
         }
         
         _memoryRegister[memoryAddress].ReplacedBytes = new()
         {
-            OriginalOpcodes = originalOpcodes
+            OriginalOpcodes = originalOpcodes.ToArray()
         };
 
-        if (!WriteBytes(memoryAddress, replacement))
+        if (WriteBytes(memoryAddress, replacement))
         {
-            _memoryRegister[memoryAddress].ReplacedBytes = null;
-            return false;
+            return true;
         }
+        
+        _memoryRegister[memoryAddress].ReplacedBytes = null;
+        
+        return false;
 
-        return true;
     }
     
     /// <summary>
@@ -51,12 +54,7 @@ public partial class RwMemory
     /// <returns></returns>
     public bool UndoReplaceBytes(MemoryAddress memoryAddress)
     {
-        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
-        {
-            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
-            return false;
-        }
-        else if (table.ReplacedBytes is null)
+        if (BytesAlreadyReplaced(memoryAddress))
         {
             return false;
         }
@@ -76,14 +74,17 @@ public partial class RwMemory
         return true;
     }
     
-    private void RestoreAllReplacedBytes()
+    private bool BytesAlreadyReplaced(MemoryAddress memoryAddress)
     {
-        foreach (var (memoryAddress, table) in _memoryRegister)
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
         {
-            if (table.ReplacedBytes is not null)
-            {
-                UndoReplaceBytes(memoryAddress);
-            }
+            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
         }
+        else if (table.ReplacedBytes is not null)
+        {
+            return false;
+        }
+
+        return true;
     }
 }

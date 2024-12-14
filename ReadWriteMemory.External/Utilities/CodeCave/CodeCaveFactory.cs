@@ -5,11 +5,11 @@ namespace ReadWriteMemory.External.Utilities.CodeCave;
 internal static class CodeCaveFactory
 {
     internal static bool CreateCaveAndHookFunction(nuint targetAddress, nint targetProcessHandle,
-        IReadOnlyList<byte> caveCode, int instructionOpcodesLength,
+        ReadOnlySpan<byte> caveCode, int instructionOpcodesLength,
         int totalAmountOfOpcodes, out nuint caveAddress, out byte[] originalOpcodes, out byte[] jmpBytes,
         uint size = 4096)
     {
-        var finalCaveCode = new List<byte>(caveCode);
+        var finalCaveCode = new List<byte>(caveCode.ToArray());
 
         caveAddress = VirtualAllocEx(targetProcessHandle,
             nuint.Zero, size, MemCommit | MemReserve | 0x00100000,

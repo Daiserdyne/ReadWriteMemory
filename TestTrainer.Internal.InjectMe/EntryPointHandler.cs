@@ -32,7 +32,6 @@ public static class EntryPointHandler
 
     private static async Task ExecuteProgram()
     {
-        await new SignalTrainer()
-            .Main(CancellationToken.None);
+        await SignalTrainer.Main(CancellationToken.None);
     }
 }

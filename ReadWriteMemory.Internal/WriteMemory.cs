@@ -1,7 +1,9 @@
-﻿using ReadWriteMemory.Shared.Entities;
+﻿using System.Diagnostics.CodeAnalysis;
+using ReadWriteMemory.Internal.Entities;
 
 namespace ReadWriteMemory.Internal;
 
+[SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
 public partial class RwMemory
 {
     /// <summary>
@@ -9,7 +11,7 @@ public partial class RwMemory
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="bytes"></param>
-    public unsafe bool WriteBytes(MemoryAddress memoryAddress, Span<byte> bytes)
+    public unsafe bool WriteBytes(MemoryAddress memoryAddress, ReadOnlySpan<byte> bytes)
     {
         try
         {
@@ -26,13 +28,13 @@ public partial class RwMemory
             {
                 Buffer.MemoryCopy(sourcePtr, destPtr, bytes.Length, bytes.Length);
             }
+            
+            return true;
         }
         catch
         {
             return false;
         }
-
-        return true;
     }
 
     /// <summary>
@@ -54,12 +56,12 @@ public partial class RwMemory
             var destPtr = (T*)targetAddress;
 
             *destPtr = value;
+
+            return true;
         }
         catch
         {
             return false;
         }
-
-        return true;
     }
 }

@@ -20,7 +20,7 @@ public partial class RwMemory
     /// A delegate that will be called after reading the byte array value.
     /// </summary>
     /// <param name="byteArrayValue"></param>
-    public delegate void ReadBytesCallback(byte[] byteArrayValue);
+    public delegate void ReadBytesCallback(ReadOnlySpan<byte> byteArrayValue);
 
     #endregion
 
@@ -30,7 +30,7 @@ public partial class RwMemory
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="value"></param>
-    /// <returns>A <seealso cref="bool"/> indicating whether the operation was successful.</returns>
+    /// <returns>An <seealso cref="bool"/> indicating whether the operation was successful.</returns>
     public unsafe bool ReadValue<T>(MemoryAddress memoryAddress, out T value) where T : unmanaged
     {
         value = default;
@@ -42,17 +42,8 @@ public partial class RwMemory
 
         var buffer = new byte[sizeof(T)];
 
-        if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
-        {
-            return false;
-        }
-
-        if (!MemoryOperation.ConvertBufferUnsafe(buffer, out value))
-        {
-            return false;
-        }
-
-        return true;
+        return MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer) 
+               && MemoryOperation.ConvertBufferUnsafe(buffer, out value);
     }
 
     /// <summary>
@@ -67,17 +58,8 @@ public partial class RwMemory
     {
         value = new byte[length];
 
-        if (!GetTargetAddress(memoryAddress, out var targetAddress))
-        {
-            return false;
-        }
-
-        if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, value))
-        {
-            return false;
-        }
-
-        return true;
+        return GetTargetAddress(memoryAddress, out var targetAddress) && 
+               MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, value);
     }
 
     /// <summary>
@@ -92,7 +74,7 @@ public partial class RwMemory
     public bool ReadBytesConstant(MemoryAddress memoryAddress, uint bytesToRead, ReadBytesCallback callback,
         TimeSpan refreshTime)
     {
-        if (!IsAlreadReadingConstant(memoryAddress))
+        if (!IsAlreadyReadingConstant(memoryAddress))
         {
             return false;
         }
@@ -133,7 +115,7 @@ public partial class RwMemory
     public unsafe bool ReadValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback,
         TimeSpan refreshTime) where T : unmanaged
     {
-        if (!IsAlreadReadingConstant(memoryAddress))
+        if (!IsAlreadyReadingConstant(memoryAddress))
         {
             return false;
         }
@@ -196,7 +178,7 @@ public partial class RwMemory
         return true;
     }
 
-    private bool IsAlreadReadingConstant(MemoryAddress memoryAddress)
+    private bool IsAlreadyReadingConstant(MemoryAddress memoryAddress)
     {
         if (!_memoryRegister.TryGetValue(memoryAddress, out var value))
         {
