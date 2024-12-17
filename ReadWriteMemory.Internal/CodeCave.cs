@@ -44,6 +44,11 @@ public partial class RwMemory
             return nuint.Zero;
         }
 
+        if (!ReadBytes(memoryAddress, amountOfOpcodesToReplace, out var readBytes))
+        {
+            return nuint.Zero;
+        }
+        
         var caveAddress = VirtualAlloc(nint.Zero, memoryToAllocate, 
             AllocationType.Commit | AllocationType.Reserve, MemoryProtection.ExecuteReadWrite);
 
@@ -52,7 +57,7 @@ public partial class RwMemory
             return nuint.Zero;
         }
         
-        var codeCaveTable = new CodeCaveTable();
+        // todo: continue implementing the rest of the function.
         
         return nuint.Zero;
     }

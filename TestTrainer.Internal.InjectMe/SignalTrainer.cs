@@ -10,7 +10,7 @@ public static class SignalTrainer
 
     internal static Task Main(CancellationToken _)
     {
-        Kernel32.AllocConsole();
+        //Kernel32.AllocConsole();
 
         var messageBoxA = new MemoryAddress("user32.dll", 0x8C5D0);
 
@@ -18,7 +18,7 @@ public static class SignalTrainer
             messageBoxA,
             nuint.Zero,
             "Success",
-            "Dll injection was successful", 0x000000100);
+            "Dll injection was successful. Amogus", 0x000000100);
 
         return Task.CompletedTask;
     }
