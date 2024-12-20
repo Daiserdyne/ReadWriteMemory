@@ -32,20 +32,17 @@ public partial class RwMemory
     /// <returns></returns>
     public unsafe bool ReadValue<T>(MemoryAddress memoryAddress, out T value) where T : unmanaged
     {
-        try
-        {
-            var targetAddress = GetTargetAddress(memoryAddress);
-        
-            value = *(T*)(nuint*)targetAddress;
+        var targetAddress = GetTargetAddress(memoryAddress);
 
-            return true;
-        }
-        catch
+        if (targetAddress == nuint.Zero)
         {
             value = default;
-            
             return false;
         }
+        
+        value = *(T*)(nuint*)targetAddress;
+
+        return true;
     }
 
     /// <summary>
@@ -60,27 +57,27 @@ public partial class RwMemory
         try
         {
             var targetAddress = GetTargetAddress(memoryAddress);
-            
+
             var buffer = new byte[length];
 
             fixed (byte* bufferPtr = buffer)
             {
-                Buffer.MemoryCopy((void*)targetAddress, bufferPtr, 
+                Buffer.MemoryCopy((void*)targetAddress, bufferPtr,
                     length, length);
             }
 
             value = buffer;
-            
+
             return true;
         }
         catch
         {
             value = [];
-            
+
             return false;
         }
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -89,18 +86,18 @@ public partial class RwMemory
     /// <param name="refreshTime"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public bool ReadValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, 
+    public bool ReadValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback,
         TimeSpan refreshTime) where T : unmanaged
     {
         if (!IsAlreadyReadingConstant(memoryAddress))
         {
             return false;
         }
-        
+
         var readValueConstantTokenSrc = new CancellationTokenSource();
 
         _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = readValueConstantTokenSrc;
-        
+
         StartReadingValueConstant(memoryAddress, callback, refreshTime, readValueConstantTokenSrc);
 
         return true;
@@ -130,7 +127,7 @@ public partial class RwMemory
 
         return true;
     }
-    
+
     /// <summary>
     /// Unfreezes a value from the given <paramref name="memoryAddress"/>.
     /// </summary>
@@ -157,7 +154,7 @@ public partial class RwMemory
 
         return true;
     }
-    
+
     private void StartReadingValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback,
         TimeSpan refreshTime, CancellationTokenSource readValueConstantTokenSrc)
         where T : unmanaged
@@ -168,17 +165,17 @@ public partial class RwMemory
             {
                 readValueConstantTokenSrc.Cancel();
                 readValueConstantTokenSrc.Dispose();
-                
+
                 _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
 
                 return;
             }
-            
+
             callback(value);
         }, refreshTime, readValueConstantTokenSrc.Token);
     }
-    
-    private void StartReadingBytesConstant(MemoryAddress memoryAddress, uint byteLengthToRead, 
+
+    private void StartReadingBytesConstant(MemoryAddress memoryAddress, uint byteLengthToRead,
         ReadBytesCallback callback, TimeSpan refreshRate, CancellationTokenSource readValueConstantTokenSrc)
     {
         _ = BackgroundService.ExecuteTaskRepeatedly(() =>
@@ -187,16 +184,16 @@ public partial class RwMemory
             {
                 readValueConstantTokenSrc.Cancel();
                 readValueConstantTokenSrc.Dispose();
-                
+
                 _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
 
                 return;
             }
-            
+
             callback(value);
         }, refreshRate, readValueConstantTokenSrc.Token);
     }
-    
+
     private bool IsAlreadyReadingConstant(MemoryAddress memoryAddress)
     {
         if (!_memoryRegister.TryGetValue(memoryAddress, out var value))

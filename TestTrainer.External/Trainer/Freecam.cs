@@ -62,7 +62,7 @@ public sealed class Freecam : IMemoryTrainer
         {
             case "enable_freecam":
             {
-                var caveAddress = await _memory.CreateOrResumeDetour(_cameraFunctionAddress, ScriptFunction,
+                var caveAddress = await _memory.CreateOrResumeCodeCave(_cameraFunctionAddress, ScriptFunction,
                     8, 18);
 
                 if (caveAddress == nuint.Zero)

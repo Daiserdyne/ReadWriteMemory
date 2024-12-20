@@ -97,12 +97,9 @@ public partial class RwMemory : IDisposable
 
         if (Process.GetProcessesByName(_targetProcess.ProcessName).Length != 0)
         {
-            if (_targetProcess.Handle == nint.Zero)
+            if (_targetProcess.Handle == nint.Zero && OpenProcess())
             {
-                if (OpenProcess())
-                {
-                    GetAllLoadedProcessModules();
-                }
+                GetAllLoadedProcessModules();
             }
 
             _targetProcess.IsProcessAlive = true;
@@ -248,7 +245,6 @@ public partial class RwMemory : IDisposable
         ReinitializeTargetProcess();
 
         return false;
-
     }
 
     private nuint GetTargetAddress(MemoryAddress memoryAddress)

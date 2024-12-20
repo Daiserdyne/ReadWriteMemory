@@ -17,7 +17,7 @@ public partial class RwMemory
     /// <returns></returns>
     public bool FreezeValue<T>(MemoryAddress memoryAddress, T value, TimeSpan freezeRefreshRate) where T : unmanaged
     {
-        if (!CheckIfAlreadyFroozen(memoryAddress))
+        if (!CheckIfAlreadyFrozen(memoryAddress))
         {
             return false;
         }
@@ -46,7 +46,7 @@ public partial class RwMemory
     /// <returns></returns>
     public unsafe bool FreezeValue<T>(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate) where T : unmanaged
     {
-        if (!CheckIfAlreadyFroozen(memoryAddress))
+        if (!CheckIfAlreadyFrozen(memoryAddress))
         {
             return false;
         }
@@ -79,7 +79,7 @@ public partial class RwMemory
     /// <returns></returns>
     public bool FreezeBytes(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate, uint bufferSize)
     {
-        if (!CheckIfAlreadyFroozen(memoryAddress))
+        if (!CheckIfAlreadyFrozen(memoryAddress))
         {
             return false;
         }
@@ -101,7 +101,7 @@ public partial class RwMemory
         return true;
     }
 
-    private bool CheckIfAlreadyFroozen(MemoryAddress memoryAddress)
+    private bool CheckIfAlreadyFrozen(MemoryAddress memoryAddress)
     {
         if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
         {
@@ -153,18 +153,20 @@ public partial class RwMemory
 
         _memoryRegister[memoryAddress].FreezeTokenSrc = freezeToken;
 
-        var byteBufffer = buffer.ToArray();
+        var byteBuffer = buffer.ToArray();
         
         _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
-            if (!GetTargetAddress(memoryAddress, out var targetAddress)
-                || !MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, byteBufffer))
+            if (GetTargetAddress(memoryAddress, out var targetAddress) &&
+                MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, byteBuffer))
             {
-                freezeToken.Cancel();
-                freezeToken.Dispose();
-
-                _memoryRegister[memoryAddress].FreezeTokenSrc = null;
+                return;
             }
+            
+            freezeToken.Cancel();
+            freezeToken.Dispose();
+
+            _memoryRegister[memoryAddress].FreezeTokenSrc = null;
         }, freezeRefreshRate, freezeToken.Token);
     }
 }

@@ -1,6 +1,5 @@
 ﻿using ReadWriteMemory.Internal;
 using ReadWriteMemory.Internal.Entities;
-using ReadWriteMemory.Internal.NativeImports;
 
 namespace TestTrainer.Internal.InjectMe;
 

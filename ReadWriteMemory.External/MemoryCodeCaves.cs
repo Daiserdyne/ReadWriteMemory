@@ -20,12 +20,12 @@ public partial class RwMemory
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    public Task<nuint> CreateOrResumeDetour(MemoryAddress memoryAddress, ReadOnlySpan<byte> caveCode, 
+    public Task<nuint> CreateOrResumeCodeCave(MemoryAddress memoryAddress, ReadOnlySpan<byte> caveCode, 
         int instructionOpcodesLength, int totalAmountOfOpcodes, uint size = 4096)
     {
         var caveCodeBytes = caveCode.ToArray();
         
-        return Task.Run(() => CreateDetour(memoryAddress, caveCodeBytes, instructionOpcodesLength, 
+        return Task.Run(() => CreateCodeCave(memoryAddress, caveCodeBytes, instructionOpcodesLength, 
             totalAmountOfOpcodes, size));
     }
 
@@ -44,7 +44,7 @@ public partial class RwMemory
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>
     /// <returns>Cave address</returns>
-    private nuint CreateDetour(MemoryAddress memoryAddress, ReadOnlySpan<byte> caveCode, 
+    private nuint CreateCodeCave(MemoryAddress memoryAddress, ReadOnlySpan<byte> caveCode, 
         int instructionOpcodesLength, int totalAmountOfOpcodes, uint size = 4096)
     {
         if (!IsProcessAlive)
@@ -85,26 +85,22 @@ public partial class RwMemory
 
         var caveTable = memoryTable.CodeCaveTable;
 
-        if (caveTable is null)
+        if (caveTable is null || caveTable.CaveAddress == nuint.Zero)
         {
             return false;
         }
+        
+        caveAddress = caveTable.CaveAddress;
 
-        if (caveTable.CaveAddress != nuint.Zero)
+        if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, memoryTable.BaseAddress, caveTable.JmpBytes))
         {
-            caveAddress = caveTable.CaveAddress;
-
-            if (!MemoryOperation.WriteProcessMemory(_targetProcess.Handle, memoryTable.BaseAddress, (byte[])caveTable.JmpBytes))
-            {
-                MemoryOperation.WriteProcessMemory(_targetProcess.Handle, memoryTable.BaseAddress, (byte[])caveTable.OriginalOpcodes);
-
-                DeallocateMemory(caveTable.CaveAddress);
-
-                return false;
-            }
-
             return true;
         }
+            
+        MemoryOperation.WriteProcessMemory(_targetProcess.Handle, memoryTable.BaseAddress, 
+            caveTable.OriginalOpcodes);
+
+        DeallocateMemory(caveTable.CaveAddress);
 
         return false;
     }
@@ -114,7 +110,7 @@ public partial class RwMemory
     /// So your code-bytes stay in the memory at the cave address. The advantage is that you
     /// don't have to create a new code cave which costs time. You can simply jump to the cave address
     /// or use the original code. Don't forget to dispose the memory object when you exit the application.
-    /// Otherwise the codecaves continue to live forever.
+    /// Otherwise, the codecaves continue to live forever.
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <returns></returns>
@@ -133,14 +129,8 @@ public partial class RwMemory
         var baseAddress = memoryTable.BaseAddress;
         var caveTable = memoryTable.CodeCaveTable;
 
-        if (caveTable is null)
-        {
-            return false;
-        }
-
-        MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, (byte[])caveTable.OriginalOpcodes);
-
-        return true;
+        return caveTable is not null && 
+               MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.OriginalOpcodes);
     }
 
     /// <summary>
@@ -179,15 +169,15 @@ public partial class RwMemory
     /// </summary>
     private void CloseAllCodeCaves()
     {
-        foreach (var memoryTable in Enumerable
-            .Where<MemoryAddressTable>(_memoryRegister.Values, addr => addr.CodeCaveTable is not null))
+        foreach (var memoryTable in _memoryRegister.Values
+            .Where(addr => addr.CodeCaveTable is not null))
         {
             var baseAddress = memoryTable.BaseAddress;
             var caveTable = memoryTable.CodeCaveTable;
 
             if (caveTable is null)
             {
-                return;
+                continue;
             }
 
             MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.OriginalOpcodes);
