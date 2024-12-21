@@ -44,9 +44,7 @@ public partial class RwMemory
             return false;
         }
         
-        var destPtr = (T*)targetAddress;
-
-        *destPtr = value;
+        *(T*)targetAddress = value;
 
         return true;
     }

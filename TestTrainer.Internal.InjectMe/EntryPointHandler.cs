@@ -8,7 +8,7 @@ public static class EntryPointHandler
         DllProcessAttach = 1,
         DllThreadAttach = 2,
         DllThreadDetach = 3;
-
+    
     [UnmanagedCallersOnly(EntryPoint = nameof(DllMain))]
     public static bool DllMain(nint module, uint reason, nint reserved)
     {

@@ -39,8 +39,8 @@ public partial class RwMemory
             value = default;
             return false;
         }
-        
-        value = *(T*)(nuint*)targetAddress;
+
+        value = *(T*)targetAddress;
 
         return true;
     }
@@ -54,28 +54,25 @@ public partial class RwMemory
     /// <returns></returns>
     public unsafe bool ReadBytes(MemoryAddress memoryAddress, uint length, out ReadOnlySpan<byte> value)
     {
-        try
+        var targetAddress = GetTargetAddress(memoryAddress);
+
+        if (targetAddress == nuint.Zero)
         {
-            var targetAddress = GetTargetAddress(memoryAddress);
-
-            var buffer = new byte[length];
-
-            fixed (byte* bufferPtr = buffer)
-            {
-                Buffer.MemoryCopy((void*)targetAddress, bufferPtr,
-                    length, length);
-            }
-
-            value = buffer;
-
-            return true;
-        }
-        catch
-        {
-            value = [];
-
+            value = default;
             return false;
         }
+
+        var buffer = new byte[length];
+
+        fixed (byte* bufferPtr = buffer)
+        {
+            Buffer.MemoryCopy((void*)targetAddress, bufferPtr,
+                length, length);
+        }
+
+        value = buffer;
+
+        return true;
     }
 
     /// <summary>

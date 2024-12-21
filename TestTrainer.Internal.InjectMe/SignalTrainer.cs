@@ -5,7 +5,7 @@ namespace TestTrainer.Internal.InjectMe;
 
 public static class SignalTrainer
 {
-    private static readonly RwMemory Memory = new();
+    private static readonly RwMemory _memory = new();
 
     internal static Task Main(CancellationToken _)
     {
@@ -13,7 +13,7 @@ public static class SignalTrainer
 
         var messageBoxA = new MemoryAddress("user32.dll", 0x8C5D0);
 
-        Memory.CallFunctionStdcall<int, nuint, string, string, nint>(
+        _memory.CallFunctionStdcall<int, nuint, string, string, nint>(
             messageBoxA,
             nuint.Zero,
             "Success",

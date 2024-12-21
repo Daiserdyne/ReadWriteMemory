@@ -88,9 +88,9 @@ public partial class RwMemory
         {
             return false;
         }
-        
+
         var buffer = new byte[bufferSize];
-        
+
         if (!MemoryOperation.ReadProcessMemory(_targetProcess.Handle, targetAddress, buffer))
         {
             return false;
@@ -154,7 +154,7 @@ public partial class RwMemory
         _memoryRegister[memoryAddress].FreezeTokenSrc = freezeToken;
 
         var byteBuffer = buffer.ToArray();
-        
+
         _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
             if (GetTargetAddress(memoryAddress, out var targetAddress) &&
@@ -162,7 +162,7 @@ public partial class RwMemory
             {
                 return;
             }
-            
+
             freezeToken.Cancel();
             freezeToken.Dispose();
 

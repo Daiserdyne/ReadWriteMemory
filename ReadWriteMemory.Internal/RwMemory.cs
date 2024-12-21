@@ -1,8 +1,7 @@
 ﻿using System.Collections.Frozen;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
-using System.Security;
 using ReadWriteMemory.Internal.Entities;
+using static ReadWriteMemory.Internal.NativeImports.Kernel32;
 
 namespace ReadWriteMemory.Internal;
 
@@ -40,12 +39,23 @@ public partial class RwMemory : IDisposable
         return modules.ToFrozenDictionary();
     }
 
+    private static unsafe bool IsValidMemory(nuint address)
+    {
+        var result = VirtualQuery(address, out var mbi, (uint)sizeof(MemoryBasicInformation));
+
+        if (result == 0)
+        {
+            return false;
+        }
+        
+        return mbi.State == MemCommit && mbi.Protect != PageNoAccess;
+    }
+    
     /// <summary>
     /// Calculates the final address of the given address with module name and offsets.
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <returns></returns>
-    [HandleProcessCorruptedStateExceptions, SecurityCritical]
     private unsafe nuint GetTargetAddress(MemoryAddress memoryAddress)
     {
         var baseAddress = GetBaseAddress(memoryAddress);
@@ -54,32 +64,33 @@ public partial class RwMemory : IDisposable
         
         if (memoryAddress.Offsets.Length != 0)
         {
-            try
-            {
-                targetAddress = *(nuint*)targetAddress;
-            }
-            catch
+            if (!IsValidMemory(targetAddress))
             {
                 return nuint.Zero;
             }
+            
+            targetAddress = *(nuint*)targetAddress;
 
             for (ushort i = 0; i < memoryAddress.Offsets.Length - 1; i++)
             {
                 targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[i]);
 
-                try
-                {
-                    targetAddress = *(nuint*)targetAddress;
-                }
-                catch
+                if (!IsValidMemory(targetAddress))
                 {
                     return nuint.Zero;
                 }
+                
+                targetAddress = *(nuint*)targetAddress;
             }
 
             targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[^1]);
         }
 
+        if (!IsValidMemory(targetAddress))
+        {
+            return nuint.Zero;
+        }
+        
         if (!_memoryRegister.ContainsKey(memoryAddress))
         {
             _memoryRegister.Add(memoryAddress, new MemoryAddressTable()
@@ -134,5 +145,6 @@ public partial class RwMemory : IDisposable
     /// </summary>
     public void Dispose()
     {
+        RestoreAllReplacedBytes();
     }
 }
