@@ -32,7 +32,7 @@ public static partial class Kernel32
     public static partial bool AllocConsole();
 
     [LibraryImport("kernel32.dll", SetLastError = true)]
-    internal static partial nint VirtualAlloc(
+    internal static partial nuint VirtualAlloc(
         nint lpAddress,
         uint dwSize,
         AllocationType flAllocationType,

@@ -1,4 +1,5 @@
-﻿using ReadWriteMemory.Internal.Entities;
+﻿using System.Runtime.CompilerServices;
+using ReadWriteMemory.Internal.Entities;
 using static ReadWriteMemory.Internal.NativeImports.Kernel32;
 
 namespace ReadWriteMemory.Internal;
@@ -16,7 +17,7 @@ public partial class RwMemory
         0xFF, 0x15, 0x02, 0x00, 0x00, 0x00, 0xEB, 0x08,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     ];
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -27,7 +28,7 @@ public partial class RwMemory
     /// <param name="memoryToAllocate"></param>
     /// <returns></returns>
     public async ValueTask<nuint> CreateOrResumeCodeCave(MemoryAddress memoryAddress, byte[] customCode,
-        uint amountOfOpcodesToReplace, uint totalAmountOfOpcodesToReplace, uint memoryToAllocate = 4096)
+        int amountOfOpcodesToReplace, int totalAmountOfOpcodesToReplace, uint memoryToAllocate = 4096)
     {
         if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
         {
@@ -37,40 +38,55 @@ public partial class RwMemory
         {
             return table.CodeCaveTable.Value.CaveAddress;
         }
-        
-        return await Task.Run(() => CreateCodeCave(memoryAddress, customCode, amountOfOpcodesToReplace, 
+
+        return await Task.Run(() => CreateCodeCave(memoryAddress, customCode, amountOfOpcodesToReplace,
             totalAmountOfOpcodesToReplace, memoryToAllocate));
     }
 
     private nuint CreateCodeCave(MemoryAddress memoryAddress, ReadOnlySpan<byte> customCode,
-        uint amountOfOpcodesToReplace, uint totalAmountOfOpcodesToReplace, uint memoryToAllocate = 4096)
+        int amountOfOpcodesToReplace, int totalAmountOfOpcodesToReplace, uint memoryToAllocate = 4096)
     {
-        nuint targetAddress;
-        
-        try
-        {
-            targetAddress = GetTargetAddress(memoryAddress);
-        }
-        catch 
+        var targetAddress = GetTargetAddress(memoryAddress);
+
+        if (targetAddress == nuint.Zero)
         {
             return nuint.Zero;
         }
 
-        if (!ReadBytes(memoryAddress, amountOfOpcodesToReplace, out var readBytes))
+        if (!ReadBytes(memoryAddress, (uint)amountOfOpcodesToReplace, out var readBytes))
         {
             return nuint.Zero;
         }
-        
-        var caveAddress = VirtualAlloc(nint.Zero, memoryToAllocate, 
+
+        var caveAddress = VirtualAlloc(nint.Zero, memoryToAllocate,
             AllocationType.Commit | AllocationType.Reserve, MemoryProtection.ExecuteReadWrite);
 
-        if (caveAddress == nint.Zero)
+        if (caveAddress == nuint.Zero)
         {
             return nuint.Zero;
         }
+
+        var startAddress = nuint.Add(targetAddress, amountOfOpcodesToReplace);
+
+        var remainingOpcodesLength = totalAmountOfOpcodesToReplace - amountOfOpcodesToReplace;
+
+        var jmpBytes = GetAbsoluteJumpBytes(caveAddress);
         
-        // todo: continue implementing the rest of the function.
+        var customAsmInstructions = new byte[customCode.Length + jmpBytes.Length];
+
+        Unsafe.WriteUnaligned(ref customAsmInstructions[customCode.Length], jmpBytes);
         
         return nuint.Zero;
+    }
+
+    private static byte[] GetAbsoluteJumpBytes(nuint jumpToAddress)
+    {
+        var jumpBytes = new byte[JumpAsmTemplate.Length];
+
+        JumpAsmTemplate.CopyTo(jumpBytes);
+
+        Unsafe.WriteUnaligned(ref jumpBytes[6], jumpToAddress);
+
+        return jumpBytes;
     }
 }
