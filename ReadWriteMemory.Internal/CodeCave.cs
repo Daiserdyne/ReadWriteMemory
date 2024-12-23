@@ -6,6 +6,12 @@ namespace ReadWriteMemory.Internal;
 
 public partial class RwMemory
 {
+    private const byte RelativeCallInstruction = 0xE8;
+    private const byte RelativeCallInstructionLength = 5;
+
+    private const byte RelativeJumpInstruction = 0xE9;
+    private const byte RelativeJumpInstructionLength = 5;
+
     private static ReadOnlySpan<byte> JumpAsmTemplate =>
     [
         0xFF, 0x25, 0x00, 0x00, 0x00, 0x00,
@@ -70,16 +76,33 @@ public partial class RwMemory
 
         var remainingOpcodesLength = totalAmountOfOpcodesToReplace - amountOfOpcodesToReplace;
 
-        customCode = AppendAbsoluteJmpBack(customCode, totalAmountOfOpcodesToReplace, targetAddress);
+        if (customCode[^RelativeJumpInstructionLength] == RelativeJumpInstruction)
+        {
+            customCode = RemoveLastRelativeJumpInSequence(customCode);
+        }
 
-        var customInstructionsAddGivenAddress =
+        customCode = AppendAbsoluteJumpAtTheEndOfSequence(customCode, totalAmountOfOpcodesToReplace, targetAddress);
+
+        var customInstructionsAtGivenAddress =
             GetAbsoluteJumpBytes(caveAddress, totalAmountOfOpcodesToReplace);
 
 
         return nuint.Zero;
     }
 
-    private static byte[] AppendAbsoluteJmpBack(ReadOnlySpan<byte> customCode,
+    private static ReadOnlySpan<byte> RemoveLastRelativeJumpInSequence(ReadOnlySpan<byte> customCode)
+    {
+        var sequenceWithRemovedRelativeJump = new byte[customCode[^RelativeJumpInstructionLength]];
+
+        for (var i = 0; i < sequenceWithRemovedRelativeJump.Length; i++)
+        {
+            sequenceWithRemovedRelativeJump[i] = customCode[i];
+        }
+
+        return sequenceWithRemovedRelativeJump;
+    }
+
+    private static byte[] AppendAbsoluteJumpAtTheEndOfSequence(ReadOnlySpan<byte> customCode,
         int totalAmountOfOpcodesToReplace, nuint targetAddress)
     {
         var jumpBackAddress = nuint.Add(targetAddress, totalAmountOfOpcodesToReplace);

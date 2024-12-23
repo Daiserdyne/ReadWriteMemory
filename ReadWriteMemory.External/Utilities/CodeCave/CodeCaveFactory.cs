@@ -59,7 +59,7 @@ internal static class CodeCaveFactory
     {
         var remainingOpcodes = new byte[remainingOpcodesLength];
 
-        ReadProcessMemory(targetProcessHandle, startAddress, remainingOpcodes, remainingOpcodes.Length, 
+        ReadProcessMemory(targetProcessHandle, startAddress, remainingOpcodes, remainingOpcodes.Length,
             nint.Zero);
 
         convertedRemainingOpcodes = CaveHelper.ConvertRemainingInstructions(remainingOpcodes, startAddress);
@@ -73,10 +73,10 @@ internal static class CodeCaveFactory
     {
         originalOpcodes = new byte[opcodesToReplace];
 
-        ReadProcessMemory(targetProcessHandle, targetAddress, originalOpcodes, opcodesToReplace, 
+        ReadProcessMemory(targetProcessHandle, targetAddress, originalOpcodes, opcodesToReplace,
             nint.Zero);
 
-        WriteProcessMemory(targetProcessHandle, targetAddress, jumpBytes, (nuint)opcodesToReplace, 
+        WriteProcessMemory(targetProcessHandle, targetAddress, jumpBytes, (nuint)opcodesToReplace,
             out _);
     }
 }

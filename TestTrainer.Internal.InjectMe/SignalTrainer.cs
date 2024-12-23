@@ -19,6 +19,6 @@ public static class SignalTrainer
             "Success",
             "Dll injection was successful. Amogus", 0x000000100);
 
-        return Task.CompletedTask;
+        return Task.CompletedTask; 
     }
 }
