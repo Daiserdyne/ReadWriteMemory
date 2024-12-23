@@ -53,7 +53,7 @@ public partial class RwMemory
             return nuint.Zero;
         }
 
-        if (!ReadBytes(memoryAddress, (uint)amountOfOpcodesToReplace, out var readBytes))
+        if (!ReadBytes(memoryAddress, (uint)totalAmountOfOpcodesToReplace, out var originalOpcodes))
         {
             return nuint.Zero;
         }
@@ -70,13 +70,40 @@ public partial class RwMemory
 
         var remainingOpcodesLength = totalAmountOfOpcodesToReplace - amountOfOpcodesToReplace;
 
-        var jmpBytes = GetAbsoluteJumpBytes(caveAddress);
-        
-        var customAsmInstructions = new byte[customCode.Length + jmpBytes.Length];
+        customCode = AppendAbsoluteJmpBack(customCode, totalAmountOfOpcodesToReplace, targetAddress);
 
-        Unsafe.WriteUnaligned(ref customAsmInstructions[customCode.Length], jmpBytes);
-        
+        var customInstructionsAddGivenAddress =
+            GetAbsoluteJumpBytes(caveAddress, totalAmountOfOpcodesToReplace);
+
+
         return nuint.Zero;
+    }
+
+    private static byte[] AppendAbsoluteJmpBack(ReadOnlySpan<byte> customCode,
+        int totalAmountOfOpcodesToReplace, nuint targetAddress)
+    {
+        var jumpBackAddress = nuint.Add(targetAddress, totalAmountOfOpcodesToReplace);
+
+        var jumpBackBytes = GetAbsoluteJumpBytes(jumpBackAddress);
+
+        var customAsmInstructions = new byte[customCode.Length + jumpBackBytes.Length];
+
+        Unsafe.WriteUnaligned(ref customAsmInstructions[customCode.Length], jumpBackBytes);
+
+        return customAsmInstructions;
+    }
+
+    private static byte[] GetAbsoluteJumpBytes(nuint jumpToAddress, int opcodesToReplace)
+    {
+        var jumpBytes = new byte[opcodesToReplace];
+
+        JumpAsmTemplate.CopyTo(jumpBytes);
+
+        Unsafe.WriteUnaligned(ref jumpBytes[6], jumpToAddress);
+
+        jumpBytes.AsSpan(14).Fill(0x90);
+
+        return jumpBytes;
     }
 
     private static byte[] GetAbsoluteJumpBytes(nuint jumpToAddress)
