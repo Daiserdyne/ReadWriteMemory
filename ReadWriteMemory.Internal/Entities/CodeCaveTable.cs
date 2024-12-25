@@ -1,17 +1,22 @@
 ﻿namespace ReadWriteMemory.Internal.Entities;
 
-internal readonly record struct CodeCaveTable
+public readonly record struct CodeCaveTable
 {
-	internal CodeCaveTable(byte[] originalOpcode, nuint caveAddress, byte[] jmpBytes)
+	internal CodeCaveTable(byte[] originalOpcode, nuint caveAddress, uint sizeOfAllocatedMemory, byte[] jmpBytes)
 	{
 		OriginalOpcodes = originalOpcode;
 		CaveAddress = caveAddress;
 		JmpBytes = jmpBytes;
+		SizeOfAllocatedMemory = sizeOfAllocatedMemory;
 	}
+
+	public static CodeCaveTable Empty { get; } = new([], nuint.Zero, 0, []);
 	
-	internal nuint CaveAddress { get; }
+	public nuint CaveAddress { get; }
 	
-	internal byte[] OriginalOpcodes { get; }
+	public uint SizeOfAllocatedMemory { get; }
 	
-	internal byte[] JmpBytes { get; }
+	public byte[] OriginalOpcodes { get; }
+	
+	public byte[] JmpBytes { get; }
 }

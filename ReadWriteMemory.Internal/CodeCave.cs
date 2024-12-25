@@ -33,7 +33,7 @@ public partial class RwMemory
     /// <param name="totalAmountOfOpcodesToReplace"></param>
     /// <param name="memoryToAllocate"></param>
     /// <returns></returns>
-    public async ValueTask<nuint> CreateOrResumeCodeCave(MemoryAddress memoryAddress, byte[] customCode,
+    public async ValueTask<CodeCaveTable> CreateOrResumeCodeCave(MemoryAddress memoryAddress, byte[] customCode,
         int amountOfOpcodesToReplace, int totalAmountOfOpcodesToReplace, uint memoryToAllocate = 4096)
     {
         if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
@@ -42,31 +42,80 @@ public partial class RwMemory
         }
         else if (table.CodeCaveTable is not null)
         {
-            if (!WriteBytes(memoryAddress, table.CodeCaveTable.Value.JmpBytes))
+            if (WriteBytes(memoryAddress, table.CodeCaveTable.Value.JmpBytes))
             {
-                // ignored for now.
+                return table.CodeCaveTable.Value;
             }
+
+            CloseCodeCave(memoryAddress);
             
-            return table.CodeCaveTable.Value.CaveAddress;
+            return CodeCaveTable.Empty;
         }
 
         return await Task.Run(() => CreateCodeCave(memoryAddress, customCode,
             amountOfOpcodesToReplace, totalAmountOfOpcodesToReplace, memoryToAllocate));
     }
 
-    private nuint CreateCodeCave(MemoryAddress memoryAddress, ReadOnlySpan<byte> customCode,
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <returns></returns>
+    public bool PauseOpenedCodeCave(MemoryAddress memoryAddress)
+    {
+        if (_memoryRegister.TryGetValue(memoryAddress, out var table))
+        {
+            return table.CodeCaveTable is not null &&
+                   WriteBytes(memoryAddress, table.CodeCaveTable.Value.OriginalOpcodes);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="memoryAddress"></param>
+    /// <returns></returns>
+    public bool CloseCodeCave(MemoryAddress memoryAddress)
+    {
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
+        {
+            return false;
+        }
+
+        if (table.CodeCaveTable is null ||
+            WriteBytes(memoryAddress, table.CodeCaveTable.Value.OriginalOpcodes))
+        {
+            return false;
+        }
+
+        var result = VirtualFree(table.CodeCaveTable.Value.CaveAddress,
+            table.CodeCaveTable.Value.SizeOfAllocatedMemory, MemRelease);
+
+        if (!result)
+        {
+            return false;
+        }
+
+        _memoryRegister[memoryAddress].CodeCaveTable = null;
+
+        return true;
+    }
+
+    private CodeCaveTable CreateCodeCave(MemoryAddress memoryAddress, ReadOnlySpan<byte> caveCode,
         int instructionOpcodeLength, int totalAmountOfOpcodesToReplace, uint memoryToAllocate = 4096)
     {
         var targetAddress = GetTargetAddress(memoryAddress);
 
         if (targetAddress == nuint.Zero)
         {
-            return nuint.Zero;
+            return CodeCaveTable.Empty;
         }
 
         if (!ReadBytes(memoryAddress, (uint)totalAmountOfOpcodesToReplace, out var originalOpcodes))
         {
-            return nuint.Zero;
+            return CodeCaveTable.Empty;
         }
 
         var caveAddress = VirtualAlloc(nint.Zero, memoryToAllocate,
@@ -74,129 +123,156 @@ public partial class RwMemory
 
         if (caveAddress == nuint.Zero)
         {
-            return nuint.Zero;
+            return CodeCaveTable.Empty;
         }
 
-        if (customCode[^RelativeJumpInstructionLength] == RelativeJumpInstruction)
+        var finalCaveCode = new List<byte>(caveCode.ToArray());
+
+        if (finalCaveCode[^RelativeJumpInstructionLength] == RelativeJumpInstruction)
         {
-            RemoveLastRelativeJumpInSequence(ref customCode);
+            RemoveLastRelativeJumpInSequence(ref finalCaveCode);
         }
 
-        AppendAbsoluteJumpBackAtTheEndOfSequence(ref customCode, totalAmountOfOpcodesToReplace, targetAddress);
-        
         var startOfRemainingOpcodesAddress = nuint.Add(targetAddress, instructionOpcodeLength);
 
-        var remainingOpcodesAddress = new MemoryAddress(memoryAddress.ModuleName, 
+        var remainingOpcodesAddress = new MemoryAddress(memoryAddress.ModuleName,
             startOfRemainingOpcodesAddress, memoryAddress.Offsets);
-        
+
         var remainingOpcodesLength = totalAmountOfOpcodesToReplace - instructionOpcodeLength;
-        
-        if (!ReadBytes(remainingOpcodesAddress, (uint)remainingOpcodesLength, 
-                out var remainingInstructions))
+
+        if (!ReadBytes(remainingOpcodesAddress, (uint)remainingOpcodesLength,
+                out var remainingOpcodes))
         {
             VirtualFree(caveAddress, memoryToAllocate, MemRelease);
-            
-            return nuint.Zero;
+
+            return CodeCaveTable.Empty;
         }
-        
-        ConvertRemainingOpcodesToAbsoluteInstructions(ref remainingInstructions, startOfRemainingOpcodesAddress);
+
+        var convertedRemainingInstructions =
+            ConvertRelativeToAbsoluteInstructions(remainingOpcodes, startOfRemainingOpcodesAddress);
+
+        finalCaveCode.AddRange(convertedRemainingInstructions);
+
+        AppendAbsoluteJumpBackAtTheEndOfSequence(ref finalCaveCode, totalAmountOfOpcodesToReplace, targetAddress);
 
         var jumpToCaveBytes = GetAbsoluteJumpBytes(caveAddress, totalAmountOfOpcodesToReplace);
 
-
-        return nuint.Zero;
+        return new CodeCaveTable(originalOpcodes.ToArray(), caveAddress, memoryToAllocate, jumpToCaveBytes);
     }
 
-    private static byte[] ConvertRemainingOpcodesToAbsoluteInstructions(ReadOnlySpan<byte> customCode, 
-        nuint startOfRemainingOpcodes)
+    private static unsafe List<byte> ConvertRelativeToAbsoluteInstructions(ReadOnlySpan<byte> remainingInstructions,
+        nuint startOfRemainingOpcodesAddress)
     {
         var newCustomCode = new List<byte>();
 
-        var index = 0;
-
-        while (index < customCode.Length)
-        {
-            if (customCode[index] == RelativeJumpInstruction && index + RelativeJumpInstructionLength <= customCode.Length)
-            {
-                var offset = BitConverter.ToInt32(customCode.Slice(index + 1, 4));
-                
-                var absoluteAddress = (nuint)((int)startOfRemainingOpcodes + index + RelativeJumpInstructionLength + offset);
-                
-                var absoluteJumpBytes = GetAbsoluteJumpBytes(absoluteAddress);
-                newCustomCode.AddRange(absoluteJumpBytes);
-
-                index += RelativeJumpInstructionLength;
-            }
-            else
-            {
-                newCustomCode.Add(customCode[index]);
-                index++;
-            }
-        }
-
-        return newCustomCode.ToArray();
-    }
-    
-    private static void ConvertRemainingOpcodesToAbsoluteInstructions(
-        ref ReadOnlySpan<byte> remainingInstructions, nuint startOfRemainingOpcodes)
-    {
         for (var index = 0; index < remainingInstructions.Length; index++)
         {
+            if (index + RelativeJumpInstructionLength > remainingInstructions.Length)
+            {
+                newCustomCode.Add(remainingInstructions[index]);
+                continue;
+            }
+
             switch (remainingInstructions[index])
             {
                 case RelativeJumpInstruction:
                 {
-                    if (index + RelativeJumpInstructionLength > remainingInstructions.Length)
+                    // Example jump: E9 6E C4 85 FF
+                    // index of loop: E9
+                    // convert to little indian format
+                    byte[] relativeAddressOffsetBytes =
+                    [
+                        remainingInstructions[index + 4], // FF
+                        remainingInstructions[index + 3], // 85
+                        remainingInstructions[index + 2], // C4
+                        remainingInstructions[index + 1] // 6E
+                    ];
+
+                    int relativeAddressOffset;
+
+                    fixed (byte* offsetAsPtr = relativeAddressOffsetBytes)
                     {
-                        continue;
+                        relativeAddressOffset = *(int*)offsetAsPtr;
                     }
 
-                    var relativeAddressOffset = BitConverter.ToInt32(remainingInstructions.Slice(index + 1, 4));
+                    // Goes to start of jump (E9)
+                    var callerAddress = nuint.Add(startOfRemainingOpcodesAddress, index);
 
-                    var relativeAddress = nuint.Add(startOfRemainingOpcodes, relativeAddressOffset + index);
+                    // Adds size of the jump to the address.
+                    var relativeAddress = callerAddress + RelativeJumpInstructionLength;
 
-                    var absoluteJumpAddress = GetAbsoluteJumpBytes(relativeAddress);
+                    // Calculates the jump address.
+                    var jumpAddress = nuint.Add(relativeAddress, relativeAddressOffset);
 
-                    var newCustomCode = new byte
-                        [remainingInstructions.Length - RelativeJumpInstructionLength + JumpAsmTemplate.Length];
+                    var absoluteJumpBytes = GetAbsoluteJumpBytes(jumpAddress);
 
-                    Unsafe.WriteUnaligned(ref newCustomCode[0], remainingInstructions[..(index - 1)]);
+                    newCustomCode.AddRange(absoluteJumpBytes);
 
-                    Unsafe.WriteUnaligned(ref newCustomCode[index], absoluteJumpAddress);
+                    index += RelativeJumpInstructionLength - 1;
 
-                    for (var i = index + RelativeJumpInstructionLength; i < remainingInstructions.Length; i++)
+                    break;
+                }
+                case RelativeCallInstruction:
+                {
+                    // Example jump: E8 6E C4 85 FF
+                    // index of loop: E8
+                    // convert to little indian format
+                    byte[] relativeAddressOffsetBytes =
+                    [
+                        remainingInstructions[index + 4], // FF
+                        remainingInstructions[index + 3], // 85 
+                        remainingInstructions[index + 2], // C4
+                        remainingInstructions[index + 1] // 6E
+                    ];
+
+                    int relativeAddressOffset;
+
+                    fixed (byte* offsetAsPtr = relativeAddressOffsetBytes)
                     {
-                        newCustomCode[i] = remainingInstructions[i];
+                        relativeAddressOffset = *(int*)offsetAsPtr;
                     }
 
-                    index -= RelativeJumpInstructionLength + JumpAsmTemplate.Length;
+                    // Goes to start of jump (E9)
+                    var callerAddress = nuint.Add(startOfRemainingOpcodesAddress, index);
 
-                    remainingInstructions = newCustomCode;
+                    // Adds size of the jump to the address.
+                    var relativeAddress = callerAddress + RelativeCallInstructionLength;
 
-                    continue;
+                    // Calculates the jump address.
+                    var callAddress = nuint.Add(relativeAddress, relativeAddressOffset);
+
+                    var absoluteJumpBytes = GetAbsoluteCallBytes(callAddress);
+
+                    newCustomCode.AddRange(absoluteJumpBytes);
+
+                    index += RelativeCallInstructionLength - 1;
+
+                    break;
                 }
             }
         }
+
+        return newCustomCode;
     }
 
-    private static void RemoveLastRelativeJumpInSequence(ref ReadOnlySpan<byte> customCode)
+    private static void RemoveLastRelativeJumpInSequence(ref List<byte> customCode)
     {
-        customCode = customCode[..^RelativeJumpInstructionLength].ToArray();
+        customCode = customCode[..^RelativeJumpInstructionLength];
     }
 
-    private static void AppendAbsoluteJumpBackAtTheEndOfSequence(ref ReadOnlySpan<byte> customCode,
+    private static void AppendAbsoluteJumpBackAtTheEndOfSequence(ref List<byte> customCode,
         int totalAmountOfOpcodesToReplace, nuint targetAddress)
     {
         var jumpBackAddress = nuint.Add(targetAddress, totalAmountOfOpcodesToReplace);
 
         var jumpBackBytes = GetAbsoluteJumpBytes(jumpBackAddress);
 
-        var customAsmInstructions = new byte[customCode.Length + jumpBackBytes.Length];
+        var customAsmInstructions = new byte[customCode.Count + jumpBackBytes.Length];
 
         customCode.CopyTo(customAsmInstructions.AsSpan());
-        jumpBackBytes.CopyTo(customAsmInstructions.AsSpan(customCode.Length));
+        jumpBackBytes.CopyTo(customAsmInstructions.AsSpan(customCode.Count));
 
-        customCode = customAsmInstructions;
+        customCode.AddRange(customAsmInstructions);
     }
 
     private static byte[] GetAbsoluteJumpBytes(nuint jumpToAddress, int opcodesToReplace = 0)
@@ -215,5 +291,16 @@ public partial class RwMemory
         }
 
         return jumpBytes;
+    }
+
+    private static byte[] GetAbsoluteCallBytes(nuint callAddress)
+    {
+        var callBytes = new byte[CallAsmTemplate.Length];
+
+        CallAsmTemplate.CopyTo(callBytes);
+
+        Unsafe.WriteUnaligned(ref callBytes[8], callAddress);
+
+        return callBytes;
     }
 }
