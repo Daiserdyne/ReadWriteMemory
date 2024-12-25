@@ -1,67 +1,93 @@
-﻿using System.Numerics;
+﻿using System.Collections.Frozen;
 using ReadWriteMemory.Internal;
-using ReadWriteMemory.Internal.Entities;
+using ReadWriteMemory.Internal.Interfaces;
 using ReadWriteMemory.Internal.NativeImports;
+using ReadWriteMemory.Internal.Services;
 using ReadWriteMemory.Internal.Utilities;
+using TestTrainer.Internal.InjectMe.Trainer;
 
 namespace TestTrainer.Internal.InjectMe;
 
-public static class TrialsTrainer
+public class TrialsTrainer
 {
-    private static readonly MemoryAddress _cameraCoordinatesAddress =
-        new("TOTClient-Win64-Shipping.exe", 0x5DE5A50,
-            0x218, 0x3A8, 0x2A0, 0x1E0);
+    private readonly RwMemory _memory = RwMemoryHelper.RwMemory;
 
-    private static readonly MemoryAddress _cameraPitchAddress =
-        new("TOTClient-Win64-Shipping.exe", 0x5E9FAD0,
-            0x30, 0x260, 0x2A0, 0x6C0, 0x68, 0x430, 0x74);
+    private readonly FrozenDictionary<string, IMemoryTrainer> _implementedTrainer =
+        new Dictionary<string, IMemoryTrainer>
+        {
+            {
+                nameof(Freecam), new Freecam()
+            }
+        }.ToFrozenDictionary();
 
-    private static readonly MemoryAddress _cameraYawAddress =
-        new("TOTClient-Win64-Shipping.exe", 0x5DE5A50,
-            0x208, 0x870, 0x20, 0x29C);
+    private bool _freecamEnabled;
 
-    private static readonly RwMemory _memory = new();
-
-    internal static async Task Main(CancellationToken token)
+    internal async Task Main(CancellationToken cancellationToken)
     {
         Kernel32.AllocConsole();
         
-        while (!token.IsCancellationRequested)
+        while (!cancellationToken.IsCancellationRequested)
         {
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.F4))
-            {
-                var result = _memory.ReadValueConstant(_cameraCoordinatesAddress,
-                    (Vector3 coords) => { Console.WriteLine($"coords: {coords}\n"); }, TimeSpan.FromMilliseconds(1000));
+            await HandleTrainerTree(cancellationToken);
 
-                Console.WriteLine(result);
+            await Task.Delay(1, cancellationToken);
+        }
+    }
+    
+    private async Task HandleTrainerTree(CancellationToken cancellationToken)
+    {
+        while (_freecamEnabled)
+        {
+            await HandleFreecam();
+            await Task.Delay(1, cancellationToken);
+        }
 
-                result = _memory.ReadValueConstant(_cameraPitchAddress,
-                    (float pitch) => { Console.WriteLine($"pitch: {pitch}\n"); }, TimeSpan.FromMilliseconds(1000));
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.F4))
+        {
+            _freecamEnabled = await _implementedTrainer[nameof(Freecam)]
+                .Enable("enable_freecam");
+        }
+    }
+    
+    private async Task HandleFreecam()
+    {
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.F4))
+        {
+            _freecamEnabled = false;
 
-                Console.WriteLine(result);
+            await _implementedTrainer[nameof(Freecam)].Disable();
 
-                result = _memory.ReadValueConstant(_cameraYawAddress,
-                    (float yaw) => { Console.WriteLine($"yaw: {yaw}\n"); }, TimeSpan.FromMilliseconds(1000));
+            return;
+        }
 
-                Console.WriteLine(result);
-            }
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.W, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable("forward");
+        }
 
-            if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.F5))
-            {
-                var result = _memory.StopReadingValueConstant(_cameraCoordinatesAddress);
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.S, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable("backward");
+        }
 
-                Console.WriteLine(result);
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.E, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable("up");
+        }
 
-                result = _memory.StopReadingValueConstant(_cameraPitchAddress);
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.Q, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable("down");
+        }
 
-                Console.WriteLine(result);
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.A, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable("left");
+        }
 
-                result = _memory.StopReadingValueConstant(_cameraYawAddress);
-
-                Console.WriteLine(result);
-            }
-
-            await Task.Delay(1, token);
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.D, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable("right");
         }
     }
 }

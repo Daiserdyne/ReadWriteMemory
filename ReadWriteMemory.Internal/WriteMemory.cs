@@ -21,11 +21,16 @@ public partial class RwMemory
         }
 
         var destPtr = (byte*)targetAddress;
-
-        fixed (byte* sourcePtr = bytes)
+        
+        for (var i = 0; i < bytes.Length; ++i)
         {
-            Buffer.MemoryCopy(sourcePtr, destPtr, bytes.Length, bytes.Length);
+            *(destPtr + i) = bytes[i];
         }
+        
+        // fixed (byte* sourcePtr = bytes)
+        // {
+        //     Buffer.MemoryCopy(sourcePtr, destPtr, bytes.Length, bytes.Length);
+        // }
 
         return true;
     }

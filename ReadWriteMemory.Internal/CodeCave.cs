@@ -33,7 +33,7 @@ public partial class RwMemory
     /// <param name="totalAmountOfOpcodesToReplace"></param>
     /// <param name="memoryToAllocate"></param>
     /// <returns></returns>
-    public async ValueTask<CodeCaveTable> CreateOrResumeCodeCave(MemoryAddress memoryAddress, byte[] customCode,
+    public CodeCaveTable CreateOrResumeCodeCave(MemoryAddress memoryAddress, ReadOnlySpan<byte> customCode,
         int amountOfOpcodesToReplace, int totalAmountOfOpcodesToReplace, uint memoryToAllocate = 4096)
     {
         if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
@@ -48,12 +48,12 @@ public partial class RwMemory
             }
 
             CloseCodeCave(memoryAddress);
-            
+
             return CodeCaveTable.Empty;
         }
 
-        return await Task.Run(() => CreateCodeCave(memoryAddress, customCode,
-            amountOfOpcodesToReplace, totalAmountOfOpcodesToReplace, memoryToAllocate));
+        return CreateCodeCave(memoryAddress, customCode,
+            amountOfOpcodesToReplace, totalAmountOfOpcodesToReplace, memoryToAllocate);
     }
 
     /// <summary>
@@ -63,13 +63,34 @@ public partial class RwMemory
     /// <returns></returns>
     public bool PauseOpenedCodeCave(MemoryAddress memoryAddress)
     {
-        if (_memoryRegister.TryGetValue(memoryAddress, out var table))
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
         {
-            return table.CodeCaveTable is not null &&
-                   WriteBytes(memoryAddress, table.CodeCaveTable.Value.OriginalOpcodes);
+            return false;
         }
 
-        return false;
+        var targetAddress = GetTargetAddress(memoryAddress);
+
+        if (targetAddress == nuint.Zero)
+        {
+            return false;
+        }
+
+        if (table.CodeCaveTable is null ||
+            !VirtualProtect(targetAddress, table.CodeCaveTable.Value.OriginalOpcodes.Length,
+                PAGE_EXECUTE_READWRITE, out var _))
+        {
+            return false;
+        }
+
+        var writtenBytes = WriteBytes(memoryAddress, table.CodeCaveTable.Value.OriginalOpcodes);
+
+        if (!writtenBytes)
+        {
+            return false;
+        }
+
+        return VirtualProtect(targetAddress, table.CodeCaveTable.Value.OriginalOpcodes.Length,
+            PAGE_EXECUTE_READ, out var _);
     }
 
     /// <summary>
@@ -135,8 +156,7 @@ public partial class RwMemory
 
         var startOfRemainingOpcodesAddress = nuint.Add(targetAddress, instructionOpcodeLength);
 
-        var remainingOpcodesAddress = new MemoryAddress(memoryAddress.ModuleName,
-            startOfRemainingOpcodesAddress, memoryAddress.Offsets);
+        var remainingOpcodesAddress = new MemoryAddress(startOfRemainingOpcodesAddress);
 
         var remainingOpcodesLength = totalAmountOfOpcodesToReplace - instructionOpcodeLength;
 
@@ -155,9 +175,46 @@ public partial class RwMemory
 
         AppendAbsoluteJumpBackAtTheEndOfSequence(ref finalCaveCode, totalAmountOfOpcodesToReplace, targetAddress);
 
+        if (!WriteBytes(new MemoryAddress(caveAddress), finalCaveCode.ToArray()))
+        {
+            VirtualFree(caveAddress, memoryToAllocate, MemRelease);
+
+            return CodeCaveTable.Empty;
+        }
+
         var jumpToCaveBytes = GetAbsoluteJumpBytes(caveAddress, totalAmountOfOpcodesToReplace);
 
-        return new CodeCaveTable(originalOpcodes.ToArray(), caveAddress, memoryToAllocate, jumpToCaveBytes);
+        var rr = GetTargetAddress(memoryAddress);
+        
+        if (rr == nuint.Zero)
+        {
+            VirtualFree(caveAddress, memoryToAllocate, MemRelease);
+
+            return CodeCaveTable.Empty;
+        }
+
+        if (!VirtualProtect(rr, jumpToCaveBytes.Length, PAGE_EXECUTE_READWRITE, out var oldProtect))
+        {
+            VirtualFree(caveAddress, memoryToAllocate, MemRelease);
+
+            return CodeCaveTable.Empty;
+        }
+
+        if (WriteBytes(memoryAddress, jumpToCaveBytes))
+        {
+            VirtualProtect(rr, jumpToCaveBytes.Length, oldProtect, out var _);
+
+            var caveTable = new CodeCaveTable(originalOpcodes.ToArray(),
+                caveAddress, memoryToAllocate, jumpToCaveBytes);
+            
+            _memoryRegister[memoryAddress].CodeCaveTable = caveTable;
+            
+            return caveTable;
+        }
+
+        VirtualFree(caveAddress, memoryToAllocate, MemRelease);
+
+        return CodeCaveTable.Empty;
     }
 
     private static unsafe List<byte> ConvertRelativeToAbsoluteInstructions(ReadOnlySpan<byte> remainingInstructions,
@@ -249,6 +306,11 @@ public partial class RwMemory
 
                     break;
                 }
+                default:
+                {
+                    newCustomCode.Add(remainingInstructions[index]);
+                    break;
+                }
             }
         }
 
@@ -267,12 +329,12 @@ public partial class RwMemory
 
         var jumpBackBytes = GetAbsoluteJumpBytes(jumpBackAddress);
 
-        var customAsmInstructions = new byte[customCode.Count + jumpBackBytes.Length];
+        foreach (var t in jumpBackBytes)
+        {
+            Console.Write(t);
+        }
 
-        customCode.CopyTo(customAsmInstructions.AsSpan());
-        jumpBackBytes.CopyTo(customAsmInstructions.AsSpan(customCode.Count));
-
-        customCode.AddRange(customAsmInstructions);
+        customCode.AddRange(jumpBackBytes);
     }
 
     private static byte[] GetAbsoluteJumpBytes(nuint jumpToAddress, int opcodesToReplace = 0)

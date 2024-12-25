@@ -13,6 +13,9 @@ public static partial class Kernel32
     internal const uint MemReserve = 0x2000;
     internal const uint MemRelease = 0x8000;
     
+    internal const uint PAGE_EXECUTE_READWRITE = 0x40;
+    internal const uint PAGE_EXECUTE_READ = 0x20;
+    
     [StructLayout(LayoutKind.Sequential)]
     internal struct MemoryBasicInformation
     {
@@ -25,6 +28,14 @@ public static partial class Kernel32
         public uint Type;
     }
 
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool VirtualProtect(
+        nuint lpAddress,
+        int dwSize,
+        uint flNewProtect,
+        out uint oldProtect);
+    
     [LibraryImport("kernel32.dll", SetLastError = true)]
     internal static partial int VirtualQuery(nuint lpAddress, out MemoryBasicInformation lpBuffer, uint dwLength);
     
