@@ -24,8 +24,6 @@ public class TrialsTrainer
 
     internal async Task Main(CancellationToken cancellationToken)
     {
-        Kernel32.AllocConsole();
-        
         while (!cancellationToken.IsCancellationRequested)
         {
             await HandleTrainerTree(cancellationToken);

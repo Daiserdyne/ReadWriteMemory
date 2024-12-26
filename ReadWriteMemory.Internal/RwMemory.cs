@@ -21,6 +21,19 @@ public partial class RwMemory : IDisposable
     {
     }
 
+    /// <summary>
+    /// Returns the calculated target address.
+    /// </summary>
+    /// <param name="address"></param>
+    /// <param name="targetAddress"></param>
+    /// <returns></returns>
+    public bool GetTargetAddress(MemoryAddress address, out nuint targetAddress)
+    {
+        targetAddress = GetTargetAddress(address, false);
+        
+        return targetAddress != nuint.Zero;
+    }
+    
     private static FrozenDictionary<string, nuint> GetAllLoadedProcessModules()
     {
         var modules = new Dictionary<string, nuint>();
@@ -56,7 +69,7 @@ public partial class RwMemory : IDisposable
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <returns></returns>
-    private unsafe nuint GetTargetAddress(MemoryAddress memoryAddress)
+    private unsafe nuint GetTargetAddress(MemoryAddress memoryAddress, bool addToRegister = true)
     {
         var baseAddress = GetBaseAddress(memoryAddress);
 
@@ -91,7 +104,7 @@ public partial class RwMemory : IDisposable
             return nuint.Zero;
         }
         
-        if (!_memoryRegister.ContainsKey(memoryAddress))
+        if (!_memoryRegister.ContainsKey(memoryAddress) && addToRegister)
         {
             _memoryRegister.Add(memoryAddress, new MemoryAddressTable()
             {
