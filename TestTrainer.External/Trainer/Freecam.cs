@@ -38,7 +38,7 @@ public sealed class Freecam : IMemoryTrainer
     private float _currentPitch;
     private float _currentYaw;
 
-    public Freecam() => _memory.OnReInitializeTargetProcess += OnReinitilizeTargetProcess;
+    public Freecam() => _memory.OnReInitializeTargetProcess += OnReinitializeTargetProcess;
 
     public int Id => 0;
     
@@ -62,10 +62,10 @@ public sealed class Freecam : IMemoryTrainer
         {
             case "enable_freecam":
             {
-                var caveAddress = await _memory.CreateOrResumeCodeCave(_cameraFunctionAddress, ScriptFunction,
+                var caveAddress = _memory.CreateOrResumeCodeCave(_cameraFunctionAddress, ScriptFunction,
                     8, 18);
 
-                if (caveAddress == nuint.Zero)
+                if (caveAddress == CodeCaveTable.Empty)
                 {
                     await Disable();
 
@@ -178,7 +178,7 @@ public sealed class Freecam : IMemoryTrainer
         _memory.WriteValue(_cameraCoordinatesAddress, newCoordinates);
     }
 
-    private void OnReinitilizeTargetProcess()
+    private void OnReinitializeTargetProcess()
     {
         _memory.StopReadingValueConstant(_cameraPitchAddress);
         _memory.StopReadingValueConstant(_cameraYawAddress);

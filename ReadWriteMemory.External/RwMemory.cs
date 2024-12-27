@@ -204,6 +204,25 @@ public partial class RwMemory : IDisposable
         }
     }
 
+    private void CloseAllCodeCaves()
+    {
+        foreach (var memoryTable in _memoryRegister.Values
+                     .Where(addr => addr.CodeCaveTable is not null))
+        {
+            var baseAddress = memoryTable.BaseAddress;
+            var caveTable = memoryTable.CodeCaveTable;
+
+            if (caveTable is null)
+            {
+                continue;
+            }
+
+            MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.Value.OriginalOpcodes);
+
+            DeallocateMemory(caveTable.Value.CaveAddress);
+        }
+    }
+    
     private bool OpenProcess()
     {
         var process = Process.GetProcessesByName(_targetProcess.ProcessName);
