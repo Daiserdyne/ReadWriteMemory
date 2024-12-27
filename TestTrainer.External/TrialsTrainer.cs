@@ -9,7 +9,7 @@ using RwMemory = ReadWriteMemory.External.RwMemory;
 
 namespace TestTrainer.External;
 
-public sealed class TestTrainer : IDisposable
+public sealed class TrialsTrainer : IDisposable
 {
     private static Kernel32.ConsoleCtrlDelegate? _handler;
 

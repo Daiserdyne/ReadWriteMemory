@@ -63,11 +63,12 @@ public partial class RwMemory : IDisposable
         
         return mbi.State == MemCommit && mbi.Protect != PageNoAccess;
     }
-    
+
     /// <summary>
     /// Calculates the final address of the given address with module name and offsets.
     /// </summary>
     /// <param name="memoryAddress"></param>
+    /// <param name="addToRegister"></param>
     /// <returns></returns>
     private unsafe nuint GetTargetAddress(MemoryAddress memoryAddress, bool addToRegister = true)
     {

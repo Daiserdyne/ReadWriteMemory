@@ -36,6 +36,18 @@ public static partial class Kernel32
         uint flNewProtect,
         out uint oldProtect);
     
+    public delegate uint ThreadProc(nint lpParameter);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    public static partial nint CreateThread(
+        nint lpThreadAttributes,
+        uint dwStackSize,
+        ThreadProc lpStartAddress,
+        nint lpParameter,
+        uint dwCreationFlags,
+        out uint lpThreadId
+    );
+    
     [LibraryImport("kernel32.dll", SetLastError = true)]
     internal static partial int VirtualQuery(nuint lpAddress, out MemoryBasicInformation lpBuffer, uint dwLength);
     

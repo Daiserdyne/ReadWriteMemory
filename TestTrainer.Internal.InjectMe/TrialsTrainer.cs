@@ -26,12 +26,22 @@ public class TrialsTrainer
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            await HandleTrainerTree(cancellationToken);
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    await HandleTrainerTree(cancellationToken);
 
-            await Task.Delay(1, cancellationToken);
+                    await Task.Delay(1, cancellationToken);
+                }
+            }
+            catch
+            {
+                // ignored
+            }
         }
     }
-    
+
     private async Task HandleTrainerTree(CancellationToken cancellationToken)
     {
         while (_freecamEnabled)
@@ -46,7 +56,7 @@ public class TrialsTrainer
                 .Enable("enable_freecam");
         }
     }
-    
+
     private async Task HandleFreecam()
     {
         if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.F4))
