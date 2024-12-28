@@ -1,7 +1,6 @@
 ﻿using System.Collections.Frozen;
 using ReadWriteMemory.Internal;
 using ReadWriteMemory.Internal.Interfaces;
-using ReadWriteMemory.Internal.NativeImports;
 using ReadWriteMemory.Internal.Services;
 using ReadWriteMemory.Internal.Utilities;
 using TestTrainer.Internal.InjectMe.Trainer;

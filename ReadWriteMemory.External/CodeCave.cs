@@ -13,6 +13,9 @@ public partial class RwMemory
     private const byte RelativeJumpInstruction = 0xE9;
     private const byte RelativeJumpInstructionLength = 5;
 
+    private const byte RelativeShortJumpInstruction = 0xEB;
+    private const byte RelativeShortJumpInstructionLength = 2;
+
     private static ReadOnlySpan<byte> JumpAsmTemplate =>
     [
         0xFF, 0x25, 0x00, 0x00, 0x00, 0x00,
@@ -92,12 +95,14 @@ public partial class RwMemory
         {
             return false;
         }
-        
+
         if (table.CodeCaveTable is null ||
-            WriteBytes(memoryAddress, table.CodeCaveTable.Value.OriginalOpcodes))
+            !WriteBytes(memoryAddress, table.CodeCaveTable.Value.OriginalOpcodes))
         {
             return false;
         }
+
+        DeallocateMemory(table.CodeCaveTable.Value.CaveAddress);
 
         _memoryRegister[memoryAddress].CodeCaveTable = null;
 
@@ -151,7 +156,7 @@ public partial class RwMemory
         {
             return CodeCaveTable.Empty;
         }
-        
+
         if (!WriteBytes(new MemoryAddress(caveAddress), finalCaveCode.ToArray()))
         {
             return CodeCaveTable.Empty;
@@ -224,11 +229,42 @@ public partial class RwMemory
 
                     break;
                 }
+                case RelativeShortJumpInstruction:
+                {
+                    // Example jump: EB 65 
+                    // index of loop: EB
+                    // convert to little indian format
+                    byte[] relativeAddressOffsetBytes =
+                    [
+                        remainingInstructions[index + 1] // 65
+                    ];
+
+                    int relativeAddressOffset;
+
+                    fixed (byte* offsetAsPtr = relativeAddressOffsetBytes)
+                    {
+                        relativeAddressOffset = *(int*)offsetAsPtr;
+                    }
+
+                    // Goes to start of jump (E9)
+                    var callerAddress = nuint.Add(startOfRemainingOpcodesAddress, index);
+
+                    // Adds size of the jump to the address.
+                    var relativeAddress = callerAddress + RelativeShortJumpInstructionLength;
+
+                    // Calculates the jump address.
+                    var jumpAddress = nuint.Add(relativeAddress, relativeAddressOffset);
+
+                    var absoluteJumpBytes = GetAbsoluteJumpBytes(jumpAddress);
+
+                    newCustomCode.AddRange(absoluteJumpBytes);
+
+                    index += RelativeShortJumpInstructionLength - 1;
+
+                    break;
+                }
                 case RelativeCallInstruction:
                 {
-                    // Example jump: E8 6E C4 85 FF
-                    // index of loop: E8
-                    // convert to little indian format
                     byte[] relativeAddressOffsetBytes =
                     [
                         remainingInstructions[index + 4], // FF
@@ -244,7 +280,7 @@ public partial class RwMemory
                         relativeAddressOffset = *(int*)offsetAsPtr;
                     }
 
-                    // Goes to start of jump (E9)
+                    // Goes to start of jump (E8)
                     var callerAddress = nuint.Add(startOfRemainingOpcodesAddress, index);
 
                     // Adds size of the jump to the address.

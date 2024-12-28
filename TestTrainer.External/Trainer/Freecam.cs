@@ -60,6 +60,19 @@ public sealed class Freecam : IMemoryTrainer
 
         switch (command)
         {
+            case "disable_code_cave":
+            {
+                var caveAddress = _memory.CloseCodeCave(_cameraFunctionAddress);
+                
+                break;
+            }
+            case "enable_code_cave":
+            {
+                var caveAddress = _memory.CreateOrResumeCodeCave(_cameraFunctionAddress, ScriptFunction,
+                    8, 18);
+                
+                break;
+            }
             case "enable_freecam":
             {
                 var caveAddress = _memory.CreateOrResumeCodeCave(_cameraFunctionAddress, ScriptFunction,
