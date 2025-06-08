@@ -1,4 +1,5 @@
 ﻿using ReadWriteMemory.External.NativeImports;
+
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 namespace ReadWriteMemory.External.Utilities;
@@ -126,22 +127,22 @@ public static class Hotkeys
     /// <param name="waitForKeyRelease"></param>
     public static async ValueTask<bool> KeyPressedAsync(Key key, bool waitForKeyRelease = true)
     {
-        if (User32.GetAsyncKeyState(key) < 0)
+        if (User32.GetAsyncKeyState(key) >= 0)
         {
-            if (!waitForKeyRelease)
-            {
-                return true;
-            }
+            return false;
+        }
 
-            while (User32.GetAsyncKeyState(key) < 0)
-            {
-                await Task.Delay(1);
-            }
-
+        if (!waitForKeyRelease)
+        {
             return true;
         }
 
-        return false;
+        while (User32.GetAsyncKeyState(key) < 0)
+        {
+            await Task.Delay(1);
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -152,21 +153,21 @@ public static class Hotkeys
     /// <param name="waitForKeyRelease"></param>
     public static async ValueTask<bool> KeyPressedAsync(int key, bool waitForKeyRelease = true)
     {
-        if (User32.GetAsyncKeyState(key) < 0)
+        if (User32.GetAsyncKeyState(key) >= 0)
         {
-            if (!waitForKeyRelease)
-            {
-                return true;
-            }
+            return false;
+        }
 
-            while (User32.GetAsyncKeyState(key) < 0)
-            {
-                await Task.Delay(1);
-            }
-
+        if (!waitForKeyRelease)
+        {
             return true;
         }
 
-        return false;
+        while (User32.GetAsyncKeyState(key) < 0)
+        {
+            await Task.Delay(1);
+        }
+
+        return true;
     }
 }

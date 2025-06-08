@@ -1,4 +1,4 @@
-﻿namespace ReadWriteMemory.External.Services;
+﻿namespace ReadWriteMemory.Internal.Services;
 
 internal static class BackgroundService
 {
@@ -16,7 +16,7 @@ internal static class BackgroundService
             await Task.Delay(repeatTime, ct);
         }
     }
-
+    
     private static TimeSpan GetValidRefreshRate(TimeSpan freezeRefreshRate)
     {
         freezeRefreshRate = (double)(long)freezeRefreshRate.TotalMilliseconds switch

@@ -20,10 +20,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ReadWriteMemory.Shared\ReadWriteMemory.Shared.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
       <None Update="CallFunction.tt">
         <Generator>TextTemplatingFileGenerator</Generator>
         <LastGenOutput>CallFunction.cs</LastGenOutput>

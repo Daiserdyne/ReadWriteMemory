@@ -1,4 +1,4 @@
-﻿namespace ReadWriteMemory.External.Entities;
+﻿namespace ReadWriteMemory.Internal.Entities;
 
 /// <summary>
 /// Contains/holds some information about the target memory address.
@@ -10,8 +10,8 @@ internal sealed record MemoryAddressTable
     internal CodeCaveTable? CodeCaveTable { get; set; }
 
     internal ReplacedBytes? ReplacedBytes { get; set; }
-
+    
     internal CancellationTokenSource? FreezeTokenSrc { get; set; }
-
+    
     internal CancellationTokenSource? ReadValueConstantTokenSrc { get; set; }
 }

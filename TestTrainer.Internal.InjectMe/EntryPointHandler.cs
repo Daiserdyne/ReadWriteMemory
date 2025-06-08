@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using ReadWriteMemory.Internal.NativeImports;
 
 namespace TestTrainer.Internal.InjectMe;
 
@@ -16,7 +17,16 @@ public static class EntryPointHandler
         {
             case DllProcessAttach:
             {
-                Task.Run(ExecuteProgram);
+                Kernel32.ThreadProc threadProc = ThreadEntryPoint;
+                
+                Kernel32.CreateThread(
+                    nint.Zero,
+                    0,
+                    threadProc,
+                    module,
+                    0,
+                    out _
+                );
                 break;
             }
             case DllThreadAttach:
@@ -29,10 +39,15 @@ public static class EntryPointHandler
 
         return true;
     }
-
+    
+    private static uint ThreadEntryPoint(nint parameter)
+    {
+        _ = ExecuteProgram();
+        return 0;
+    }
+    
     private static async Task ExecuteProgram()
     {
-        await new SignalTrainer()
-            .Main(CancellationToken.None);
+        await new TrialsTrainer().Main(CancellationToken.None);
     }
 }

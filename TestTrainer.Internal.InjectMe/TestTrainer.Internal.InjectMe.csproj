@@ -10,13 +10,7 @@
         <EnableWindowsTargeting>true</EnableWindowsTargeting>
         <PublishAot>true</PublishAot>
     </PropertyGroup>
-
-    <ItemGroup>
-      <Compile Remove="Trainer\**" />
-      <EmbeddedResource Remove="Trainer\**" />
-      <None Remove="Trainer\**" />
-    </ItemGroup>
-
+    
     <ItemGroup>
       <ProjectReference Include="..\ReadWriteMemory.Internal\ReadWriteMemory.Internal.csproj" />
     </ItemGroup>

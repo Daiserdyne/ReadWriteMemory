@@ -1,4 +1,6 @@
-﻿namespace ReadWriteMemory.Shared.Interfaces;
+﻿using ReadWriteMemory.Internal.Utilities;
+
+namespace ReadWriteMemory.Internal.Interfaces;
 
 /// <summary>
 /// Standard interface for a trainer.
@@ -10,6 +12,11 @@ public interface IMemoryTrainer
     /// </summary>
     public int Id { get; }
     
+    /// <summary>
+    /// The key you have to press to activate/deactivate the trainer.
+    /// </summary>
+    public Hotkeys.Key Hotkey { get; }
+
     /// <summary>
     /// Name of the trainer.
     /// </summary>

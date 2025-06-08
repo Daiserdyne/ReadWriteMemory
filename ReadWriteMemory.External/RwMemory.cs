@@ -8,8 +8,8 @@ using Kernel32 = ReadWriteMemory.External.NativeImports.Kernel32;
 namespace ReadWriteMemory.External;
 
 /// <summary>
-/// This is the main component of the <see cref="ReadWriteMemory.External"/> library. This class includes a lot of powerfull
-/// read and write operations to manipulate the memory of an process.
+/// This is the main component of the <see cref="ReadWriteMemory.External"/> library. This class includes a lot of powerful
+/// read and write operations to manipulate the memory of a process.
 /// </summary>
 public partial class RwMemory : IDisposable
 {
@@ -24,7 +24,7 @@ public partial class RwMemory : IDisposable
     /// <summary>
     /// 
     /// </summary>
-    public delegate void ReinitilizeTargetProcess();
+    public delegate void ReInitializeTargetProcess();
 
     /// <summary>
     /// This event will be triggered when the process state changes.
@@ -34,7 +34,7 @@ public partial class RwMemory : IDisposable
     /// <summary>
     /// This will be triggered when the whole internal attributes get reinitialized.
     /// </summary>
-    public event ReinitilizeTargetProcess? OnReinitilizeTargetProcess;
+    public event ReInitializeTargetProcess? OnReInitializeTargetProcess;
 
     #endregion
 
@@ -61,8 +61,8 @@ public partial class RwMemory : IDisposable
     #region C'tor
 
     /// <summary>
-    /// This is the main component of the <see cref="ReadWriteMemory.External"/> library. This class includes a lot of powerfull
-    /// read and write operations to manipulate the memory of an process.
+    /// This is the main component of the <see cref="ReadWriteMemory.External"/> library. This class includes a
+    /// lot of powerful read and write operations to manipulate the memory of a process.
     /// </summary>
     public RwMemory(string processName)
     {
@@ -82,7 +82,7 @@ public partial class RwMemory : IDisposable
             ProcessName = _targetProcess.ProcessName
         };
 
-        OnReinitilizeTargetProcess?.Invoke();
+        OnReInitializeTargetProcess?.Invoke();
     }
 
     #endregion
@@ -95,14 +95,11 @@ public partial class RwMemory : IDisposable
     {
         var oldProcessState = IsProcessAlive;
 
-        if (Process.GetProcessesByName(_targetProcess.ProcessName).Any())
+        if (Process.GetProcessesByName(_targetProcess.ProcessName).Length != 0)
         {
-            if (_targetProcess.Handle == nint.Zero)
+            if (_targetProcess.Handle == nint.Zero && OpenProcess())
             {
-                if (OpenProcess())
-                {
-                    GetAllLoadedProcessModules();
-                }
+                GetAllLoadedProcessModules();
             }
 
             _targetProcess.IsProcessAlive = true;
@@ -171,12 +168,7 @@ public partial class RwMemory : IDisposable
 
     private bool DeallocateMemory(nuint address)
     {
-        if (!IsProcessAlive)
-        {
-            return false;
-        }
-
-        return MemoryOperation.DeallocateMemory(_targetProcess.Handle, address);
+        return IsProcessAlive && MemoryOperation.DeallocateMemory(_targetProcess.Handle, address);
     }
 
     private void UnfreezeAllValues()
@@ -200,12 +192,42 @@ public partial class RwMemory : IDisposable
             readValueConstantTokenSrc.Dispose();
         }
     }
+    
+    private void RestoreAllReplacedBytes()
+    {
+        foreach (var (memoryAddress, table) in _memoryRegister)
+        {
+            if (table.ReplacedBytes is not null)
+            {
+                UndoReplaceBytes(memoryAddress);
+            }
+        }
+    }
 
+    private void CloseAllCodeCaves()
+    {
+        foreach (var memoryTable in _memoryRegister.Values
+                     .Where(addr => addr.CodeCaveTable is not null))
+        {
+            var baseAddress = memoryTable.BaseAddress;
+            var caveTable = memoryTable.CodeCaveTable;
+
+            if (caveTable is null)
+            {
+                continue;
+            }
+
+            MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.Value.OriginalOpcodes);
+
+            DeallocateMemory(caveTable.Value.CaveAddress);
+        }
+    }
+    
     private bool OpenProcess()
     {
         var process = Process.GetProcessesByName(_targetProcess.ProcessName);
 
-        if (!process.Any())
+        if (process.Length == 0)
         {
             return false;
         }
@@ -214,7 +236,7 @@ public partial class RwMemory : IDisposable
 
         _targetProcess.Process = Process.GetProcessById(pid);
 
-        _targetProcess.Handle = Kernel32.OpenProcess(true, pid);
+        _targetProcess.Handle = MemoryOperation.OpenProcess(true, pid);
 
         if (_targetProcess.Handle == nint.Zero)
         {
@@ -234,14 +256,14 @@ public partial class RwMemory : IDisposable
 
         var mainModule = _targetProcess.Process.MainModule;
 
-        if (mainModule is null)
+        if (mainModule is not null)
         {
-            ReinitializeTargetProcess();
-
-            return false;
+            return true;
         }
 
-        return true;
+        ReinitializeTargetProcess();
+
+        return false;
     }
 
     private nuint GetTargetAddress(MemoryAddress memoryAddress)
@@ -250,7 +272,7 @@ public partial class RwMemory : IDisposable
 
         var targetAddress = baseAddress;
 
-        if (memoryAddress.Offsets.Any())
+        if (memoryAddress.Offsets.Length != 0)
         {
             var buffer = new byte[nuint.Size];
 
@@ -317,19 +339,14 @@ public partial class RwMemory : IDisposable
     {
         if (!IsProcessAlive)
         {
-            targetAddress = default;
+            targetAddress = 0;
 
             return false;
         }
 
         targetAddress = GetTargetAddress(memoryAddress);
 
-        if (targetAddress == nuint.Zero)
-        {
-            return false;
-        }
-        
-        return true;
+        return targetAddress != nuint.Zero;
     }
 
     /// <summary>

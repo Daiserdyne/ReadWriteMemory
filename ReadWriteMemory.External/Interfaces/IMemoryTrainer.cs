@@ -1,4 +1,6 @@
-﻿namespace ReadWriteMemory.External.Interfaces;
+﻿using ReadWriteMemory.External.Utilities;
+
+namespace ReadWriteMemory.External.Interfaces;
 
 /// <summary>
 /// Standard interface for a trainer.
@@ -9,6 +11,11 @@ public interface IMemoryTrainer
     /// Specifies the trainer by an unique id. This is usefull when you want to order/sort a list of trainer.
     /// </summary>
     public int Id { get; }
+    
+    /// <summary>
+    /// The key you have to press to activate/deactivate the trainer.
+    /// </summary>
+    public Hotkeys.Key Hotkey { get; }
 
     /// <summary>
     /// Name of the trainer.

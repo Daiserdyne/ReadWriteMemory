@@ -1,20 +1,15 @@
 ﻿using System.Collections.Frozen;
-using ReadWriteMemory.External.Entities;
-using ReadWriteMemory.External.Interfaces;
-using ReadWriteMemory.External.Services;
-using ReadWriteMemory.External.Utilities;
-using TestTrainer.External.NativeImports;
-using TestTrainer.External.Trainer;
-using RwMemory = ReadWriteMemory.External.RwMemory;
+using ReadWriteMemory.Internal;
+using ReadWriteMemory.Internal.Interfaces;
+using ReadWriteMemory.Internal.Services;
+using ReadWriteMemory.Internal.Utilities;
+using TestTrainer.Internal.InjectMe.Trainer;
 
-namespace TestTrainer.External;
+namespace TestTrainer.Internal.InjectMe;
 
-public sealed class TestTrainer : IDisposable
+public class TrialsTrainer
 {
-    private static Kernel32.ConsoleCtrlDelegate? _handler;
-
-    private readonly RwMemory _memory =
-        RwMemoryHelper.CreateAndGetSingletonInstance("TOTClient-Win64-Shipping");
+    private readonly RwMemory _memory = RwMemoryHelper.RwMemory;
 
     private readonly FrozenDictionary<string, IMemoryTrainer> _implementedTrainer =
         new Dictionary<string, IMemoryTrainer>
@@ -26,33 +21,24 @@ public sealed class TestTrainer : IDisposable
 
     private bool _freecamEnabled;
 
-    public async Task Main(CancellationToken cancellationToken)
+    internal async Task Main(CancellationToken cancellationToken)
     {
-        _handler = Handler;
-        Kernel32.SetConsoleCtrlHandler(_handler, true);
-
-        _memory.OnProcessStateChanged += OnProcessStateChanged;
-
         while (!cancellationToken.IsCancellationRequested)
         {
-            if (_memory.IsProcessAlive)
+            try
             {
-                await HandleTrainerTree(cancellationToken);
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    await HandleTrainerTree(cancellationToken);
+
+                    await Task.Delay(1, cancellationToken);
+                }
             }
-
-            await Task.Delay(1, cancellationToken);
+            catch
+            {
+                // ignored
+            }
         }
-    }
-
-    private bool Handler(Kernel32.CtrlTypes ctrlType)
-    {
-        if (ctrlType is Kernel32.CtrlTypes.CTRL_CLOSE_EVENT
-            or Kernel32.CtrlTypes.CTRL_C_EVENT)
-        {
-            _memory.Dispose();
-        }
-
-        return false;
     }
 
     private async Task HandleTrainerTree(CancellationToken cancellationToken)
@@ -110,19 +96,5 @@ public sealed class TestTrainer : IDisposable
         {
             await _implementedTrainer[nameof(Freecam)].Enable("right");
         }
-    }
-
-
-    private void OnProcessStateChanged(ProgramState state)
-    {
-        if (state == ProgramState.Closed)
-        {
-            _freecamEnabled = false;
-        }
-    }
-
-    public void Dispose()
-    {
-        _memory.Dispose();
     }
 }

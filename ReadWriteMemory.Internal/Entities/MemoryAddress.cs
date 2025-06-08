@@ -1,4 +1,4 @@
-﻿namespace ReadWriteMemory.Shared.Entities;
+﻿namespace ReadWriteMemory.Internal.Entities;
 
 /// <summary>
 /// This record class stores address, offsets and module name. 
@@ -9,16 +9,16 @@
 /// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567, 0x42, 0x420, 0x69);</code>
 /// <code><see cref="MemoryAddress"/> memoryAddress = new(0x1234567);</code>
 /// </example>
-/// <para>See <seealso cref="MemoryAddress(nuint, int[])"/></para> 
-/// See <seealso cref="MemoryAddress(string, nuint, int[])"/>
+/// <para><seealso cref="MemoryAddress(nuint, int[])"/></para> 
+/// <seealso cref="MemoryAddress(string, nuint, int[])"/>
 /// </summary>
 public readonly record struct MemoryAddress
 {
-    public nuint Address { get; }
+    internal nuint Address { get; }
 
-    public string ModuleName { get; }
+    internal string ModuleName { get; }
 
-    public int[] Offsets { get; }
+    internal int[] Offsets { get; }
 
     /// <summary>
     /// This record class stores a memory <paramref name="address"/>, the associated <paramref name="offsets"/> and <paramref name="moduleName"/>. 

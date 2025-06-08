@@ -1,8 +1,10 @@
-﻿using ReadWriteMemory.Shared.Entities;
-using ReadWriteMemory.Shared.Services;
+﻿using System.Diagnostics.CodeAnalysis;
+using ReadWriteMemory.Internal.Entities;
+using ReadWriteMemory.Internal.Services;
 
 namespace ReadWriteMemory.Internal;
 
+[SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
 public partial class RwMemory
 {
     #region Delegates
@@ -17,28 +19,30 @@ public partial class RwMemory
     /// A delegate that will be called after reading the byte array value.
     /// </summary>
     /// <param name="byteArrayValue"></param>
-    public delegate void ReadBytesCallback(byte[] byteArrayValue);
+    public delegate void ReadBytesCallback(ReadOnlySpan<byte> byteArrayValue);
 
     #endregion
-    
+
     /// <summary>
     /// 
     /// </summary>
     /// <param name="memoryAddress"></param>
+    /// <param name="value"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public unsafe T ReadValue<T>(MemoryAddress memoryAddress) where T : unmanaged
+    public unsafe bool ReadValue<T>(MemoryAddress memoryAddress, out T value) where T : unmanaged
     {
-        try
+        var targetAddress = GetTargetAddress(memoryAddress);
+
+        if (targetAddress == nuint.Zero)
         {
-            var targetAddress = GetTargetAddress(memoryAddress);
-        
-            return *(T*)(nuint*)targetAddress;
+            value = default;
+            return false;
         }
-        catch
-        {
-            return default;
-        }
+
+        value = *(T*)targetAddress;
+
+        return true;
     }
 
     /// <summary>
@@ -46,28 +50,31 @@ public partial class RwMemory
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <param name="length"></param>
+    /// <param name="value"></param>
     /// <returns></returns>
-    public unsafe byte[] ReadBytes(MemoryAddress memoryAddress, uint length)
+    public unsafe bool ReadBytes(MemoryAddress memoryAddress, uint length, out ReadOnlySpan<byte> value)
     {
-        try
-        {
-            var targetAddress = GetTargetAddress(memoryAddress);
-            
-            var buffer = new byte[length];
+        var targetAddress = GetTargetAddress(memoryAddress);
 
-            fixed (byte* bufferPtr = buffer)
-            {
-                Buffer.MemoryCopy((void*)targetAddress, bufferPtr, length, length);
-            }
-
-            return buffer;
-        }
-        catch
+        if (targetAddress == nuint.Zero)
         {
-            return [];
+            value = default;
+            return false;
         }
+
+        var buffer = new byte[length];
+
+        fixed (byte* bufferPtr = buffer)
+        {
+            Buffer.MemoryCopy((void*)targetAddress, bufferPtr,
+                length, length);
+        }
+
+        value = buffer;
+
+        return true;
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -76,22 +83,18 @@ public partial class RwMemory
     /// <param name="refreshTime"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public bool ReadValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback, 
+    public bool ReadValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback,
         TimeSpan refreshTime) where T : unmanaged
     {
-        if (!_memoryRegister.TryGetValue(memoryAddress, out var value))
-        {
-            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
-        }
-        else if (value.ReadValueConstantTokenSrc is not null)
+        if (!IsAlreadyReadingConstant(memoryAddress))
         {
             return false;
         }
-        
+
         var readValueConstantTokenSrc = new CancellationTokenSource();
 
         _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = readValueConstantTokenSrc;
-        
+
         StartReadingValueConstant(memoryAddress, callback, refreshTime, readValueConstantTokenSrc);
 
         return true;
@@ -108,13 +111,9 @@ public partial class RwMemory
     public bool ReadBytesConstant(MemoryAddress memoryAddress, uint bytesToRead, ReadBytesCallback callback,
         TimeSpan refreshTime)
     {
-        if (!_memoryRegister.TryGetValue(memoryAddress, out var value))
+        if (!IsAlreadyReadingConstant(memoryAddress))
         {
-            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
-        }
-        else if (value.ReadValueConstantTokenSrc is not null)
-        {
-            return true;
+            return false;
         }
 
         var readValueConstantTokenSrc = new CancellationTokenSource();
@@ -125,7 +124,7 @@ public partial class RwMemory
 
         return true;
     }
-    
+
     /// <summary>
     /// Unfreezes a value from the given <paramref name="memoryAddress"/>.
     /// </summary>
@@ -152,23 +151,57 @@ public partial class RwMemory
 
         return true;
     }
-    
+
     private void StartReadingValueConstant<T>(MemoryAddress memoryAddress, ReadValueCallback<T> callback,
         TimeSpan refreshTime, CancellationTokenSource readValueConstantTokenSrc)
         where T : unmanaged
     {
         _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
-            callback(ReadValue<T>(memoryAddress));
+            if (!ReadValue<T>(memoryAddress, out var value))
+            {
+                readValueConstantTokenSrc.Cancel();
+                readValueConstantTokenSrc.Dispose();
+
+                _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
+
+                return;
+            }
+
+            callback(value);
         }, refreshTime, readValueConstantTokenSrc.Token);
     }
-    
-    private void StartReadingBytesConstant(MemoryAddress memoryAddress, uint byteLengthToRead, 
+
+    private void StartReadingBytesConstant(MemoryAddress memoryAddress, uint byteLengthToRead,
         ReadBytesCallback callback, TimeSpan refreshRate, CancellationTokenSource readValueConstantTokenSrc)
     {
         _ = BackgroundService.ExecuteTaskRepeatedly(() =>
         {
-            callback(ReadBytes(memoryAddress, byteLengthToRead));
+            if (!ReadBytes(memoryAddress, byteLengthToRead, out var value))
+            {
+                readValueConstantTokenSrc.Cancel();
+                readValueConstantTokenSrc.Dispose();
+
+                _memoryRegister[memoryAddress].ReadValueConstantTokenSrc = null;
+
+                return;
+            }
+
+            callback(value);
         }, refreshRate, readValueConstantTokenSrc.Token);
+    }
+
+    private bool IsAlreadyReadingConstant(MemoryAddress memoryAddress)
+    {
+        if (!_memoryRegister.TryGetValue(memoryAddress, out var value))
+        {
+            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
+        }
+        else if (value.ReadValueConstantTokenSrc is not null)
+        {
+            return false;
+        }
+
+        return true;
     }
 }
