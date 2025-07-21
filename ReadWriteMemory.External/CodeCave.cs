@@ -29,14 +29,19 @@ public partial class RwMemory
     ];
 
     /// <summary>
-    /// 
+    /// Creates a code cave to apply custom code in target process. 
+    /// If you created a code cave in the past with the same memory address, it will
+    /// jump back to your cave address.
     /// </summary>
-    /// <param name="memoryAddress"></param>
-    /// <param name="caveCode"></param>
-    /// <param name="amountOfOpcodesToReplace"></param>
-    /// <param name="totalAmountOfOpcodesToReplace"></param>
-    /// <param name="memoryToAllocate"></param>
-    /// <returns></returns>
+    /// <param name="memoryAddress">Address, module name and offesets</param>
+    /// <param name="caveCode">The opcodes to write in the code cave</param>
+    /// <param name="amountOfOpcodesToReplace">The number of bytes of the instruction</param>
+    /// <param name="totalAmountOfOpcodesToReplace">Because a x64 jump is 14 bytes large, it will override other instructions, 
+    /// so you have to give this function more to do so.</param>
+    /// <param name="memoryToAllocate">size of the allocated region</param>
+    /// <remarks>Please ensure that you use the proper replaceCount
+    /// if you replace halfway in an instruction you may cause bad things</remarks>
+    /// <returns>Cave address</returns>
     public CodeCaveTable CreateOrResumeCodeCave(MemoryAddress memoryAddress, ReadOnlySpan<byte> caveCode,
         int amountOfOpcodesToReplace, int totalAmountOfOpcodesToReplace, uint memoryToAllocate = 4096)
     {
@@ -69,7 +74,11 @@ public partial class RwMemory
     }
 
     /// <summary>
-    /// 
+    /// Restores the original opcodes to the memory address without dealloacating the memory.
+    /// So your code-bytes stay in the memory at the cave address. The advantage is that you
+    /// don't have to create a new code cave which costs time. You can simply jump to the cave address
+    /// or use the original code. Don't forget to dispose the memory object when you exit the application.
+    /// Otherwise, the codecaves continue to live forever.
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <returns></returns>
@@ -85,10 +94,9 @@ public partial class RwMemory
     }
 
     /// <summary>
-    /// 
+    /// Closes a created code cave. Just give this function the memory address where you create a code cave with.
     /// </summary>
-    /// <param name="memoryAddress"></param>
-    /// <returns></returns>
+    /// <returns>true if the operation was successful, otherwise false.</returns>
     public bool CloseCodeCave(MemoryAddress memoryAddress)
     {
         if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
@@ -152,12 +160,7 @@ public partial class RwMemory
         var caveAddress = VirtualAllocEx(_targetProcess.Handle, nuint.Zero, memoryToAllocate,
             MemCommit | MemReserve, PageExecuteReadwrite);
 
-        if (caveAddress == nuint.Zero)
-        {
-            return CodeCaveTable.Empty;
-        }
-
-        if (!WriteBytes(new MemoryAddress(caveAddress), finalCaveCode.ToArray()))
+        if (caveAddress == nuint.Zero || !WriteBytes(new MemoryAddress(caveAddress), finalCaveCode.ToArray()))
         {
             return CodeCaveTable.Empty;
         }
