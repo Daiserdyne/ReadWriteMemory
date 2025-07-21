@@ -1,10 +1,10 @@
 ﻿using System.Numerics;
+using ReadWriteMemory.External;
 using ReadWriteMemory.External.Entities;
 using ReadWriteMemory.External.Interfaces;
 using ReadWriteMemory.External.Services;
 using ReadWriteMemory.External.Utilities;
 using TestTrainer.External.Utilities;
-using RwMemory = ReadWriteMemory.External.RwMemory;
 
 namespace TestTrainer.External.Trainer;
 
@@ -13,35 +13,35 @@ public sealed class Freecam : IMemoryTrainer
     private readonly RwMemory _memory = RwMemoryHelper.RwMemory;
 
     private readonly MemoryAddress _cameraFunctionAddress =
-        new("TOTClient-Win64-Shipping.exe", 0x793B8D);
+        new("TOTClient-Win64-Shipping.exe", 0x9AE4E8);
 
     private readonly MemoryAddress _cameraCoordinatesAddress =
-        new("TOTClient-Win64-Shipping.exe", 0x5DE5A50,
-            0x218, 0x3A8, 0x2A0, 0x1E0);
+        new("TOTClient-Win64-Shipping.exe", 0x5DDD930,
+            0x220, 0x3B0, 0x2A0, 0x1E0);
 
     private readonly MemoryAddress _cameraPitchAddress =
-        new("TOTClient-Win64-Shipping.exe", 0x5E9FAD0,
-            0x30, 0x260, 0x2A0, 0x6C0, 0x68, 0x430, 0x74);
+        new("TOTClient-Win64-Shipping.exe", 0x5E97E60,
+            0x30, 0x260, 0x2A0, 0x6C0, 0x68, 0x4F0, 0x74);
 
     private readonly MemoryAddress _cameraYawAddress =
-        new("TOTClient-Win64-Shipping.exe", 0x5DE5A50,
-            0x208, 0x870, 0x20, 0x29C);
+        new("TOTClient-Win64-Shipping.exe", 0x5DDD930,
+            0x210, 0x8D0, 0x20, 0x29C);
 
-    private static ReadOnlySpan<byte> ScriptFunction =>
+    private readonly byte[] _customCameraFunctionShellCode =
     [
-        0x83, 0xBB, 0x34, 0x01, 0x00, 0x00, 0x00, 0x0F, 0x84, 0x0D, 0x00,
-        0x00, 0x00, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0xE9, 0x08, 0x00, 0x00, 0x00, 0x44, 0x0F, 0x11,
-        0xAB, 0xE0, 0x01, 0x00, 0x00, 0xE9, 0x8A, 0xA7, 0x87, 0x00
+        0x81, 0xBB, 0xB0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x0F, 0x85, 0x0D, 0x00, 0x00, 0x00, 0x90, 
+        0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0xE9, 0x08, 0x00, 0x00, 0x00, 0x44, 0x0F, 0x11, 0x83, 0xE0, 
+        0x01, 0x00, 0x00, 0xE9, 0xC6, 0xE4, 0x9B, 0x00
     ];
 
     private Vector3 _currentCameraPosition = Vector3.Zero;
     private float _currentPitch;
     private float _currentYaw;
 
-    public Freecam() => _memory.OnReInitializeTargetProcess += OnReinitializeTargetProcess;
+    public Freecam() => _memory.OnReInitializeTargetProcess += OnReInitializeTargetProcess;
 
-    public int Id => 0;
-    
+    public int Id => 4;
+
     public Hotkeys.Key Hotkey => Hotkeys.Key.F4;
 
     public string TrainerName => nameof(Freecam);
@@ -60,23 +60,11 @@ public sealed class Freecam : IMemoryTrainer
 
         switch (command)
         {
-            case "disable_code_cave":
-            {
-                var caveAddress = _memory.CloseCodeCave(_cameraFunctionAddress);
-                
-                break;
-            }
-            case "enable_code_cave":
-            {
-                var caveAddress = _memory.CreateOrResumeCodeCave(_cameraFunctionAddress, ScriptFunction,
-                    8, 18);
-                
-                break;
-            }
             case "enable_freecam":
             {
-                var caveAddress = _memory.CreateOrResumeCodeCave(_cameraFunctionAddress, ScriptFunction,
-                    8, 18);
+                var caveAddress = _memory.CreateOrResumeCodeCave(_cameraFunctionAddress,
+                    _customCameraFunctionShellCode,
+                    8, 19);
 
                 if (caveAddress == CodeCaveTable.Empty)
                 {
@@ -177,7 +165,7 @@ public sealed class Freecam : IMemoryTrainer
         _memory.StopReadingValueConstant(_cameraPitchAddress);
         _memory.StopReadingValueConstant(_cameraYawAddress);
 
-        _memory.PauseOpenedCodeCave(_cameraFunctionAddress);
+        _memory.CloseCodeCave(_cameraFunctionAddress);
 
         await Task.CompletedTask;
 
@@ -191,7 +179,7 @@ public sealed class Freecam : IMemoryTrainer
         _memory.WriteValue(_cameraCoordinatesAddress, newCoordinates);
     }
 
-    private void OnReinitializeTargetProcess()
+    private void OnReInitializeTargetProcess()
     {
         _memory.StopReadingValueConstant(_cameraPitchAddress);
         _memory.StopReadingValueConstant(_cameraYawAddress);
