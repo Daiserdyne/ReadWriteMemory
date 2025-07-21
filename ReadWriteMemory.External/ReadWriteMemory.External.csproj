@@ -18,5 +18,10 @@
 		<Product>ReadWriteMemoryExternal</Product>
 		<Description>A powerfull memory editing library.</Description>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<PackageIcon>Assets\icon.png</PackageIcon>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Assets\icon.png" Pack="true" PackagePath="\Assets"/>
+	</ItemGroup>
 </Project>
