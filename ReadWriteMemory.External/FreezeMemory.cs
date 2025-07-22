@@ -4,7 +4,7 @@ using ReadWriteMemory.External.Utilities;
 
 namespace ReadWriteMemory.External;
 
-public partial class RwMemory
+public sealed partial class RwMemory
 {
     /// <summary>
     /// <para>Freezes the <paramref name="value"/> of an unmanaged data type by the given
@@ -36,7 +36,7 @@ public partial class RwMemory
 
     /// <summary>
     /// Freezes the value of an unmanaged data type by the given <paramref name="memoryAddress"/> with a
-    /// given <paramref name="freezeRefreshRate"></paramref>. The value will be read out once and then applied to to 
+    /// given <paramref name="freezeRefreshRate"></paramref>. The value will be read out once and then applied to 
     /// <paramref name="memoryAddress"/>. You have the specify the data type <typeparamref name="T"/> to get
     /// the size of the buffer.
     /// </summary>
@@ -70,7 +70,7 @@ public partial class RwMemory
 
     /// <summary>
     /// Freezes the value by the given <paramref name="memoryAddress"/> with a
-    /// given <paramref name="freezeRefreshRate"></paramref>. The value will be read out once and then applied to to 
+    /// given <paramref name="freezeRefreshRate"></paramref>. The value will be read out once and then applied to 
     /// <paramref name="memoryAddress"/>. This overload allows you the set the <paramref name="bufferSize"/> by yourself.
     /// </summary>
     /// <param name="memoryAddress"></param>
@@ -103,16 +103,9 @@ public partial class RwMemory
 
     private bool CheckIfAlreadyFrozen(MemoryAddress memoryAddress)
     {
-        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
-        {
-            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
-        }
-        else if (table.FreezeTokenSrc is not null)
-        {
-            return false;
-        }
+        var table = _memoryRegister.GetOrAdd(memoryAddress, _ => new MemoryAddressTable());
 
-        return true;
+        return table.FreezeTokenSrc is null;
     }
 
     /// <summary>

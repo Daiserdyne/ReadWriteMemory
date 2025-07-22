@@ -5,7 +5,7 @@ using static ReadWriteMemory.External.NativeImports.Kernel32;
 
 namespace ReadWriteMemory.External;
 
-public partial class RwMemory
+public sealed partial class RwMemory
 {
     private const byte RelativeCallInstruction = 0xE8;
     private const byte RelativeCallInstructionLength = 5;
@@ -45,32 +45,28 @@ public partial class RwMemory
     public CodeCaveTable CreateOrResumeCodeCave(MemoryAddress memoryAddress, ReadOnlySpan<byte> caveCode,
         int amountOfOpcodesToReplace, int totalAmountOfOpcodesToReplace, uint memoryToAllocate = 4096)
     {
-        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
+        var table = _memoryRegister.GetOrAdd(memoryAddress, _ => new MemoryAddressTable());
+
+        if (table.CodeCaveTable is null)
         {
-            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
+            return CreateCodeCave(memoryAddress, caveCode, amountOfOpcodesToReplace, 
+                totalAmountOfOpcodesToReplace, memoryToAllocate);
         }
-        else if (table.CodeCaveTable is not null)
+           
+        if (!GetTargetAddress(memoryAddress, out var targetAddress))
         {
-            if (!GetTargetAddress(memoryAddress, out var targetAddress))
-            {
-                CloseCodeCave(memoryAddress);
-
-                return CodeCaveTable.Empty;
-            }
-
-            if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress,
-                    table.CodeCaveTable.Value.JmpBytes))
-            {
-                return table.CodeCaveTable.Value;
-            }
-
             CloseCodeCave(memoryAddress);
-
             return CodeCaveTable.Empty;
         }
 
-        return CreateCodeCave(memoryAddress, caveCode, amountOfOpcodesToReplace,
-            totalAmountOfOpcodesToReplace, memoryToAllocate);
+        if (MemoryOperation.WriteProcessMemory(_targetProcess.Handle, targetAddress, table.CodeCaveTable.Value.JmpBytes))
+        {
+            return table.CodeCaveTable.Value;
+        }
+
+        CloseCodeCave(memoryAddress);
+        
+        return CodeCaveTable.Empty;
     }
 
     /// <summary>
@@ -110,7 +106,7 @@ public partial class RwMemory
             return false;
         }
 
-        DeallocateMemory(table.CodeCaveTable.Value.CaveAddress);
+        _ = DeallocateMemory(table.CodeCaveTable.Value.CaveAddress);
 
         _memoryRegister[memoryAddress].CodeCaveTable = null;
 

@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using ReadWriteMemory.External.Entities;
 using ReadWriteMemory.External.Interfaces;
 using ReadWriteMemory.External.Services;
@@ -11,7 +12,7 @@ namespace ReadWriteMemory.External;
 /// This is the main component of the <see cref="ReadWriteMemory.External"/> library. This class includes a lot of powerful
 /// read and write operations to manipulate the memory of a process.
 /// </summary>
-public partial class RwMemory : IDisposable
+public sealed partial class RwMemory : IAsyncDisposable
 {
     #region Events and Delegates
 
@@ -40,7 +41,7 @@ public partial class RwMemory : IDisposable
 
     #region Fields
 
-    private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
+    private readonly ConcurrentDictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
 
     private readonly CancellationTokenSource _monitoringServiceCancellationTokenSrc = new();
 
@@ -192,7 +193,7 @@ public partial class RwMemory : IDisposable
             readValueConstantTokenSrc.Dispose();
         }
     }
-    
+
     private void RestoreAllReplacedBytes()
     {
         foreach (var (memoryAddress, table) in _memoryRegister)
@@ -222,7 +223,7 @@ public partial class RwMemory : IDisposable
             DeallocateMemory(caveTable.Value.CaveAddress);
         }
     }
-    
+
     private bool OpenProcess()
     {
         var process = Process.GetProcessesByName(_targetProcess.ProcessName);
@@ -232,22 +233,20 @@ public partial class RwMemory : IDisposable
             return false;
         }
 
-        var pid = process.First().Id;
+        var pid = process.FirstOrDefault()?.Id;
 
-        _targetProcess.Process = Process.GetProcessById(pid);
-
-        _targetProcess.Handle = MemoryOperation.OpenProcess(true, pid);
-
-        if (_targetProcess.Handle == nint.Zero)
+        if (pid is null)
         {
-            ReinitializeTargetProcess();
-
-            return false;
+            throw new NullReferenceException("Process not found or pid was null");
         }
 
-        if (!(Environment.Is64BitOperatingSystem
-              && Kernel32.IsWow64Process(_targetProcess.Handle, out var isWow64)
-              && !isWow64))
+        _targetProcess.Process = Process.GetProcessById(pid.Value);
+
+        _targetProcess.Handle = MemoryOperation.OpenProcess(true, pid.Value);
+
+        Kernel32.IsWow64Process(_targetProcess.Handle, out var isProcessIs64Bit);
+
+        if (_targetProcess.Handle == nint.Zero || !isProcessIs64Bit)
         {
             ReinitializeTargetProcess();
 
@@ -297,13 +296,8 @@ public partial class RwMemory : IDisposable
             targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[^1]);
         }
 
-        if (!_memoryRegister.ContainsKey(memoryAddress))
-        {
-            _memoryRegister.Add(memoryAddress, new()
-            {
-                BaseAddress = baseAddress
-            });
-        }
+        _memoryRegister.GetOrAdd(memoryAddress, static (_, address) =>
+            new() { BaseAddress = address }, baseAddress);
 
         return targetAddress;
     }
@@ -352,7 +346,7 @@ public partial class RwMemory : IDisposable
     /// <summary>
     /// Disposes the whole memory object and restores the process normal memory state.
     /// </summary>
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         IDictionary<string, IMemoryTrainer>? implementedTrainer = null;
 
@@ -370,7 +364,7 @@ public partial class RwMemory : IDisposable
             foreach (var trainer in implementedTrainer.Values
                          .Where(x => x.DisableWhenDispose))
             {
-                trainer.Disable();
+                await trainer.Disable();
             }
         }
 
@@ -381,7 +375,7 @@ public partial class RwMemory : IDisposable
         CloseHandle();
 
         _memoryRegister.Clear();
-        _monitoringServiceCancellationTokenSrc.Cancel();
+        await _monitoringServiceCancellationTokenSrc.CancelAsync();
         _monitoringServiceCancellationTokenSrc.Dispose();
         OnProcessStateChanged = null;
     }

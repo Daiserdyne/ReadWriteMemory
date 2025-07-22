@@ -5,7 +5,7 @@ using ReadWriteMemory.External.Utilities;
 
 namespace ReadWriteMemory.External;
 
-public partial class RwMemory
+public sealed partial class RwMemory
 {
     /// <summary>
     /// Basically the same as <see cref="WriteBytes"/> with the difference, that the original
@@ -49,16 +49,9 @@ public partial class RwMemory
 
     private bool BytesAlreadyReplaced(MemoryAddress memoryAddress)
     {
-        if (!_memoryRegister.TryGetValue(memoryAddress, out var table))
-        {
-            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
-        }
-        else if (table.ReplacedBytes is not null)
-        {
-            return false;
-        }
+        var table = _memoryRegister.GetOrAdd(memoryAddress, _ => new MemoryAddressTable());
 
-        return true;
+        return table.ReplacedBytes is null;
     }
 
     /// <summary>
