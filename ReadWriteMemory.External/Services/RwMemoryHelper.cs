@@ -62,7 +62,7 @@ public static class RwMemoryHelper
             .Select(type => Activator.CreateInstance(type) as IMemoryTrainer)
             .ToList();
 
-        if (!implementedTrainers.Any())
+        if (implementedTrainers.Count == 0)
         {
             return trainerRegister.ToFrozenDictionary();
         }
