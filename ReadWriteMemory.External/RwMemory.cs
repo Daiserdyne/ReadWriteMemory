@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Diagnostics;
 using ReadWriteMemory.External.Entities;
 using ReadWriteMemory.External.Interfaces;
@@ -220,12 +221,17 @@ public sealed partial class RwMemory : IAsyncDisposable
 
             MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.Value.OriginalOpcodes);
 
-            DeallocateMemory(caveTable.Value.CaveAddress);
+            _ = DeallocateMemory(caveTable.Value.CaveAddress);
         }
     }
 
     private bool OpenProcess()
     {
+        if (!Environment.Is64BitOperatingSystem)
+        {
+            throw new Exception("This library requires a 64-bit operating system.");
+        }
+        
         var process = Process.GetProcessesByName(_targetProcess.ProcessName);
 
         if (process.Length == 0)
@@ -239,19 +245,30 @@ public sealed partial class RwMemory : IAsyncDisposable
         {
             throw new NullReferenceException("Process not found or pid was null");
         }
-
-        _targetProcess.Process = Process.GetProcessById(pid.Value);
-
+        
         _targetProcess.Handle = MemoryOperation.OpenProcess(true, pid.Value);
 
-        Kernel32.IsWow64Process(_targetProcess.Handle, out var isProcessIs64Bit);
-
-        if (_targetProcess.Handle == nint.Zero || !isProcessIs64Bit)
+        if (Kernel32.IsWow64Process2(_targetProcess.Handle, out _, 
+                out var isProcessIs64Bit))
         {
-            ReinitializeTargetProcess();
+            if (isProcessIs64Bit != Kernel32.Amd64Code)
+            {
+                throw new Exception("This library does only support x64 games, not x86 games. Sorry :(.");
+            }
 
-            return false;
+            if (_targetProcess.Handle == nint.Zero)
+            {
+                throw new NullReferenceException("Could not get a valid handle of the process. " +
+                                                 "Maybe try to run it with Administrator rights.");
+            }
         }
+        else
+        {
+            throw new Exception("Could not call the WinApi function 'IsWow64Process2' successfully. " +
+                                "Maybe try to run it with Administrator rights.");
+        }
+        
+        _targetProcess.Process = Process.GetProcessById(pid.Value);
 
         var mainModule = _targetProcess.Process.MainModule;
 
@@ -348,26 +365,25 @@ public sealed partial class RwMemory : IAsyncDisposable
     /// </summary>
     public async ValueTask DisposeAsync()
     {
-        IDictionary<string, IMemoryTrainer>? implementedTrainer = null;
-
+        // The try is in case it's native aot compiled.
         try
         {
-            implementedTrainer = RwMemoryHelper.GetAllImplementedTrainers();
+            var implementedTrainer = RwMemoryHelper.GetAllImplementedTrainers();
+            
+            if (implementedTrainer.Count > 0)
+            {
+                foreach (var trainer in implementedTrainer.Values
+                             .Where(x => x.DisableWhenDispose))
+                {
+                    await trainer.Disable();
+                }
+            }
         }
         catch
         {
             // ignored
         }
-
-        if (implementedTrainer is not null)
-        {
-            foreach (var trainer in implementedTrainer.Values
-                         .Where(x => x.DisableWhenDispose))
-            {
-                await trainer.Disable();
-            }
-        }
-
+       
         CloseAllCodeCaves();
         UnfreezeAllValues();
         StopReadingValuesConstant();
@@ -375,7 +391,9 @@ public sealed partial class RwMemory : IAsyncDisposable
         CloseHandle();
 
         _memoryRegister.Clear();
+        
         await _monitoringServiceCancellationTokenSrc.CancelAsync();
+        
         _monitoringServiceCancellationTokenSrc.Dispose();
         OnProcessStateChanged = null;
     }

@@ -35,9 +35,12 @@ public sealed partial class RwMemory
     /// </summary>
     /// <param name="memoryAddress">Address, module name and offesets</param>
     /// <param name="caveCode">The opcodes to write in the code cave</param>
-    /// <param name="amountOfOpcodesToReplace">The number of bytes of the instruction</param>
+    /// <param name="amountOfOpcodesToReplace">The number of bytes of the instruction you want to override/create am jump instruction</param>
     /// <param name="totalAmountOfOpcodesToReplace">Because a x64 jump is 14 bytes large, it will override other instructions, 
-    /// so you have to give this function more to do so.</param>
+    /// so you have to have at least 14 bytes. That means you need to give the next instruction in a whole. For example:
+    /// You have a function with 7 bytes, and the next instruction has 4 and the next also 4. That means you have 15. They
+    /// get copied in the cave as well since we don't do relative jumps. That's a bit weird, I know, but with that I save
+    /// the search of a free space in memory in the near.</param>
     /// <param name="memoryToAllocate">size of the allocated region</param>
     /// <remarks>Please ensure that you use the proper replaceCount
     /// if you replace halfway in an instruction you may cause bad things</remarks>

@@ -8,6 +8,9 @@ internal static partial class Kernel32
 {
     // privileges
     internal const int FullMemoryAccess = 0x1F0FFF;
+    
+    // AMD64 (K8) code
+    internal const ushort Amd64Code = 0x8664;
 
     // used for memory allocation
     internal const uint MemCommit = 0x00001000;
@@ -59,7 +62,10 @@ internal static partial class Kernel32
         nuint nSize,
         out nint lpNumberOfBytesWritten);
 
-    [LibraryImport("kernel32")]
+    [LibraryImport("kernel32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static partial bool IsWow64Process(nint hProcess, [MarshalAs(UnmanagedType.Bool)] out bool lpSystemInfo);
+    internal static partial bool IsWow64Process2(
+        nint hProcess,
+        out ushort processMachine,
+        out ushort nativeMachine);
 }
