@@ -8,7 +8,7 @@ namespace ReadWriteMemory.External.Interfaces;
 public interface IMemoryTrainer
 {
     /// <summary>
-    /// Specifies the trainer by an unique id. This is usefull when you want to order/sort a list of trainer.
+    /// Specifies the trainer by a unique id. This is useful when you want to order/sort a list of trainer.
     /// </summary>
     public int Id { get; }
     
