@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Kernel32 = ReadWriteMemory.External.NativeImports.Kernel32;
+﻿using Kernel32 = ReadWriteMemory.External.NativeImports.Kernel32;
 
 namespace ReadWriteMemory.External.Utilities;
 
@@ -10,29 +9,10 @@ internal static class MemoryOperation
         return Kernel32.OpenProcess(Kernel32.FullMemoryAccess, bInheritHandle, dwProcessId);
     }
 
-    internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, string value)
-    {
-        var stringAsByteArray = Encoding.UTF8.GetBytes(value);
-        return WriteProcessMemory(processHandle, targetAddress, stringAsByteArray);
-    }
-
-    internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, string value, int length)
-    {
-        var stringAsByteArray = Encoding.UTF8.GetBytes(value);
-        return WriteProcessMemory(processHandle, targetAddress, stringAsByteArray, length);
-    }
-
     internal static bool WriteProcessMemory(nint processHandle, nuint targetAddress, ReadOnlySpan<byte> buffer)
     {
         return Kernel32.WriteProcessMemory(processHandle, targetAddress, buffer, 
             (nuint)buffer.Length, out _);
-    }
-
-    private static bool WriteProcessMemory(nint processHandle, nuint targetAddress, 
-        ReadOnlySpan<byte> buffer, int length)
-    {
-        return Kernel32.WriteProcessMemory(processHandle, targetAddress, buffer, (nuint)length, 
-            out _);
     }
 
     internal static bool WriteProcessMemory<T>(nint processHandle, nuint targetAddress, T value) where T : unmanaged

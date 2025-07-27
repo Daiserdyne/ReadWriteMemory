@@ -1,8 +1,6 @@
 ﻿using System.Collections.Concurrent;
-using System.Collections.Frozen;
 using System.Diagnostics;
 using ReadWriteMemory.External.Entities;
-using ReadWriteMemory.External.Interfaces;
 using ReadWriteMemory.External.Services;
 using ReadWriteMemory.External.Utilities;
 using Kernel32 = ReadWriteMemory.External.NativeImports.Kernel32;

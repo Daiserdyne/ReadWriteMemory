@@ -1,6 +1,5 @@
 ﻿using ReadWriteMemory.External.Interfaces;
 using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace ReadWriteMemory.External.Services;
