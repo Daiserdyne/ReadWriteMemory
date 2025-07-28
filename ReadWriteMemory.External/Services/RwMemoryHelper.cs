@@ -61,18 +61,10 @@ public static class RwMemoryHelper
                 .Contains(typeof(IMemoryTrainer)) && type.GetConstructor(Type.EmptyTypes) is not null)
             .Select(type => Activator.CreateInstance(type) as IMemoryTrainer)
             .ToList();
-
-        if (!implementedTrainers.Any())
+        
+        foreach (var trainer in implementedTrainers.Where(trainerInstance => trainerInstance is not null))
         {
-            return trainerRegister.ToFrozenDictionary();
-        }
-
-        foreach (var trainer in implementedTrainers)
-        {
-            if (trainer is not null)
-            {
-                trainerRegister.Add(trainer.TrainerName, trainer);
-            }
+            trainerRegister.Add(trainer!.TrainerName, trainer);
         }
 
         return trainerRegister.ToFrozenDictionary();

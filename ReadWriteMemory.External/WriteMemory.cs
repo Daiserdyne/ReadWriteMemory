@@ -3,7 +3,7 @@ using ReadWriteMemory.External.Utilities;
 
 namespace ReadWriteMemory.External;
 
-public partial class RwMemory
+public sealed partial class RwMemory
 {
     /// <summary>
     /// This will write the given <c>ByteArray</c>-<paramref name="value"/> to the target <paramref name="memoryAddress"/>.

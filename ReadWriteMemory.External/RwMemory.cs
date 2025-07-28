@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using ReadWriteMemory.External.Entities;
-using ReadWriteMemory.External.Interfaces;
 using ReadWriteMemory.External.Services;
 using ReadWriteMemory.External.Utilities;
 using Kernel32 = ReadWriteMemory.External.NativeImports.Kernel32;
@@ -11,7 +11,7 @@ namespace ReadWriteMemory.External;
 /// This is the main component of the <see cref="ReadWriteMemory.External"/> library. This class includes a lot of powerful
 /// read and write operations to manipulate the memory of a process.
 /// </summary>
-public partial class RwMemory : IDisposable
+public sealed partial class RwMemory : IAsyncDisposable
 {
     #region Events and Delegates
 
@@ -40,7 +40,7 @@ public partial class RwMemory : IDisposable
 
     #region Fields
 
-    private readonly Dictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
+    private readonly ConcurrentDictionary<MemoryAddress, MemoryAddressTable> _memoryRegister = [];
 
     private readonly CancellationTokenSource _monitoringServiceCancellationTokenSrc = new();
 
@@ -192,7 +192,7 @@ public partial class RwMemory : IDisposable
             readValueConstantTokenSrc.Dispose();
         }
     }
-    
+
     private void RestoreAllReplacedBytes()
     {
         foreach (var (memoryAddress, table) in _memoryRegister)
@@ -219,12 +219,17 @@ public partial class RwMemory : IDisposable
 
             MemoryOperation.WriteProcessMemory(_targetProcess.Handle, baseAddress, caveTable.Value.OriginalOpcodes);
 
-            DeallocateMemory(caveTable.Value.CaveAddress);
+            _ = DeallocateMemory(caveTable.Value.CaveAddress);
         }
     }
-    
+
     private bool OpenProcess()
     {
+        if (!Environment.Is64BitOperatingSystem)
+        {
+            throw new Exception("This library requires a 64-bit operating system.");
+        }
+        
         var process = Process.GetProcessesByName(_targetProcess.ProcessName);
 
         if (process.Length == 0)
@@ -232,27 +237,36 @@ public partial class RwMemory : IDisposable
             return false;
         }
 
-        var pid = process.First().Id;
+        var pid = process.FirstOrDefault()?.Id;
 
-        _targetProcess.Process = Process.GetProcessById(pid);
-
-        _targetProcess.Handle = MemoryOperation.OpenProcess(true, pid);
-
-        if (_targetProcess.Handle == nint.Zero)
+        if (pid is null)
         {
-            ReinitializeTargetProcess();
-
-            return false;
+            throw new NullReferenceException("Process not found or pid was null");
         }
+        
+        _targetProcess.Handle = MemoryOperation.OpenProcess(true, pid.Value);
 
-        if (!(Environment.Is64BitOperatingSystem
-              && Kernel32.IsWow64Process(_targetProcess.Handle, out var isWow64)
-              && !isWow64))
+        if (Kernel32.IsWow64Process2(_targetProcess.Handle, out _, 
+                out var isProcessIs64Bit))
         {
-            ReinitializeTargetProcess();
+            if (isProcessIs64Bit != Kernel32.Amd64Code)
+            {
+                throw new Exception("This library does only support x64 games, not x86 games. Sorry :(.");
+            }
 
-            return false;
+            if (_targetProcess.Handle == nint.Zero)
+            {
+                throw new NullReferenceException("Could not get a valid handle of the process. " +
+                                                 "Maybe try to run it with Administrator rights.");
+            }
         }
+        else
+        {
+            throw new Exception("Could not call the WinApi function 'IsWow64Process2' successfully. " +
+                                "Maybe try to run it with Administrator rights.");
+        }
+        
+        _targetProcess.Process = Process.GetProcessById(pid.Value);
 
         var mainModule = _targetProcess.Process.MainModule;
 
@@ -297,13 +311,8 @@ public partial class RwMemory : IDisposable
             targetAddress = nuint.Add(targetAddress, memoryAddress.Offsets[^1]);
         }
 
-        if (!_memoryRegister.ContainsKey(memoryAddress))
-        {
-            _memoryRegister.Add(memoryAddress, new()
-            {
-                BaseAddress = baseAddress
-            });
-        }
+        _memoryRegister.GetOrAdd(memoryAddress, static (_, address) =>
+            new() { BaseAddress = address }, baseAddress);
 
         return targetAddress;
     }
@@ -352,28 +361,27 @@ public partial class RwMemory : IDisposable
     /// <summary>
     /// Disposes the whole memory object and restores the process normal memory state.
     /// </summary>
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        IDictionary<string, IMemoryTrainer>? implementedTrainer = null;
-
+        // The try is in case it's native aot compiled.
         try
         {
-            implementedTrainer = RwMemoryHelper.GetAllImplementedTrainers();
+            var implementedTrainer = RwMemoryHelper.GetAllImplementedTrainers();
+            
+            if (implementedTrainer.Count > 0)
+            {
+                foreach (var trainer in implementedTrainer.Values
+                             .Where(x => x.DisableWhenDispose))
+                {
+                    await trainer.Disable();
+                }
+            }
         }
         catch
         {
             // ignored
         }
-
-        if (implementedTrainer is not null)
-        {
-            foreach (var trainer in implementedTrainer.Values
-                         .Where(x => x.DisableWhenDispose))
-            {
-                trainer.Disable();
-            }
-        }
-
+       
         CloseAllCodeCaves();
         UnfreezeAllValues();
         StopReadingValuesConstant();
@@ -381,7 +389,9 @@ public partial class RwMemory : IDisposable
         CloseHandle();
 
         _memoryRegister.Clear();
-        _monitoringServiceCancellationTokenSrc.Cancel();
+        
+        await _monitoringServiceCancellationTokenSrc.CancelAsync();
+        
         _monitoringServiceCancellationTokenSrc.Dispose();
         OnProcessStateChanged = null;
     }

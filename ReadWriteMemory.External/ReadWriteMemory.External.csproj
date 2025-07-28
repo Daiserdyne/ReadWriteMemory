@@ -13,10 +13,15 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Version>1.2.0</Version>
+		<Version>1.2.1</Version>
 		<Authors>Daiserdyne</Authors>
 		<Product>ReadWriteMemoryExternal</Product>
 		<Description>A powerfull memory editing library.</Description>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<PackageIcon>Assets\icon.png</PackageIcon>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="Assets\icon.png" Pack="true" PackagePath="\Assets"/>
+	</ItemGroup>
 </Project>

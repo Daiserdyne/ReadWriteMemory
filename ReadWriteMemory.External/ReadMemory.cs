@@ -6,7 +6,7 @@ using ReadWriteMemory.External.Utilities;
 
 namespace ReadWriteMemory.External;
 
-public partial class RwMemory
+public sealed partial class RwMemory
 {
     #region Delegates
 
@@ -180,15 +180,8 @@ public partial class RwMemory
 
     private bool IsAlreadyReadingConstant(MemoryAddress memoryAddress)
     {
-        if (!_memoryRegister.TryGetValue(memoryAddress, out var value))
-        {
-            _memoryRegister.Add(memoryAddress, new MemoryAddressTable());
-        }
-        else if (value.ReadValueConstantTokenSrc is not null)
-        {
-            return false;
-        }
+        var table = _memoryRegister.GetOrAdd(memoryAddress, _ => new MemoryAddressTable());
 
-        return true;
+        return table.ReadValueConstantTokenSrc is null;
     }
 }
