@@ -11,17 +11,25 @@
 		<RootNamespace>ReadWriteMemory.External</RootNamespace>
 		<IncludeBuildOutput>true</IncludeBuildOutput>
 	</PropertyGroup>
-
+	
 	<PropertyGroup>
-		<Version>1.2.1</Version>
+		<Version>1.2.2</Version>
 		<Authors>Daiserdyne</Authors>
 		<Product>ReadWriteMemoryExternal</Product>
 		<Description>A powerfull memory editing library.</Description>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<PackageIcon>Assets\icon.png</PackageIcon>
+		<RepositoryUrl>https://github.com/Daiserdyne/ReadWriteMemory</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/Daiserdyne/ReadWriteMemory</PackageProjectUrl>
+		<PackageReadmeFile>Assets/README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="Assets\icon.png" Pack="true" PackagePath="\Assets"/>
+		<None Include="..\README.md">
+		  <Pack>true</Pack>
+		  <PackagePath>Assets</PackagePath>
+		  <Link>Assets\README.md</Link>
+		</None>
+		<None Include="Assets\icon.png" Pack="true" PackagePath="Assets"/>
 	</ItemGroup>
 </Project>
