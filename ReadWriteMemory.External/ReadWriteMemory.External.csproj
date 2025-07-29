@@ -23,7 +23,7 @@
 		<PackageProjectUrl>https://github.com/Daiserdyne/ReadWriteMemory</PackageProjectUrl>
 		<PackageReadmeFile>Assets/README.md</PackageReadmeFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageId>Daiserdyne.ReadWriteMemory.External</PackageId>
+		<PackageId>ReadWriteMemory.External</PackageId>
 	</PropertyGroup>
 
 	<ItemGroup>
