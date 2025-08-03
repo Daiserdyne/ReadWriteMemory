@@ -33,7 +33,7 @@ public sealed partial class RwMemory
     /// If you created a code cave in the past with the same memory address, it will
     /// jump back to your cave address.
     /// </summary>
-    /// <param name="memoryAddress">Address, module name and offesets</param>
+    /// <param name="memoryAddress">Address, module name and offsets</param>
     /// <param name="caveCode">The opcodes to write in the code cave</param>
     /// <param name="amountOfOpcodesToReplace">The number of bytes of the instruction you want to override/create am jump instruction</param>
     /// <param name="totalAmountOfOpcodesToReplace">Because a x64 jump is 14 bytes large, it will override other instructions, 
@@ -73,11 +73,11 @@ public sealed partial class RwMemory
     }
 
     /// <summary>
-    /// Restores the original opcodes to the memory address without dealloacating the memory.
+    /// Restores the original opcodes to the memory address without deallocate the memory.
     /// So your code-bytes stay in the memory at the cave address. The advantage is that you
     /// don't have to create a new code cave which costs time. You can simply jump to the cave address
     /// or use the original code. Don't forget to dispose the memory object when you exit the application.
-    /// Otherwise, the codecaves continue to live forever.
+    /// Otherwise, the codecave continue to live forever.
     /// </summary>
     /// <param name="memoryAddress"></param>
     /// <returns></returns>
@@ -121,12 +121,8 @@ public sealed partial class RwMemory
     {
         var targetAddress = GetTargetAddress(memoryAddress);
 
-        if (targetAddress == nuint.Zero)
-        {
-            return CodeCaveTable.Empty;
-        }
-
-        if (!ReadBytes(memoryAddress, (uint)totalAmountOfOpcodesToReplace, out var originalOpcodes))
+        if (targetAddress == nuint.Zero || 
+            !ReadBytes(memoryAddress, (uint)totalAmountOfOpcodesToReplace, out var originalOpcodes))
         {
             return CodeCaveTable.Empty;
         }
