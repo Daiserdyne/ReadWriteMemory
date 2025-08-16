@@ -17,7 +17,7 @@ internal static class MemoryOperation
 
     internal static bool WriteProcessMemory<T>(nint processHandle, nuint targetAddress, T value) where T : unmanaged
     {
-        var valueBuffer = ConvertToByteArrayUnsafe(value);
+        var valueBuffer = ConvertToByteArrayUnsafeAsSpan(value);
 
         return WriteProcessMemory(processHandle, targetAddress, valueBuffer);
     }
@@ -28,7 +28,19 @@ internal static class MemoryOperation
             nint.Zero);
     }
 
-    internal static unsafe ReadOnlySpan<byte> ConvertToByteArrayUnsafe<T>(T value) where T : unmanaged
+    private static unsafe ReadOnlySpan<byte> ConvertToByteArrayUnsafeAsSpan<T>(T value) where T : unmanaged
+    {
+        var buffer = new byte[sizeof(T)];
+
+        fixed (byte* pByte = buffer)
+        {
+            *(T*)pByte = value;
+        }
+
+        return buffer;
+    }
+    
+    internal static unsafe byte[] ConvertToByteArrayUnsafe<T>(T value) where T : unmanaged
     {
         var buffer = new byte[sizeof(T)];
 

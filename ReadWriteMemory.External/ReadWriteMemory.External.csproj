@@ -5,6 +5,7 @@
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Platforms>x64</Platforms>
+		<RuntimeIdentifiers>win-x64;</RuntimeIdentifiers>
 		<OutputType>Library</OutputType>
 		<WindowsPackageType>None</WindowsPackageType>
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
@@ -13,7 +14,7 @@
 	</PropertyGroup>
 	
 	<PropertyGroup>
-		<Version>1.2.2</Version>
+		<Version>1.2.3</Version>
 		<Authors>Daiserdyne</Authors>
 		<Product>ReadWriteMemoryExternal</Product>
 		<Description>A powerfull memory editing library.</Description>
@@ -22,6 +23,8 @@
 		<RepositoryUrl>https://github.com/Daiserdyne/ReadWriteMemory</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/Daiserdyne/ReadWriteMemory</PackageProjectUrl>
 		<PackageReadmeFile>Assets/README.md</PackageReadmeFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageId>ReadWriteMemory.External</PackageId>
 	</PropertyGroup>
 
 	<ItemGroup>
