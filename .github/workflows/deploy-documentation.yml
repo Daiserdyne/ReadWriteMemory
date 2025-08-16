@@ -70,3 +70,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./ReadWriteMemory/site
+          destination_branch: gh-pages
+          keep_files: false
