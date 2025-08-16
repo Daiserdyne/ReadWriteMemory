@@ -33,9 +33,6 @@ jobs:
       - name: Build library
         run: dotnet build ReadWriteMemory/ReadWriteMemory.External/ReadWriteMemory.External.csproj -c Release
 
-      - name: Debug output
-        run: ls ReadWriteMemory
-
       - name: Run xmldoc2md
         run: |
           dotnet tools/xmldoc2md/src/XMLDoc2Markdown/bin/Release/net9.0/xmldoc2md.dll \
@@ -43,6 +40,11 @@ jobs:
             --output ReadWriteMemory/docs \
             --github-pages \
             --back-button
+
+      - name: Override index.md file with project readme
+        working-directory: ReadWriteMemory
+        run: |
+          cp README.md docs/index.md
 
       # Setup Python + MkDocs
       - name: Setup Python
@@ -58,11 +60,6 @@ jobs:
       - name: Build MkDocs site
         working-directory: ReadWriteMemory
         run: mkdocs build
-
-      - name: Override index.md file with project readme
-        working-directory: ReadWriteMemory
-        run: |
-          cp README.md docs/index.md
 
       # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
