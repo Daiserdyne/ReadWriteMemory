@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>RwMemory - ReadWriteMemory.External</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">ReadWriteMemory.External</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="./" class="nav-link active" aria-current="page">RwMemory</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../readwritememory.external.entities.memoryaddress/" class="nav-link">MemoryAddress</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../readwritememory.external.interfaces.imemorytrainer/" class="nav-link">IMemoryTrainer</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../readwritememory.external.services.rwmemoryhelper/" class="nav-link">RwMemoryHelper</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" class="nav-link disabled">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../readwritememory.external.entities.memoryaddress/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#rwmemory" class="nav-link">RwMemory</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#properties" class="nav-link">Properties</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#constructors" class="nav-link">Constructors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#methods" class="nav-link">Methods</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#events" class="nav-link">Events</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<p><a href="./"><code>&lt; Back</code></a></p>
+<hr />
+<h1 id="rwmemory">RwMemory</h1>
+<p>Namespace: ReadWriteMemory.External</p>
+<p>This is the main component of the  library. This class includes a lot of powerful
+ read and write operations to manipulate the memory of a process.</p>
+<pre><code class="language-csharp">public sealed class RwMemory : System.IAsyncDisposable
+</code></pre>
+<p>Inheritance <a href="https://docs.microsoft.com/en-us/dotnet/api/system.object">Object</a> → <a href="./readwritememory.external.rwmemory">RwMemory</a><br>
+Implements <a href="https://docs.microsoft.com/en-us/dotnet/api/system.iasyncdisposable">IAsyncDisposable</a></p>
+<h2 id="properties">Properties</h2>
+<h3 id="isprocessalive"><strong>IsProcessAlive</strong></h3>
+<p>Returns the current state of the process.</p>
+<pre><code class="language-csharp">public bool IsProcessAlive { get; }
+</code></pre>
+<h4 id="property-value">Property Value</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h2 id="constructors">Constructors</h2>
+<h3 id="rwmemorystring"><strong>RwMemory(String)</strong></h3>
+<p>This is the main component of the  library. This class includes a
+ lot of powerful read and write operations to manipulate the memory of a process.</p>
+<pre><code class="language-csharp">public RwMemory(string processName)
+</code></pre>
+<h4 id="parameters">Parameters</h4>
+<p><code>processName</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.string">String</a><br></p>
+<h2 id="methods">Methods</h2>
+<h3 id="createorresumecodecavememoryaddress-readonlyspanbyte-int32-int32-uint32"><strong>CreateOrResumeCodeCave(MemoryAddress, ReadOnlySpan&lt;Byte&gt;, Int32, Int32, UInt32)</strong></h3>
+<p>Creates a code cave to apply custom code in target process. 
+ If you created a code cave in the past with the same memory address, it will
+ jump back to your cave address.</p>
+<pre><code class="language-csharp">public CodeCaveTable CreateOrResumeCodeCave(MemoryAddress memoryAddress, ReadOnlySpan&lt;byte&gt; caveCode, int amountOfOpcodesToReplace, int totalAmountOfOpcodesToReplace, uint memoryToAllocate)
+</code></pre>
+<h4 id="parameters_1">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br>
+Address, module name and offsets</p>
+<p><code>caveCode</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.readonlyspan-1">ReadOnlySpan&lt;Byte&gt;</a><br>
+The opcodes to write in the code cave</p>
+<p><code>amountOfOpcodesToReplace</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.int32">Int32</a><br>
+The number of bytes of the instruction you want to override/create am jump instruction</p>
+<p><code>totalAmountOfOpcodesToReplace</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.int32">Int32</a><br>
+Because a x64 jump is 14 bytes large, it will override other instructions, 
+ so you have to have at least 14 bytes. That means you need to give the next instruction in a whole. For example:
+ You have a function with 7 bytes, and the next instruction has 4 and the next also 4. That means you have 15. They
+ get copied in the cave as well since we don't do relative jumps. That's a bit weird, I know, but with that I save
+ the search of a free space in memory in the near.</p>
+<p><code>memoryToAllocate</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.uint32">UInt32</a><br>
+size of the allocated region</p>
+<h4 id="returns">Returns</h4>
+<p><a href="./readwritememory.external.entities.codecavetable">CodeCaveTable</a><br>
+Cave address</p>
+<p><strong>Remarks:</strong></p>
+<p>Please ensure that you use the proper replaceCount
+ if you replace halfway in an instruction you may cause bad things</p>
+<h3 id="pauseopenedcodecavememoryaddress"><strong>PauseOpenedCodeCave(MemoryAddress)</strong></h3>
+<p>Restores the original opcodes to the memory address without deallocate the memory.
+ So your code-bytes stay in the memory at the cave address. The advantage is that you
+ don't have to create a new code cave which costs time. You can simply jump to the cave address
+ or use the original code. Don't forget to dispose the memory object when you exit the application.
+ Otherwise, the codecave continue to live forever.</p>
+<pre><code class="language-csharp">public bool PauseOpenedCodeCave(MemoryAddress memoryAddress)
+</code></pre>
+<h4 id="parameters_2">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<h4 id="returns_1">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="closecodecavememoryaddress"><strong>CloseCodeCave(MemoryAddress)</strong></h3>
+<p>Closes a created code cave. Just give this function the memory address where you create a code cave with.</p>
+<pre><code class="language-csharp">public bool CloseCodeCave(MemoryAddress memoryAddress)
+</code></pre>
+<h4 id="parameters_3">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<h4 id="returns_2">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br>
+true if the operation was successful, otherwise false.</p>
+<h3 id="freezevalueuntiltmemoryaddress-t-funcboolean-timespan"><strong>FreezeValueUntil&lt;T&gt;(MemoryAddress, T, Func&lt;Boolean&gt;, TimeSpan)</strong></h3>
+<p>Freezes the <code>value</code> of an unmanaged data type by the given
+ <code>memoryAddress</code> with a 
+ given <code>freezeRefreshRate</code>.</p>
+<p>Freezing value will be stopped when the given
+ callback method returns false.</p>
+<pre><code class="language-csharp">public bool FreezeValueUntil&lt;T&gt;(MemoryAddress memoryAddress, T value, Func&lt;bool&gt; executeUntil, TimeSpan freezeRefreshRate)
+</code></pre>
+<h4 id="type-parameters">Type Parameters</h4>
+<p><code>T</code><br></p>
+<h4 id="parameters_4">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>value</code> T<br></p>
+<p><code>executeUntil</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.func-1">Func&lt;Boolean&gt;</a><br></p>
+<p><code>freezeRefreshRate</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.timespan">TimeSpan</a><br></p>
+<h4 id="returns_3">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="freezevalueuntiltmemoryaddress-funcboolean-timespan"><strong>FreezeValueUntil&lt;T&gt;(MemoryAddress, Func&lt;Boolean&gt;, TimeSpan)</strong></h3>
+<p>Freezes the value of an unmanaged data type by the given <code>memoryAddress</code> with a
+ given <code>freezeRefreshRate</code>. The value will be read out once and then applied to 
+ <code>memoryAddress</code>. You have the specify the data type  to get
+ the size of the buffer. Freezing value will be stopped when the given callback method returns false.</p>
+<pre><code class="language-csharp">public bool FreezeValueUntil&lt;T&gt;(MemoryAddress memoryAddress, Func&lt;bool&gt; executeUntil, TimeSpan freezeRefreshRate)
+</code></pre>
+<h4 id="type-parameters_1">Type Parameters</h4>
+<p><code>T</code><br></p>
+<h4 id="parameters_5">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>executeUntil</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.func-1">Func&lt;Boolean&gt;</a><br></p>
+<p><code>freezeRefreshRate</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.timespan">TimeSpan</a><br></p>
+<h4 id="returns_4">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="freezebytesuntilmemoryaddress-funcboolean-timespan-uint32"><strong>FreezeBytesUntil(MemoryAddress, Func&lt;Boolean&gt;, TimeSpan, UInt32)</strong></h3>
+<p>Freezes the value by the given <code>memoryAddress</code> with a
+ given <code>freezeRefreshRate</code>. The value will be read out once and then applied to 
+ <code>memoryAddress</code>. This overload allows you the set the <code>bufferSize</code> by yourself.
+ Freezing byte sequence will be stopped when the given callback method returns false.</p>
+<pre><code class="language-csharp">public bool FreezeBytesUntil(MemoryAddress memoryAddress, Func&lt;bool&gt; executeUntil, TimeSpan freezeRefreshRate, uint bufferSize)
+</code></pre>
+<h4 id="parameters_6">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>executeUntil</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.func-1">Func&lt;Boolean&gt;</a><br></p>
+<p><code>freezeRefreshRate</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.timespan">TimeSpan</a><br></p>
+<p><code>bufferSize</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.uint32">UInt32</a><br></p>
+<h4 id="returns_5">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="freezevaluetmemoryaddress-t-timespan"><strong>FreezeValue&lt;T&gt;(MemoryAddress, T, TimeSpan)</strong></h3>
+<p>Freezes the <code>value</code> of an unmanaged data type by the given
+ <code>memoryAddress</code> with a 
+ given <code>freezeRefreshRate</code>.</p>
+<pre><code class="language-csharp">public bool FreezeValue&lt;T&gt;(MemoryAddress memoryAddress, T value, TimeSpan freezeRefreshRate)
+</code></pre>
+<h4 id="type-parameters_2">Type Parameters</h4>
+<p><code>T</code><br></p>
+<h4 id="parameters_7">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>value</code> T<br></p>
+<p><code>freezeRefreshRate</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.timespan">TimeSpan</a><br></p>
+<h4 id="returns_6">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="freezevaluetmemoryaddress-timespan"><strong>FreezeValue&lt;T&gt;(MemoryAddress, TimeSpan)</strong></h3>
+<p>Freezes the value of an unmanaged data type by the given <code>memoryAddress</code> with a
+ given <code>freezeRefreshRate</code>. The value will be read out once and then applied to 
+ <code>memoryAddress</code>. You have the specify the data type  to get
+ the size of the buffer.</p>
+<pre><code class="language-csharp">public bool FreezeValue&lt;T&gt;(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate)
+</code></pre>
+<h4 id="type-parameters_3">Type Parameters</h4>
+<p><code>T</code><br></p>
+<h4 id="parameters_8">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>freezeRefreshRate</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.timespan">TimeSpan</a><br></p>
+<h4 id="returns_7">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="freezebytesmemoryaddress-timespan-uint32"><strong>FreezeBytes(MemoryAddress, TimeSpan, UInt32)</strong></h3>
+<p>Freezes the value by the given <code>memoryAddress</code> with a
+ given <code>freezeRefreshRate</code>. The value will be read out once and then applied to 
+ <code>memoryAddress</code>. This overload allows you the set the <code>bufferSize</code> by yourself.</p>
+<pre><code class="language-csharp">public bool FreezeBytes(MemoryAddress memoryAddress, TimeSpan freezeRefreshRate, uint bufferSize)
+</code></pre>
+<h4 id="parameters_9">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>freezeRefreshRate</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.timespan">TimeSpan</a><br></p>
+<p><code>bufferSize</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.uint32">UInt32</a><br></p>
+<h4 id="returns_8">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="unfreezevaluememoryaddress"><strong>UnfreezeValue(MemoryAddress)</strong></h3>
+<p>Unfreezes a value from the given <code>memoryAddress</code>.</p>
+<pre><code class="language-csharp">public bool UnfreezeValue(MemoryAddress memoryAddress)
+</code></pre>
+<h4 id="parameters_10">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<h4 id="returns_9">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="readvaluetmemoryaddress-t"><strong>ReadValue&lt;T&gt;(MemoryAddress, T&amp;)</strong></h3>
+<p>This will read the <code>value</code> out of the given <code>memoryAddress</code>.
+ Don't forget to specify the  type correctly to prevent errors or unintended outcomes.</p>
+<pre><code class="language-csharp">public bool ReadValue&lt;T&gt;(MemoryAddress memoryAddress, T&amp; value)
+</code></pre>
+<h4 id="type-parameters_4">Type Parameters</h4>
+<p><code>T</code><br></p>
+<h4 id="parameters_11">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>value</code> T&amp;<br></p>
+<h4 id="returns_10">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br>
+An <a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a> indicating whether the operation was successful.</p>
+<h3 id="readbytesmemoryaddress-uint32-byte"><strong>ReadBytes(MemoryAddress, UInt32, Byte[]&amp;)</strong></h3>
+<p>This method reads the <code>bytes</code> value of <code>length</code> from the specified <code>memoryAddress</code>
+ and stores it in the <code>value</code> parameter.</p>
+<pre><code class="language-csharp">public bool ReadBytes(MemoryAddress memoryAddress, uint length, Byte[]&amp; value)
+</code></pre>
+<h4 id="parameters_12">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>length</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.uint32">UInt32</a><br></p>
+<p><code>value</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.byte&amp;">Byte[]&amp;</a><br></p>
+<h4 id="returns_11">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="readbytesconstantmemoryaddress-uint32-readbytescallback-timespan"><strong>ReadBytesConstant(MemoryAddress, UInt32, ReadBytesCallback, TimeSpan)</strong></h3>
+<p>This method will read the <code>bytes</code> from the specified <code>memoryAddress</code> and execute the 
+ <code>callback</code> function repeatedly with a specified delay <code>refreshTime</code>, using the given 
+ <code>bytesToRead</code> as the input parameter.</p>
+<pre><code class="language-csharp">public bool ReadBytesConstant(MemoryAddress memoryAddress, uint bytesToRead, ReadBytesCallback callback, TimeSpan refreshTime)
+</code></pre>
+<h4 id="parameters_13">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>bytesToRead</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.uint32">UInt32</a><br></p>
+<p><code>callback</code> <a href="./readwritememory.external.rwmemory.readbytescallback">ReadBytesCallback</a><br></p>
+<p><code>refreshTime</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.timespan">TimeSpan</a><br></p>
+<h4 id="returns_12">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="readvalueconstanttmemoryaddress-readvaluecallbackt-timespan"><strong>ReadValueConstant&lt;T&gt;(MemoryAddress, ReadValueCallback&lt;T&gt;, TimeSpan)</strong></h3>
+<p>This will read the -value and executes the <code>callback</code>
+ function in a loop with the specified delay <code>refreshTime</code>.
+ Don't forget to specify the  type correctly to prevent errors or unintended outcomes.</p>
+<pre><code class="language-csharp">public bool ReadValueConstant&lt;T&gt;(MemoryAddress memoryAddress, ReadValueCallback&lt;T&gt; callback, TimeSpan refreshTime)
+</code></pre>
+<h4 id="type-parameters_5">Type Parameters</h4>
+<p><code>T</code><br></p>
+<h4 id="parameters_14">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>callback</code> ReadValueCallback&lt;T&gt;<br></p>
+<p><code>refreshTime</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.timespan">TimeSpan</a><br></p>
+<h4 id="returns_13">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="stopreadingvalueconstantmemoryaddress"><strong>StopReadingValueConstant(MemoryAddress)</strong></h3>
+<p>Unfreezes a value from the given <code>memoryAddress</code>.</p>
+<pre><code class="language-csharp">public bool StopReadingValueConstant(MemoryAddress memoryAddress)
+</code></pre>
+<h4 id="parameters_15">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<h4 id="returns_14">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="replacebytesmemoryaddress-readonlyspanbyte"><strong>ReplaceBytes(MemoryAddress, ReadOnlySpan&lt;Byte&gt;)</strong></h3>
+<p>Basically the same as <a href="./readwritememory.external.rwmemory#writebytesmemoryaddress-readonlyspanbyte">RwMemory.WriteBytes(MemoryAddress, ReadOnlySpan&lt;Byte&gt;)</a> with the difference, that the original
+ opcodes will be saved internally. So you don't have to save the original opcodes somewhere.
+ Just call <a href="./readwritememory.external.rwmemory#undoreplacebytesmemoryaddress">RwMemory.UndoReplaceBytes(MemoryAddress)</a> to restore the original opcodes.</p>
+<pre><code class="language-csharp">public bool ReplaceBytes(MemoryAddress memoryAddress, ReadOnlySpan&lt;byte&gt; replacement)
+</code></pre>
+<h4 id="parameters_16">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>replacement</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.readonlyspan-1">ReadOnlySpan&lt;Byte&gt;</a><br></p>
+<h4 id="returns_15">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="undoreplacebytesmemoryaddress"><strong>UndoReplaceBytes(MemoryAddress)</strong></h3>
+<p>Writes the original opcodes to the address you replaced with <a href="./readwritememory.external.rwmemory#replacebytesmemoryaddress-readonlyspanbyte">RwMemory.ReplaceBytes(MemoryAddress, ReadOnlySpan&lt;Byte&gt;)</a>.</p>
+<pre><code class="language-csharp">public bool UndoReplaceBytes(MemoryAddress memoryAddress)
+</code></pre>
+<h4 id="parameters_17">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<h4 id="returns_16">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="disposeasync"><strong>DisposeAsync()</strong></h3>
+<p>Disposes the whole memory object and restores the process normal memory state.</p>
+<pre><code class="language-csharp">public ValueTask DisposeAsync()
+</code></pre>
+<h4 id="returns_17">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.threading.tasks.valuetask">ValueTask</a><br></p>
+<h3 id="writebytesmemoryaddress-readonlyspanbyte"><strong>WriteBytes(MemoryAddress, ReadOnlySpan&lt;Byte&gt;)</strong></h3>
+<p>This will write the given <code>ByteArray</code>-<code>value</code> to the target <code>memoryAddress</code>.</p>
+<pre><code class="language-csharp">public bool WriteBytes(MemoryAddress memoryAddress, ReadOnlySpan&lt;byte&gt; value)
+</code></pre>
+<h4 id="parameters_18">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>value</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.readonlyspan-1">ReadOnlySpan&lt;Byte&gt;</a><br></p>
+<h4 id="returns_18">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br>
+An <a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a> indicating whether the operation was successful.</p>
+<h3 id="writevaluetmemoryaddress-t"><strong>WriteValue&lt;T&gt;(MemoryAddress, T)</strong></h3>
+<p>This will write the given <code>value</code> to the target <code>memoryAddress</code>.
+ Don't forget to specify the <code>value</code> type to prevent errors or unintended outcomes.</p>
+<pre><code class="language-csharp">public bool WriteValue&lt;T&gt;(MemoryAddress memoryAddress, T value)
+</code></pre>
+<h4 id="type-parameters_6">Type Parameters</h4>
+<p><code>T</code><br></p>
+<h4 id="parameters_19">Parameters</h4>
+<p><code>memoryAddress</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<p><code>value</code> T<br></p>
+<h4 id="returns_19">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br>
+An <a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a> indicating whether the operation was successful.</p>
+<h2 id="events">Events</h2>
+<h3 id="onprocessstatechanged"><strong>OnProcessStateChanged</strong></h3>
+<p>This event will be triggered when the process state changes.</p>
+<pre><code class="language-csharp">public event ProcessStateHasChanged OnProcessStateChanged;
+</code></pre>
+<h3 id="onreinitializetargetprocess"><strong>OnReInitializeTargetProcess</strong></h3>
+<p>This will be triggered when the whole internal attributes get reinitialized.</p>
+<pre><code class="language-csharp">public event ReInitializeTargetProcess OnReInitializeTargetProcess;
+</code></pre>
+<hr />
+<p><a href="./"><code>&lt; Back</code></a></p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

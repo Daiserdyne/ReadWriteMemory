@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>MemoryAddress - ReadWriteMemory.External</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">ReadWriteMemory.External</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../readwritememory.external.rwmemory/" class="nav-link">RwMemory</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="./" class="nav-link active" aria-current="page">MemoryAddress</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../readwritememory.external.interfaces.imemorytrainer/" class="nav-link">IMemoryTrainer</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../readwritememory.external.services.rwmemoryhelper/" class="nav-link">RwMemoryHelper</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../readwritememory.external.rwmemory/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../readwritememory.external.interfaces.imemorytrainer/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#memoryaddress" class="nav-link">MemoryAddress</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#constructors" class="nav-link">Constructors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#methods" class="nav-link">Methods</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<p><a href="./"><code>&lt; Back</code></a></p>
+<hr />
+<h1 id="memoryaddress">MemoryAddress</h1>
+<p>Namespace: ReadWriteMemory.External.Entities</p>
+<p>This record class stores address, offsets and module name. 
+ This will be needed to calculate the base address and read/write to/from the targets process memory.</p>
+<pre><code class="language-csharp">memoryAddress = new(0x1234567, &quot;elonMusk.exe&quot;, 0x42, 0x420, 0x69);
+</code></pre>
+<pre><code class="language-csharp">memoryAddress = new(0x1234567, &quot;falconheavy.dll&quot;);
+</code></pre>
+<pre><code class="language-csharp">memoryAddress = new(0x1234567, 0x42, 0x420, 0x69);
+</code></pre>
+<pre><code class="language-csharp">memoryAddress = new(0x1234567);
+</code></pre>
+<p><a href="./readwritememory.external.entities.memoryaddress#memoryaddressuintptr-int32">MemoryAddress.MemoryAddress(UIntPtr, Int32[])</a></p>
+<p><a href="./readwritememory.external.entities.memoryaddress#memoryaddressstring-uintptr-int32">MemoryAddress.MemoryAddress(String, UIntPtr, Int32[])</a></p>
+<pre><code class="language-csharp">public struct MemoryAddress
+</code></pre>
+<p>Inheritance <a href="https://docs.microsoft.com/en-us/dotnet/api/system.object">Object</a> → <a href="https://docs.microsoft.com/en-us/dotnet/api/system.valuetype">ValueType</a> → <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br>
+Implements <a href="https://docs.microsoft.com/en-us/dotnet/api/system.iequatable-1">IEquatable&lt;MemoryAddress&gt;</a><br>
+Attributes <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.nullablecontextattribute">NullableContextAttribute</a>, <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.nullableattribute">NullableAttribute</a>, <a href="https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.isreadonlyattribute">IsReadOnlyAttribute</a></p>
+<h2 id="constructors">Constructors</h2>
+<h3 id="memoryaddressstring-uintptr-int32"><strong>MemoryAddress(String, UIntPtr, Int32[])</strong></h3>
+<p>This record class stores a memory <code>address</code>, the associated <code>offsets</code> and <code>moduleName</code>. 
+ This will be needed to calculate the base address and read/write to/from the targets process memory.</p>
+<pre><code class="language-csharp">memoryAddress = new(0x1234567, &quot;elonMusk.exe&quot;, 0x42, 0x420, 0x69);
+</code></pre>
+<pre><code class="language-csharp">memoryAddress = new(0x1234567, &quot;falconheavy.dll&quot;);
+</code></pre>
+<pre><code class="language-csharp">MemoryAddress(string moduleName, UIntPtr address, Int32[] offsets)
+</code></pre>
+<h4 id="parameters">Parameters</h4>
+<p><code>moduleName</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.string">String</a><br></p>
+<p><code>address</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.uintptr">UIntPtr</a><br></p>
+<p><code>offsets</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.int32">Int32[]</a><br></p>
+<h3 id="memoryaddressuintptr-int32"><strong>MemoryAddress(UIntPtr, Int32[])</strong></h3>
+<p>This record class stores a memory <code>address</code> and the associated <code>offsets</code>. 
+ This will be needed to calculate 
+ the base address and read/write to/from the targets process memory.</p>
+<pre><code class="language-csharp">memoryAddress = new(0x1234567, 0x42, 0x420, 0x69);
+</code></pre>
+<pre><code class="language-csharp">memoryAddress = new(0x1234567);
+</code></pre>
+<pre><code class="language-csharp">MemoryAddress(UIntPtr address, Int32[] offsets)
+</code></pre>
+<h4 id="parameters_1">Parameters</h4>
+<p><code>address</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.uintptr">UIntPtr</a><br></p>
+<p><code>offsets</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.int32">Int32[]</a><br></p>
+<h2 id="methods">Methods</h2>
+<h3 id="tostring"><strong>ToString()</strong></h3>
+<pre><code class="language-csharp">string ToString()
+</code></pre>
+<h4 id="returns">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.string">String</a><br></p>
+<h3 id="gethashcode"><strong>GetHashCode()</strong></h3>
+<pre><code class="language-csharp">int GetHashCode()
+</code></pre>
+<h4 id="returns_1">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.int32">Int32</a><br></p>
+<h3 id="equalsobject"><strong>Equals(Object)</strong></h3>
+<pre><code class="language-csharp">bool Equals(object obj)
+</code></pre>
+<h4 id="parameters_2">Parameters</h4>
+<p><code>obj</code> <a href="https://docs.microsoft.com/en-us/dotnet/api/system.object">Object</a><br></p>
+<h4 id="returns_2">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<h3 id="equalsmemoryaddress"><strong>Equals(MemoryAddress)</strong></h3>
+<pre><code class="language-csharp">bool Equals(MemoryAddress other)
+</code></pre>
+<h4 id="parameters_3">Parameters</h4>
+<p><code>other</code> <a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a><br></p>
+<h4 id="returns_3">Returns</h4>
+<p><a href="https://docs.microsoft.com/en-us/dotnet/api/system.boolean">Boolean</a><br></p>
+<hr />
+<p><a href="./"><code>&lt; Back</code></a></p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
