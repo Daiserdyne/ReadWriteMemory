@@ -1,0 +1,62 @@
+name: 'Publish documentation to GitHub pages'
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout library
+        uses: actions/checkout@v4
+
+      - name: Checkout xmldoc2md fork
+        uses: actions/checkout@v4
+        with:
+          repository: Daiserdyne/xmldoc2md
+          ref: master
+          path: tools/xmldoc2md
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Build xmldoc2md fork
+        run: dotnet build tools/xmldoc2md/src/XMLDoc2Markdown/XMLDoc2Markdown.csproj -c Release
+
+      - name: Build library
+        run: dotnet build ReadWriteMemory/ReadWriteMemory.External/ReadWriteMemory.External.csproj -c Release
+
+      - name: Run xmldoc2md
+        run: |
+          tools/xmldoc2md/src/XMLDoc2Markdown/bin/Release/net9.0/xmldoc2md.exe \
+            ReadWriteMemory/ReadWriteMemory.External/bin/Release/net9.0/ReadWriteMemory.External.dll \
+            --output ReadWriteMemory/docs \
+            --github-pages \
+            --back-button
+
+      # Setup Python + MkDocs
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install mkdocs and plugins
+        run: |
+          pip install mkdocs mkdocs-material
+
+      # Build MkDocs site
+      - name: Build MkDocs site
+        working-directory: ReadWriteMemory
+        run: mkdocs build --strict
+
+      # Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./ReadWriteMemory/site

@@ -1,0 +1,6 @@
+site_name: ReadWriteMemory.External
+nav:
+  - RwMemory: readwritememory.external.rwmemory.md
+  - MemoryAddress: readwritememory.external.entities.memoryaddress.md
+  - IMemoryTrainer: readwritememory.external.interfaces.imemorytrainer.md
+  - RwMemoryHelper: readwritememory.external.services.rwmemoryhelper.md
