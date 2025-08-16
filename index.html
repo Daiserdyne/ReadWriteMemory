@@ -74,23 +74,27 @@
             
             <li class="nav-item" data-bs-level="1"><a href="#readwritememoryexternal" class="nav-link">ReadWriteMemory.External</a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-bs-level="2"><a href="#readwritememoryexternal_1" class="nav-link">ReadWriteMemory.External</a>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#installation" class="nav-link">📦 Installation</a>
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#readwritememoryexternalentities" class="nav-link">ReadWriteMemory.External.Entities</a>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#full-documentation" class="nav-link">📄 Full Documentation</a>
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#readwritememoryexternalinterfaces" class="nav-link">ReadWriteMemory.External.Interfaces</a>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#simple-example-of-programcs-entry-class" class="nav-link">Simple example of program.cs / Entry class</a>
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#readwritememoryexternalservices" class="nav-link">ReadWriteMemory.External.Services</a>
+            
+            <li class="nav-item" data-bs-level="1"><a href="#simple-example-of-a-trainer-class" class="nav-link">Simple Example of a Trainer class</a>
               <ul class="nav flex-column">
-              </ul>
-            </li>
-            <li class="nav-item" data-bs-level="2"><a href="#readwritememoryexternalutilities" class="nav-link">ReadWriteMemory.External.Utilities</a>
+            <li class="nav-item" data-bs-level="2"><a href="#planned-community-features" class="nav-link">🛠️ Planned / Community Features</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -102,18 +106,312 @@
                     <div class="col-md-9" role="main">
 
 <h1 id="readwritememoryexternal">ReadWriteMemory.External</h1>
-<h2 id="readwritememoryexternal_1">ReadWriteMemory.External</h2>
-<p><a href="./readwritememory.external.rwmemory">RwMemory</a></p>
-<h2 id="readwritememoryexternalentities">ReadWriteMemory.External.Entities</h2>
-<p><a href="./readwritememory.external.entities.codecavetable">CodeCaveTable</a></p>
-<p><a href="./readwritememory.external.entities.memoryaddress">MemoryAddress</a></p>
-<p><a href="./readwritememory.external.entities.programstate">ProgramState</a></p>
-<h2 id="readwritememoryexternalinterfaces">ReadWriteMemory.External.Interfaces</h2>
-<p><a href="./readwritememory.external.interfaces.imemorytrainer">IMemoryTrainer</a></p>
-<h2 id="readwritememoryexternalservices">ReadWriteMemory.External.Services</h2>
-<p><a href="./readwritememory.external.services.rwmemoryhelper">RwMemoryHelper</a></p>
-<h2 id="readwritememoryexternalutilities">ReadWriteMemory.External.Utilities</h2>
-<p><a href="./readwritememory.external.utilities.hotkeys">Hotkeys</a></p></div>
+<p><strong>ReadWriteMemory.External</strong> is a high-performance C# library for external memory manipulation in Windows processes (Perhaps for Linux also in the future).<br />
+It is designed to be as fast and efficient as possible, minimizing overhead so that the main bottleneck is the Windows API itself.</p>
+<p><strong>Features:</strong>
+- <strong>ReadMemory / WriteMemory</strong> for any <code>unmanaged</code> type (not limited to primitive types — supports custom structs, vectors, etc.).
+- <strong>Freeze Memory</strong> – lock values in place, optionally with conditions until specific events occur.
+- <strong>Constant Read</strong> – continuously read values at configurable intervals with multiple reading modes.
+- <strong>Code Injection / CodeCave</strong> – insert and execute custom ASM code inside the target process.
+- <strong>Advanced Memory Control</strong> – beyond simple read/write, supports extended operations for flexible trainer or tool creation.</p>
+<p>This library is ideal for building trainers, debugging tools, or experimental projects that require precise and fast access to process memory (e.g., in single-player games or test environments).</p>
+<blockquote>
+<p>⚠️ <strong>Legal &amp; ethical notice:</strong><br />
+Use this library <strong>only</strong> for legitimate, offline/single‑player scenarios (debugging, modding, personal tooling). Misuse in online/multiplayer environments may violate ToS or laws.</p>
+</blockquote>
+<hr />
+<h1 id="installation">📦 Installation</h1>
+<p>Clone or add as a submodule:</p>
+<pre><code class="language-bash">dotnet add package ReadWriteMemory.External 
+</code></pre>
+<hr />
+<h1 id="full-documentation">📄 Full Documentation</h1>
+<hr />
+<h1 id="simple-example-of-programcs-entry-class">Simple example of program.cs / Entry class</h1>
+<pre><code class="language-csharp">using ReadWriteMemory.External;
+using ReadWriteMemory.External.Entities;
+using ReadWriteMemory.External.Interfaces;
+using ReadWriteMemory.External.Services;
+using ReadWriteMemory.External.Utilities;
+
+namespace SuperTrainer;
+
+public sealed class Program : IAsyncDisposable
+{
+    private readonly RwMemory _memory =
+        RwMemoryHelper.CreateAndGetSingletonInstance(&quot;Target-Program&quot;);
+
+    // This does not work with Aot. In case you want to use Aot, you need to add
+    // every single trainer by yourself in the list since reflection does not work with Aot.
+    private readonly FrozenDictionary&lt;string, IMemoryTrainer&gt; _implementedTrainer =
+        RwMemoryHelper.GetAllImplementedTrainers();
+
+    private bool _freecamEnabled;
+
+    public async Task Main(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            if (_memory.IsProcessAlive)
+            {
+                await HandleTrainerTree(cancellationToken);
+            }
+
+            await Task.Delay(1, cancellationToken);
+        }
+    }
+
+    private async Task HandleTrainerTree(CancellationToken cancellationToken)
+    {
+        while (_freecamEnabled)
+        {
+            await HandleFreecam();
+            await Task.Delay(1, cancellationToken);
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.F4))
+        {
+            _freecamEnabled = await _implementedTrainer[nameof(Freecam)]
+                .Enable(&quot;enable_freecam&quot;);
+        }
+    }
+
+    private async Task HandleFreecam()
+    {
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.F4))
+        {
+            _freecamEnabled = false;
+
+            await _implementedTrainer[nameof(Freecam)].Disable();
+
+            return;
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.W, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable(&quot;forward&quot;);
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.S, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable(&quot;backward&quot;);
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.E, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable(&quot;up&quot;);
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.Q, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable(&quot;down&quot;);
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.A, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable(&quot;left&quot;);
+        }
+
+        if (await Hotkeys.KeyPressedAsync(Hotkeys.Key.D, false))
+        {
+            await _implementedTrainer[nameof(Freecam)].Enable(&quot;right&quot;);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _memory.DisposeAsync();
+    }
+}
+</code></pre>
+<hr />
+<h1 id="simple-example-of-a-trainer-class">Simple Example of a Trainer class</h1>
+<h3 id="implements-imemorytrainer">Implements IMemoryTrainer</h3>
+<pre><code class="language-csharp">using System.Numerics;
+using ReadWriteMemory.External;
+using ReadWriteMemory.External.Entities;
+using ReadWriteMemory.External.Interfaces;
+using ReadWriteMemory.External.Services;
+using ReadWriteMemory.External.Utilities;
+
+public sealed class Freecam : IMemoryTrainer
+{
+    private readonly RwMemory _memory = RwMemoryHelper.RwMemory;
+
+    private readonly MemoryAddress _cameraFunctionAddress =
+        new(&quot;Target.exe&quot;, 0x19CC6F9);
+
+    private readonly MemoryAddress _cameraCoordinatesAddress =
+        new(&quot;Target.exe&quot;, 0x680D050,
+            0x220, 0x3B0, 0x2A0, 0x1E0);
+
+    // Left and right view
+    private readonly MemoryAddress _cameraPitchAddress =
+        new(&quot;Target.exe&quot;, 0x680D050,
+            0x210, 0x260, 0x2A0, 0x6C0, 0x68, 0x4F8, 0x74);
+
+    // Up and down view
+    private readonly MemoryAddress _cameraYawAddress =
+        new(&quot;Target.exe&quot;, 0x680D050,
+            0x210, 0x8F8, 0x20, 0x29C);
+
+    private static ReadOnlySpan&lt;byte&gt; CustomCameraFunctionShellCode =&gt;
+    [
+        0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    ];
+
+    private Vector3 _currentCameraPosition = Vector3.Zero;
+    private float _currentPitch;
+    private float _currentYaw;
+
+    public Freecam() =&gt; _memory.OnReInitializeTargetProcess += OnReInitializeTargetProcess;
+
+    public int Id =&gt; 4;
+
+    public Hotkeys.Key Hotkey =&gt; Hotkeys.Key.F4;
+
+    public string TrainerName =&gt; nameof(Freecam);
+
+    public string Description =&gt; &quot;Ingame freecam.&quot;;
+
+    public bool DisableWhenDispose =&gt; true;
+
+    private void RefreshYaw(float newYaw) =&gt; _currentYaw = newYaw;
+
+    private void RefreshPitch(float newPitch) =&gt; _currentPitch = newPitch;
+
+    public async ValueTask&lt;bool&gt; Enable(params string[]? args)
+    {
+        var command = args!.First();
+
+        switch (command)
+        {
+            case &quot;enable_freecam&quot;:
+            {
+                _memory.ReplaceBytes(_cameraFunctionAddress, CustomCameraFunctionShellCode);
+
+                if (!_memory.ReadValue(_cameraCoordinatesAddress, out _currentCameraPosition)
+                    &amp;&amp; _currentCameraPosition == Vector3.Zero)
+                {
+                    await Disable();
+
+                    return false;
+                }
+
+                if (!_memory.ReadValueConstant&lt;float&gt;(_cameraPitchAddress,
+                        RefreshPitch,
+                        TimeSpan.FromMilliseconds(1)))
+                {
+                    await Disable();
+
+                    return false;
+                }
+
+                if (!_memory.ReadValueConstant&lt;float&gt;(_cameraYawAddress,
+                        RefreshYaw,
+                        TimeSpan.FromMilliseconds(1)))
+                {
+                    await Disable();
+
+                    return false;
+                }
+
+                break;
+            }
+            case &quot;forward&quot;:
+            {
+                var newCoordinates = TrainerHelper.TeleportForward(_currentCameraPosition,
+                    _currentYaw - 90f, _currentPitch, 20f);
+
+                WriteNewCameraCoords(newCoordinates);
+
+                break;
+            }
+            case &quot;backward&quot;:
+            {
+                var newCoordinates = TrainerHelper.TeleportBackward(_currentCameraPosition,
+                    _currentYaw - 90f, _currentPitch, 20f);
+
+                WriteNewCameraCoords(newCoordinates);
+
+                break;
+            }
+            case &quot;up&quot;:
+            {
+                _currentCameraPosition.Z += 10f;
+
+                WriteNewCameraCoords(_currentCameraPosition);
+
+                break;
+            }
+            case &quot;down&quot;:
+            {
+                _currentCameraPosition.Z -= 10f;
+
+                WriteNewCameraCoords(_currentCameraPosition);
+
+                break;
+            }
+            case &quot;right&quot;:
+            {
+                var newCoordinates = TrainerHelper.TeleportForwardWithoutZ(_currentCameraPosition,
+                    _currentYaw, 10f);
+
+                WriteNewCameraCoords(newCoordinates);
+
+                break;
+            }
+            case &quot;left&quot;:
+            {
+                var newCoordinates = TrainerHelper.TeleportForwardWithoutZ(_currentCameraPosition,
+                    _currentYaw - 180f, 20f);
+
+                WriteNewCameraCoords(newCoordinates);
+
+                break;
+            }
+        }
+
+        return true;
+    }
+
+    public ValueTask&lt;bool&gt; Disable(params string[]? args)
+    {
+        _memory.StopReadingValueConstant(_cameraPitchAddress);
+        _memory.StopReadingValueConstant(_cameraYawAddress);
+
+        _memory.UndoReplaceBytes(_cameraFunctionAddress);
+
+        return ValueTask.FromResult(true);
+    }
+
+    private void WriteNewCameraCoords(Vector3 newCoordinates)
+    {
+        _currentCameraPosition = newCoordinates;
+
+        _memory.WriteValue(_cameraCoordinatesAddress, newCoordinates);
+    }
+
+    private void OnReInitializeTargetProcess()
+    {
+        _memory.StopReadingValueConstant(_cameraPitchAddress);
+        _memory.StopReadingValueConstant(_cameraYawAddress);
+
+        _currentCameraPosition = Vector3.Zero;
+        _currentPitch = 0f;
+        _currentYaw = 0f;
+    }
+}
+</code></pre>
+<hr />
+<h2 id="planned-community-features">🛠️ Planned / Community Features</h2>
+<ul>
+<li>AOB &amp; pattern scanning</li>
+<li>Pointer‑chain helpers</li>
+<li>Linux version in the future</li>
+</ul>
+<hr />
+<h3 id="contributions-and-ideas-are-very-welcome-feel-free-to-open-an-issue-or-pr">Contributions and ideas are very welcome, feel free to open an Issue or PR!</h3></div>
             </div>
         </div>
 
@@ -195,5 +493,5 @@
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2025-08-16 15:29:51.077954+00:00
+Build Date UTC : 2025-08-16 15:36:38.752055+00:00
 -->
