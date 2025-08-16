@@ -54,6 +54,11 @@ jobs:
         working-directory: ReadWriteMemory
         run: mkdocs build --strict
 
+      - name: Override index.md file with project readme
+        working-directory: ReadWriteMemory
+        run: |
+          cp README.md docs/index.md
+
       # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
