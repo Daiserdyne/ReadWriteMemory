@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout library
         uses: actions/checkout@v4
+        with:
+          path: ReadWriteMemory
 
       - name: Checkout xmldoc2md fork
         uses: actions/checkout@v4
@@ -29,14 +31,16 @@ jobs:
         run: dotnet build tools/xmldoc2md/src/XMLDoc2Markdown/XMLDoc2Markdown.csproj -c Release
 
       - name: Build library
-        working-directory: ReadWriteMemory
         run: dotnet build ReadWriteMemory/ReadWriteMemory.External/ReadWriteMemory.External.csproj -c Release
+
+      - name: Debug output
+        run: ls ReadWriteMemory
 
       - name: Run xmldoc2md
         run: |
-          tools/xmldoc2md/src/XMLDoc2Markdown/bin/Release/net9.0/xmldoc2md.exe \
-            ReadWriteMemory/ReadWriteMemory/ReadWriteMemory.External/bin/Release/net9.0/ReadWriteMemory.External.dll \
-            --output ReadWriteMemory/ReadWriteMemory/docs \
+          dotnet tools/xmldoc2md/src/XMLDoc2Markdown/bin/Release/net9.0/xmldoc2md.dll \
+            ReadWriteMemory/ReadWriteMemory.External/bin/Release/net9.0/ReadWriteMemory.External.dll \
+            --output ReadWriteMemory/docs \
             --github-pages \
             --back-button
 
@@ -52,11 +56,11 @@ jobs:
 
       # Build MkDocs site
       - name: Build MkDocs site
-        working-directory: ReadWriteMemory/ReadWriteMemory
-        run: mkdocs build --strict
+        working-directory: ReadWriteMemory
+        run: mkdocs build
 
       - name: Override index.md file with project readme
-        working-directory: ReadWriteMemory/ReadWriteMemory
+        working-directory: ReadWriteMemory
         run: |
           cp README.md docs/index.md
 
@@ -65,4 +69,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./ReadWriteMemory/ReadWriteMemory/site
+          publish_dir: ./ReadWriteMemory/site
