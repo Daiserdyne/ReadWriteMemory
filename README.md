@@ -29,7 +29,7 @@ dotnet add package ReadWriteMemory.External
 
 # 📄 Full Documentation
 
- 
+[Click here for full documentation](https://daiserdyne.github.io/ReadWriteMemory/)
 
 ---
 
